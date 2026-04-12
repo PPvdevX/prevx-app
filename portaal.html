@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrevX Portaal</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#003366;--navy2:#8099B3;--accent:#40668C;--green:#3FBF3F;--green-bg:#e8f5e8;--red:#dc2626;--red-bg:#fff1f2;--orange:#E97F02;--orange-bg:#fff7ed;--gray-50:#f8fafc;--gray-100:#f1f5f9;--gray-200:#e2e8f0;--gray-300:#cbd5e1;--gray-400:#94a3b8;--gray-500:#64748b;--gray-700:#334155;--gray-900:#0f172a;--radius:8px;--shadow:0 1px 8px rgba(0,0,0,0.08);--shadow-lg:0 8px 32px rgba(0,0,0,0.15)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',sans-serif;background:var(--gray-100);color:var(--gray-900);min-height:100vh}
+h1,h2,h3,h4{font-family:'Montserrat',sans-serif}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+#screen-login{background:var(--navy);align-items:center;justify-content:center;padding:40px 20px}
+.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:var(--shadow-lg)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo img{height:64px;object-fit:contain}
+.login-logo h1{font-size:22px;color:var(--navy);margin-top:10px}
+.login-logo p{font-size:12px;color:var(--gray-500);margin-top:4px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-input{width:100%;padding:10px 14px;border:2px solid var(--gray-200);border-radius:var(--radius);font-family:'Poppins',sans-serif;font-size:14px;color:var(--gray-900);background:var(--gray-50);transition:border-color .2s}
+.form-input:focus{outline:none;border-color:var(--navy);background:#fff}
+.btn-login{width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius);font-family:'Montserrat',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;margin-top:8px}
+.btn-login:hover{background:var(--accent)}
+.btn-login:disabled{opacity:.6;cursor:not-allowed}
+.login-error{background:var(--red-bg);color:var(--red);padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-top:12px;display:none}
+#screen-dashboard{flex-direction:row!important}
+.sidebar{width:240px;background:var(--navy);flex-shrink:0;display:flex;flex-direction:column;min-height:100vh;position:sticky;top:0}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+.sidebar-logo-text{font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;color:#fff}
+.sidebar-logo-sub{font-size:10px;color:var(--navy2);display:block}
+.sidebar-user{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-user-name{font-size:13px;font-weight:600;color:#fff}
+.sidebar-user-email{font-size:11px;color:var(--navy2);margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;font-weight:500;color:var(--navy2);cursor:pointer;transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--orange)}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.sidebar-bottom{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.btn-logout{width:100%;padding:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:var(--navy2);border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:'Poppins',sans-serif;transition:all .2s}
+.btn-logout:hover{background:rgba(255,255,255,.2);color:#fff}
+.main-content{flex:1;overflow-y:auto}
+.page-header{background:#fff;padding:20px 28px;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:10}
+.page-title{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:700;color:var(--navy)}
+.page-subtitle{font-size:12px;color:var(--gray-500);margin-top:2px}
+.content-area{padding:24px 28px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-top:3px solid var(--gray-200)}
+.stat-card.totaal{border-top-color:var(--navy)}
+.stat-card.rijklaar{border-top-color:var(--green)}
+.stat-card.niet-rijklaar{border-top-color:var(--red)}
+.stat-card.vandaag{border-top-color:var(--orange)}
+.stat-num{font-family:'Montserrat',sans-serif;font-size:32px;font-weight:800;color:var(--gray-900);line-height:1}
+.stat-card.rijklaar .stat-num{color:var(--green)}
+.stat-card.niet-rijklaar .stat-num{color:var(--red)}
+.stat-card.vandaag .stat-num{color:var(--orange)}
+.stat-label{font-size:11px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+.filters-bar{background:#fff;border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);margin-bottom:20px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filter-label{font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase}
+.filter-input{padding:7px 10px;border:2px solid var(--gray-200);border-radius:6px;font-family:'Poppins',sans-serif;font-size:13px;color:var(--gray-900);min-width:140px}
+.filter-input:focus{outline:none;border-color:var(--navy)}
+.btn-reset{padding:7px 14px;background:var(--gray-100);border:2px solid var(--gray-200);border-radius:6px;font-size:12px;font-weight:600;color:var(--gray-500);cursor:pointer;white-space:nowrap}
+.btn-reset:hover{border-color:var(--gray-400);color:var(--gray-700)}
+.table-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.table-header{padding:14px 20px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between}
+.table-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;color:var(--navy)}
+.table-count{font-size:12px;color:var(--gray-500);background:var(--gray-100);padding:3px 8px;border-radius:12px}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--gray-50)}
+th{padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--gray-200);white-space:nowrap}
+td{padding:12px 16px;font-size:13px;color:var(--gray-700);border-bottom:1px solid var(--gray-100);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray-50);cursor:pointer}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;white-space:nowrap}
+.badge.rijklaar{background:var(--green-bg);color:var(--green)}
+.badge.niet_rijklaar{background:var(--red-bg);color:var(--red)}
+.badge.onvolledig{background:var(--orange-bg);color:var(--orange)}
+.loading-row td{text-align:center;padding:40px;color:var(--gray-400)}
+.spinner-sm{display:inline-block;width:20px;height:20px;border:2px solid var(--gray-200);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-row td{text-align:center;padding:60px 20px;color:var(--gray-400);font-size:14px}
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100}
+.detail-overlay.active{display:flex;align-items:flex-start;justify-content:flex-end}
+.detail-panel{background:#fff;width:580px;max-width:90vw;height:100vh;overflow-y:auto;box-shadow:-4px 0 32px rgba(0,0,0,.2)}
+.detail-panel-header{background:var(--navy);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.detail-panel-title{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:#fff}
+.detail-panel-sub{font-size:11px;color:var(--navy2);margin-top:2px}
+.btn-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-close:hover{background:rgba(255,255,255,.25)}
+.detail-body{padding:20px 24px}
+.detail-verdict{padding:12px 16px;border-radius:var(--radius);font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;margin-bottom:16px}
+.detail-verdict.rijklaar{background:var(--green-bg);color:var(--green)}
+.detail-verdict.niet_rijklaar{background:var(--red-bg);color:var(--red)}
+.detail-verdict.onvolledig{background:var(--orange-bg);color:var(--orange)}
+.detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.detail-meta-item{background:var(--gray-50);border-radius:6px;padding:10px 14px}
+.detail-meta-label{font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px}
+.detail-meta-value{font-size:13px;font-weight:600;color:var(--gray-900);margin-top:3px}
+.detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.detail-stat{text-align:center;padding:12px;border-radius:var(--radius)}
+.detail-stat.ok{background:var(--green-bg)}
+.detail-stat.nok{background:var(--red-bg)}
+.detail-stat.open{background:var(--gray-100)}
+.detail-stat-n{font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800}
+.detail-stat.ok .detail-stat-n{color:var(--green)}
+.detail-stat.nok .detail-stat-n{color:var(--red)}
+.detail-stat.open .detail-stat-n{color:var(--gray-500)}
+.detail-stat-l{font-size:10px;font-weight:600;color:var(--gray-500);text-transform:uppercase;margin-top:3px}
+.sectie-blok{margin-bottom:14px;border:1px solid var(--gray-200);border-radius:var(--radius);overflow:hidden}
+.sectie-blok-header{background:var(--navy);padding:10px 14px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#fff;text-transform:uppercase}
+.punt-rij{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:12px}
+.punt-rij:last-child{border-bottom:none}
+.punt-badge{min-width:36px;padding:2px 5px;border-radius:4px;text-align:center;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;flex-shrink:0}
+.punt-badge.ok{background:var(--green);color:#fff}
+.punt-badge.nok{background:var(--red);color:#fff}
+.punt-badge.na{background:var(--gray-500);color:#fff}
+.punt-badge.open{background:var(--gray-200);color:var(--gray-600)}
+.punt-tekst{flex:1;color:var(--gray-700);line-height:1.4}
+.punt-opm{font-size:11px;color:var(--gray-500);font-style:italic;margin-top:3px}
+.punt-fotos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.punt-foto{width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--gray-200);cursor:pointer}
+.sig-sectie{margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-200)}
+.sig-label{font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.sig-img{max-width:100%;border:1px solid var(--gray-200);border-radius:6px;background:var(--gray-50)}
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
+.lightbox.active{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:8px}
+.lightbox-close{position:absolute;top:20px;right:24px;color:#fff;font-size:32px;cursor:pointer;background:none;border:none}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" onerror="this.style.display='none'">
+      <h1>PrevX Portaal</h1>
+      <p>Beheer &amp; rapportage</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">E-mailadres</label>
+      <input type="email" class="form-input" id="loginEmail" placeholder="uw@email.be" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Wachtwoord</label>
+      <input type="password" class="form-input" id="loginPass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
+    </div>
+    <button class="btn-login" id="btnLogin" onclick="doLogin()">Inloggen</button>
+    <div class="login-error" id="loginError">Ongeldig e-mailadres of wachtwoord.</div>
+  </div>
+</div>
+
+<div id="screen-dashboard" class="screen">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="Logo-PrevX.png" alt="" style="height:28px;object-fit:contain;border-radius:4px;" onerror="this.style.display='none'">
+      <div><div class="sidebar-logo-text">PrevX</div><span class="sidebar-logo-sub">Portaal</span></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-name" id="sidebarNaam">Laden...</div>
+      <div class="sidebar-user-email" id="sidebarEmail"></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" id="nav-inspecties" onclick="toonTab('inspecties')">
+        <span class="nav-icon">&#128203;</span> Inspecties
+      </div>
+      <div class="nav-item" id="nav-voertuigen" onclick="toonTab('voertuigen')">
+        <span class="nav-icon">&#128664;</span> Voertuigen
+      </div>
+      <div class="nav-item" id="nav-gebruikers" onclick="toonTab('gebruikers')">
+        <span class="nav-icon">&#128100;</span> Gebruikers
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="btn-logout" onclick="doLogout()">&#10548; Afmelden</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div id="tab-inspecties">
+      <div class="page-header">
+        <div class="page-title">Inspecties</div>
+        <div class="page-subtitle">Overzicht van alle ingediende inspectierapporten</div>
+      </div>
+      <div class="content-area">
+        <div class="stats-grid">
+          <div class="stat-card totaal"><div class="stat-num" id="statTotaal">-</div><div class="stat-label">Totaal</div></div>
+          <div class="stat-card rijklaar"><div class="stat-num" id="statRijklaar">-</div><div class="stat-label">Rijklaar</div></div>
+          <div class="stat-card niet-rijklaar"><div class="stat-num" id="statNietRijklaar">-</div><div class="stat-label">Niet rijklaar</div></div>
+          <div class="stat-card vandaag"><div class="stat-num" id="statVandaag">-</div><div class="stat-label">Vandaag</div></div>
+        </div>
+        <div class="filters-bar">
+          <div class="filter-group"><span class="filter-label">Van</span><input type="date" class="filter-input" id="filterVan"></div>
+          <div class="filter-group"><span class="filter-label">Tot</span><input type="date" class="filter-input" id="filterTot"></div>
+          <div class="filter-group"><span class="filter-label">Verdict</span>
+            <select class="filter-input" id="filterVerdict">
+              <option value="">Alle</option>
+              <option value="rijklaar">Rijklaar</option>
+              <option value="niet_rijklaar">Niet rijklaar</option>
+              <option value="onvolledig">Onvolledig</option>
+            </select>
+          </div>
+          <div class="filter-group"><span class="filter-label">Voertuig</span><input type="text" class="filter-input" id="filterVoertuig" placeholder="Nummerplaat..."></div>
+          <button class="btn-reset" onclick="resetFilters()">&#10006; Reset</button>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <span class="table-title">Rapporten</span>
+            <span class="table-count" id="tabelCount">0 resultaten</span>
+          </div>
+          <table><thead><tr><th>Datum</th><th>Tijd</th><th>Voertuig</th><th>Type</th><th>Chauffeur</th><th>Verdict</th><th></th></tr></thead>
+          <tbody id="inspectiesTabel"><tr class="loading-row"><td colspan="7"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-voertuigen" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Voertuigen</div>
+        <div class="page-subtitle">Overzicht van het wagenpark</div>
+      </div>
+      <div class="content-area">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Wagenpark</span><span class="table-count" id="voertuigenCount">0</span></div>
+          <table><thead><tr><th>Nummerplaat</th><th>Type</th><th>Omschrijving</th><th>Status</th><th>Inspecties</th></tr></thead>
+          <tbody id="voertuigenTabel"><tr class="loading-row"><td colspan="5"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-gebruikers" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Gebruikers</div>
+        <div class="page-subtitle">Chauffeurs, leidinggevenden en preventieadviseurs</div>
+      </div>
+      <div class="content-area">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Gebruikers</span><span class="table-count" id="gebruikersCount">0</span></div>
+          <table><thead><tr><th>Naam</th><th>Rol</th><th>Pincode</th><th>Status</th></tr></thead>
+          <tbody id="gebruikersTabel"><tr class="loading-row"><td colspan="4"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="detailOverlay" onclick="sluitDetailOuter(event)">
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-panel-header">
+      <div><div class="detail-panel-title" id="detailTitel">Detail</div><div class="detail-panel-sub" id="detailSub"></div></div>
+      <button class="btn-close" onclick="sluitDetail()">&#215;</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="sluitLightbox()">
+  <button class="lightbox-close">&#215;</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPABASE_URL='https://axziicyfcghanhvtmgsm.supabase.co';
+var SUPABASE_KEY='sb_publishable_qsdWjzGQnXxt9iH0B_qAjw_wIYGXR2p';
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+var huidigeBedrijfId=null;
+var alleInspecties=[];
+
+document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+
+function doLogin(){
+  var email=document.getElementById('loginEmail').value.trim();
+  var pass=document.getElementById('loginPass').value;
+  var btn=document.getElementById('btnLogin');
+  var err=document.getElementById('loginError');
+  if(!email||!pass){err.style.display='block';err.textContent='Vul e-mail en wachtwoord in.';return;}
+  btn.disabled=true;btn.textContent='Bezig...';err.style.display='none';
+  sb.auth.signInWithPassword({email:email,password:pass}).then(function(r){
+    if(r.error){err.style.display='block';err.textContent='Ongeldig e-mailadres of wachtwoord.';btn.disabled=false;btn.textContent='Inloggen';return;}
+    laadDashboard(r.data.user);
+  });
+}
+
+function doLogout(){
+  sb.auth.signOut().then(function(){
+    showScreen('login');
+    document.getElementById('loginEmail').value='';
+    document.getElementById('loginPass').value='';
+    document.getElementById('btnLogin').disabled=false;
+    document.getElementById('btnLogin').textContent='Inloggen';
+  });
+}
+
+sb.auth.getSession().then(function(r){if(r.data&&r.data.session)laadDashboard(r.data.session.user);});
+
+function laadDashboard(user){
+  document.getElementById('sidebarEmail').textContent=user.email;
+  sb.from('gebruikers').select('*').eq('actief',true).then(function(r){
+    var gebruikers=r.data||[];
+    var gevonden=gebruikers.find(function(g){return g.rol==='beheerder';});
+    if(gevonden){document.getElementById('sidebarNaam').textContent=gevonden.naam;huidigeBedrijfId=gevonden.bedrijf_id;}
+    else{document.getElementById('sidebarNaam').textContent=user.email;if(gebruikers.length>0)huidigeBedrijfId=gebruikers[0].bedrijf_id;}
+    showScreen('dashboard');
+    laadInspecties();
+  });
+}
+
+function toonTab(naam){
+  var tabs=['inspecties','voertuigen','gebruikers'];
+  tabs.forEach(function(t){
+    document.getElementById('tab-'+t).style.display=t===naam?'':'none';
+    document.getElementById('nav-'+t).classList.toggle('active',t===naam);
+  });
+  if(naam==='inspecties')laadInspecties();
+  else if(naam==='voertuigen')laadVoertuigen();
+  else if(naam==='gebruikers')laadGebruikers();
+}
+
+function laadInspecties(){
+  if(!huidigeBedrijfId)return;
+  sb.from('inspecties').select('*,voertuigen(nummerplaat,type),gebruikers(naam,rol)').eq('bedrijf_id',huidigeBedrijfId).order('datum',{ascending:false}).order('tijdstip',{ascending:false})
+  .then(function(r){
+    alleInspecties=r.data||[];
+    updateStats();
+    renderTabel(alleInspecties);
+  });
+}
+
+function updateStats(){
+  var vandaag=new Date().toISOString().split('T')[0];
+  document.getElementById('statTotaal').textContent=alleInspecties.length;
+  document.getElementById('statRijklaar').textContent=alleInspecties.filter(function(i){return i.verdict==='rijklaar';}).length;
+  document.getElementById('statNietRijklaar').textContent=alleInspecties.filter(function(i){return i.verdict==='niet_rijklaar';}).length;
+  document.getElementById('statVandaag').textContent=alleInspecties.filter(function(i){return i.datum===vandaag;}).length;
+}
+
+function renderTabel(data){
+  var tbody=document.getElementById('inspectiesTabel');
+  document.getElementById('tabelCount').textContent=data.length+' resultaten';
+  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">Geen inspecties gevonden.</td></tr>';return;}
+  var labels={rijklaar:'Rijklaar',niet_rijklaar:'Niet rijklaar',onvolledig:'Onvolledig'};
+  tbody.innerHTML='';
+  data.forEach(function(ins){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+formatDatum(ins.datum)+'</td><td>'+(ins.tijdstip?ins.tijdstip.slice(0,5):'-')+'</td><td><strong>'+(ins.voertuigen?ins.voertuigen.nummerplaat:'-')+'</strong></td><td>'+(ins.voertuigen?ins.voertuigen.type:'-')+'</td><td>'+(ins.gebruikers?ins.gebruikers.naam:'-')+'</td><td><span class="badge '+ins.verdict+'">'+(labels[ins.verdict]||ins.verdict)+'</span></td><td style="color:var(--gray-400)">&#8250;</td>';
+    tr.onclick=function(){openDetail(ins.id);};
+    tbody.appendChild(tr);
+  });
+}
+
+function filterInspecties(){
+  var van=document.getElementById('filterVan').value;
+  var tot=document.getElementById('filterTot').value;
+  var verdict=document.getElementById('filterVerdict').value;
+  var voertuig=document.getElementById('filterVoertuig').value.toLowerCase();
+  renderTabel(alleInspecties.filter(function(ins){
+    if(van&&ins.datum<van)return false;
+    if(tot&&ins.datum>tot)return false;
+    if(verdict&&ins.verdict!==verdict)return false;
+    if(voertuig&&ins.voertuigen&&ins.voertuigen.nummerplaat.toLowerCase().indexOf(voertuig)===-1)return false;
+    return true;
+  }));
+}
+
+function resetFilters(){
+  document.getElementById('filterVan').value='';
+  document.getElementById('filterTot').value='';
+  document.getElementById('filterVerdict').value='';
+  document.getElementById('filterVoertuig').value='';
+  renderTabel(alleInspecties);
+}
+
+['filterVan','filterTot','filterVerdict','filterVoertuig'].forEach(function(id){
+  var el=document.getElementById(id);
+  el.addEventListener('change',filterInspecties);
+  el.addEventListener('input',filterInspecties);
+});
+
+function openDetail(id){
+  document.getElementById('detailOverlay').classList.add('active');
+  document.getElementById('detailBody').innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400)"><div class="spinner-sm"></div>Laden...</div>';
+  sb.from('inspecties').select('*,voertuigen(nummerplaat,type,omschrijving),gebruikers(naam,rol)').eq('id',id).single().then(function(r){
+    var ins=r.data;
+    if(!ins)return;
+    document.getElementById('detailTitel').textContent=ins.voertuigen?ins.voertuigen.nummerplaat:'Inspectie';
+    document.getElementById('detailSub').textContent=formatDatum(ins.datum)+' om '+(ins.tijdstip?ins.tijdstip.slice(0,5):'-');
+    sb.from('inspectie_resultaten').select('*,inspectie_punten(omschrijving,volgorde,inspectie_secties(naam,icon,volgorde))').eq('inspectie_id',id)
+    .then(function(rr){renderDetail(ins,rr.data||[]);});
+  });
+}
+
+function renderDetail(ins,resultaten){
+  var verdictLabels={rijklaar:'&#10003; RIJKLAAR',niet_rijklaar:'&#10007; NIET RIJKLAAR',onvolledig:'&#9200; ONVOLLEDIG'};
+  var ok=resultaten.filter(function(r){return r.status==='ok';}).length;
+  var nok=resultaten.filter(function(r){return r.status==='nok';}).length;
+  var open=resultaten.filter(function(r){return r.status==='open'||!r.status;}).length;
+  var secties={};
+  resultaten.forEach(function(r){
+    if(!r.inspectie_punten||!r.inspectie_punten.inspectie_secties)return;
+    var s=r.inspectie_punten.inspectie_secties;
+    if(!secties[s.naam])secties[s.naam]={icon:s.icon,naam:s.naam,volgorde:s.volgorde,punten:[]};
+    secties[s.naam].punten.push(r);
+  });
+  var sectieArr=Object.values(secties).sort(function(a,b){return a.volgorde-b.volgorde;});
+  var html='<div class="detail-verdict '+ins.verdict+'">'+(verdictLabels[ins.verdict]||ins.verdict)+'</div>';
+  html+='<div class="detail-meta"><div class="detail-meta-item"><div class="detail-meta-label">Voertuig</div><div class="detail-meta-value">'+(ins.voertuigen?ins.voertuigen.nummerplaat:'-')+'</div></div>';
+  html+='<div class="detail-meta-item"><div class="detail-meta-label">Type</div><div class="detail-meta-value">'+(ins.voertuigen?ins.voertuigen.type:'-')+'</div></div>';
+  html+='<div class="detail-meta-item"><div class="detail-meta-label">Chauffeur</div><div class="detail-meta-value">'+(ins.gebruikers?ins.gebruikers.naam:'-')+'</div></div>';
+  html+='<div class="detail-meta-item"><div class="detail-meta-label">Datum &amp; tijd</div><div class="detail-meta-value">'+formatDatum(ins.datum)+' '+(ins.tijdstip?ins.tijdstip.slice(0,5):'')+'</div></div></div>';
+  html+='<div class="detail-stats"><div class="detail-stat ok"><div class="detail-stat-n">'+ok+'</div><div class="detail-stat-l">OK</div></div><div class="detail-stat nok"><div class="detail-stat-n">'+nok+'</div><div class="detail-stat-l">NOK</div></div><div class="detail-stat open"><div class="detail-stat-n">'+open+'</div><div class="detail-stat-l">Open</div></div></div>';
+  sectieArr.forEach(function(s){
+    html+='<div class="sectie-blok"><div class="sectie-blok-header">'+s.icon+' '+s.naam+'</div>';
+    s.punten.sort(function(a,b){return(a.inspectie_punten.volgorde||0)-(b.inspectie_punten.volgorde||0);});
+    s.punten.forEach(function(r){
+      var st=r.status||'open';
+      var bl={ok:'OK',nok:'NOK',na:'N/A',open:'-'};
+      html+='<div class="punt-rij"><span class="punt-badge '+st+'">'+(bl[st]||'-')+'</span><div class="punt-tekst">'+(r.inspectie_punten?r.inspectie_punten.omschrijving:'-');
+      if(r.opmerking)html+='<div class="punt-opm">&#128172; '+r.opmerking+'</div>';
+      if(r.fotos&&r.fotos.length>0){html+='<div class="punt-fotos">';r.fotos.forEach(function(src){html+='<img class="punt-foto" src="'+src+'" onclick="openLightbox(this.src)">';});html+='</div>';}
+      html+='</div></div>';
+    });
+    html+='</div>';
+  });
+  if(ins.handtekening)html+='<div class="sig-sectie"><div class="sig-label">Handtekening chauffeur</div><img class="sig-img" src="'+ins.handtekening+'" alt="Handtekening"></div>';
+  document.getElementById('detailBody').innerHTML=html;
+}
+
+function sluitDetailOuter(e){if(e.target===document.getElementById('detailOverlay'))sluitDetail();}
+function sluitDetail(){document.getElementById('detailOverlay').classList.remove('active');}
+
+function laadVoertuigen(){
+  if(!huidigeBedrijfId)return;
+  sb.from('voertuigen').select('*').eq('bedrijf_id',huidigeBedrijfId).order('nummerplaat').then(function(r){
+    var v=r.data||[];
+    document.getElementById('voertuigenCount').textContent=v.length+' voertuigen';
+    sb.from('inspecties').select('voertuig_id').eq('bedrijf_id',huidigeBedrijfId).then(function(ir){
+      var tel={};(ir.data||[]).forEach(function(i){tel[i.voertuig_id]=(tel[i.voertuig_id]||0)+1;});
+      var tbody=document.getElementById('voertuigenTabel');
+      if(!v.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Geen voertuigen.</td></tr>';return;}
+      tbody.innerHTML='';
+      v.forEach(function(vt){
+        var tr=document.createElement('tr');
+        tr.innerHTML='<td><strong>'+vt.nummerplaat+'</strong></td><td>'+vt.type+'</td><td>'+(vt.omschrijving||'-')+'</td><td><span class="badge '+(vt.actief?'rijklaar':'niet_rijklaar')+'">'+(vt.actief?'Actief':'Inactief')+'</span></td><td>'+(tel[vt.id]||0)+'</td>';
+        tbody.appendChild(tr);
+      });
+    });
+  });
+}
+
+function laadGebruikers(){
+  if(!huidigeBedrijfId)return;
+  sb.from('gebruikers').select('*').eq('bedrijf_id',huidigeBedrijfId).order('naam').then(function(r){
+    var g=r.data||[];
+    document.getElementById('gebruikersCount').textContent=g.length+' gebruikers';
+    var labels={chauffeur:'Chauffeur',leidinggevende:'Leidinggevende',preventieadviseur:'Preventieadviseur',beheerder:'Beheerder'};
+    var tbody=document.getElementById('gebruikersTabel');
+    if(!g.length){tbody.innerHTML='<tr class="empty-row"><td colspan="4">Geen gebruikers.</td></tr>';return;}
+    tbody.innerHTML='';
+    g.forEach(function(u){
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td><strong>'+u.naam+'</strong></td><td>'+(labels[u.rol]||u.rol)+'</td><td><code style="background:var(--gray-100);padding:2px 6px;border-radius:4px;">'+u.pincode+'</code></td><td><span class="badge '+(u.actief?'rijklaar':'niet_rijklaar')+'">'+(u.actief?'Actief':'Inactief')+'</span></td>';
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('active');}
+function sluitLightbox(){document.getElementById('lightbox').classList.remove('active');}
+function formatDatum(d){if(!d)return'-';var dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('nl-BE',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function showScreen(naam){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById('screen-'+naam).classList.add('active');}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},3000);}
+</script>
+</body>
+</html>
