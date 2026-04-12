@@ -6,15 +6,14 @@
 <title>PrevX Inspectie</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
-  --navy: #0d1f3c;
-  --navy2: #1a3260;
-  --orange: #f97316;
-  --orange2: #ea6c0a;
-  --green: #16a34a;
-  --green-bg: #f0fdf4;
+  --navy: #003366;
+  --navy2: #8099B3;
+  --orange: #8099B3;
+  --orange2: #40668C;
+  --green: #3FBF3F;
+  --green-bg: #e8f0f8;
   --red: #dc2626;
   --red-bg: #fff1f2;
   --gray-50: #f8fafc;
@@ -34,14 +33,239 @@ body { font-family: 'Poppins', sans-serif; background: var(--gray-100); color: v
 h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .screen { display: none; min-height: 100vh; }
 .screen.active { display: flex; flex-direction: column; }
-.app-header { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; zo-bottom: 500; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+.app-header { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
 .app-header-logo { display: flex; align-items: center; gap: 10px; }
-.logo-badge { width: 36px; height: 36px; background: var(--orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 15px; color: #fff; }
-.app-header position: sticky; top: 0; }
+.logo-name { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 17px; color: #fff; }
+.logo-sub { font-size: 10px; color: var(--gray-400); display: block; font-weight: 400; }
+.header-user { font-size: 12px; color: var(--gray-400); text-align: right; }
+.header-user strong { color: #fff; display: block; font-size: 13px; }
+.progress-bar { height: 3px; background: var(--navy2); }
+.progress-fill { height: 100%; background: var(--navy); transition: width 0.4s; }
+#screen-login { background: var(--navy); align-items: center; justify-content: center; padding: 40px 20px; }
+.login-box { background: #fff; border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 360px; box-shadow: var(--shadow-lg); text-align: center; }
+.login-logo { margin-bottom: 20px; }
+.login-logo h1 { font-size: 22px; color: var(--navy); margin-top: 10px; }
+.login-logo p { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+.pin-label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
+.pin-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.pin-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--gray-200); transition: background 0.2s; }
+.pin-dot.filled { background: var(--navy); }
+.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pin-key { padding: 16px; border: 2px solid var(--gray-200); border-radius: var(--radius); background: var(--gray-50); cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; color: var(--gray-900); transition: all 0.1s; user-select: none; text-align: center; }
+.pin-key:active { background: var(--navy); color: #fff; border-color: var(--navy); transform: scale(0.95); }
+.pin-key.del { font-size: 16px; color: var(--gray-500); }
+.pin-key.enter { background: var(--navy); border-color: var(--navy); color: #fff; }
+.pin-key.enter:active { background: var(--orange2); }
+.login-error { background: var(--red-bg); color: var(--red); padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-top: 14px; display: none; text-align: center; }
+#screen-voertuig { background: var(--gray-100); }
+.screen-content { flex: 1; padding: 20px 16px 100px; max-width: 700px; margin: 0 auto; width: 100%; }
+.screen-title { font-size: 20px; color: var(--navy); margin-bottom: 16px; }
+.voertuig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.voertuig-card { background: #fff; border-radius: var(--radius); padding: 20px 16px; border: 2px solid var(--gray-200); cursor: pointer; transition: all 0.2s; text-align: center; box-shadow: var(--shadow); }
+.voertuig-card:hover { border-color: var(--navy); transform: translateY(-2px); }
+.voertuig-icon { font-size: 36px; margin-bottom: 8px; }
+.voertuig-plaat { font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 700; color: var(--navy); }
+.voertuig-type { font-size: 12px; color: var(--gray-500); margin-top: 3px; }
+.voertuig-omschrijving { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+#screen-inspectie { background: var(--gray-100); }
+.stap-tabs { display: flex; gap: 4px; padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
+.stap-tab { flex: 0 0 auto; padding: 8px 14px; border-radius: 8px 8px 0 0; background: var(--gray-200); border: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--gray-500); transition: all 0.2s; white-space: nowrap; }
+.stap-tab.active { background: #fff; color: var(--navy); }
+.stap-tab.done { background: var(--green-bg); color: var(--green); }
+.inspectie-card { background: #fff; border-radius: 0 var(--radius) var(--radius) var(--radius); margin: 0 16px; box-shadow: var(--shadow); overflow: hidden; }
+.sectie-header { background: var(--navy); padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+.sectie-icon { font-size: 22px; }
+.sectie-naam { font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 700; color: #fff; }
+.sectie-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.check-list { padding: 4px 0; }
+.check-item { border-bottom: 1px solid var(--gray-100); padding: 12px 18px; }
+.check-item.ok { background: var(--green-bg); }
+.check-item.nok { background: var(--red-bg); }
+.check-label { font-size: 14px; font-weight: 500; color: var(--gray-900); margin-bottom: 10px; line-height: 1.4; }
+.check-num { font-size: 11px; color: var(--gray-400); font-weight: 600; margin-bottom: 4px; }
+.check-btns { display: flex; gap: 6px; }
+.btn-check { flex: 1; padding: 9px 4px; border: 2px solid var(--gray-200); border-radius: 8px; background: #fff; cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: var(--gray-500); transition: all 0.15s; text-align: center; }
+.btn-check.ok.sel { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-check.nok.sel { background: var(--red); border-color: var(--red); color: #fff; }
+.btn-check.na.sel { background: var(--gray-500); border-color: var(--gray-500); color: #fff; }
+.check-extras { margin-top: 10px; display: none; flex-direction: column; gap: 8px; }
+.check-extras.show { display: flex; }
+.opmerking { width: 100%; padding: 8px 10px; border: 2px solid var(--gray-200); border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 13px; resize: vertical; min-height: 54px; background: var(--gray-50); }
+.foto-btn { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--gray-100); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--gray-700); font-weight: 500; border: 2px dashed var(--gray-300); }
+.foto-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.foto-thumb { position: relative; }
+.foto-thumb img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 2px solid var(--gray-200); display: block; }
+.foto-del { position: absolute; top: -5px; right: -5px; background: var(--red); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; }
+#screen-rapport { background: var(--gray-100); }
+.verdict-box { margin: 16px; padding: 14px 16px; border-radius: var(--radius); font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.verdict-box.go { background: var(--green-bg); color: var(--green); border: 2px solid var(--green); }
+.verdict-box.nogo { background: var(--red-bg); color: var(--red); border: 2px solid var(--red); }
+.verdict-box.open { background: var(--gray-100); color: var(--gray-500); border: 2px solid var(--gray-200); }
+.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 0 16px 16px; }
+.stat { text-align: center; padding: 12px 8px; border-radius: var(--radius); }
+.stat.ok { background: var(--green-bg); }
+.stat.nok { background: var(--red-bg); }
+.stat.open { background: var(--gray-100); }
+.stat-n { font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; }
+.stat.ok .stat-n { color: var(--green); }
+.stat.nok .stat-n { color: var(--red); }
+.stat.open .stat-n { color: var(--gray-500); }
+.stat-l { font-size: 10px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; margin-top: 3px; }
+.rapport-sectie { background: #fff; margin: 0 16px 12px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.rapport-sectie-header { background: var(--navy); padding: 10px 16px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+.rapport-rij { display: flex; gap: 10px; align-items: flex-start; padding: 10px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+.rapport-badge { min-width: 40px; padding: 3px 5px; border-radius: 5px; text-align: center; font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700; }
+.rapport-badge.ok { background: var(--green); color: #fff; }
+.rapport-badge.nok { background: var(--red); color: #fff; }
+.rapport-badge.na { background: var(--gray-500); color: #fff; }
+.rapport-badge.open { background: var(--gray-200); color: var(--gray-600); }
+.rapport-tekst { flex: 1; color: var(--gray-700); line-height: 1.4; }
+.rapport-note { font-size: 11px; color: var(--gray-500); font-style: italic; margin-top: 2px; }
+.sig-wrap { margin: 0 16px 16px; background: #fff; border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.sig-title { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+.sig-canvas-wrap { position: relative; border: 2px solid var(--gray-200); border-radius: 8px; overflow: hidden; background: #fff; }
+#sigCanvas { display: block; width: 100%; height: 150px; touch-action: none; cursor: crosshair; }
+.sig-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 13px; color: var(--gray-300); pointer-events: none; font-style: italic; white-space: nowrap; }
+.sig-clear { margin-top: 8px; padding: 7px 14px; background: var(--gray-100); border: 2px solid var(--gray-200); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--gray-600); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 2px solid var(--gray-200); padding: 12px 16px; display: flex; gap: 10px; justify-content: center; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); z-index: 40; }
+.btn-nav { flex: 1; max-width: 200px; padding: 13px 16px; border-radius: var(--radius); cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; border: none; transition: all 0.2s; text-align: center; }
+.btn-terug { background: var(--gray-100); color: var(--gray-700); }
+.btn-volgende { background: var(--navy); color: #fff; flex: 2; max-width: 280px; }
+.btn-volgende:hover { background: var(--orange2); }
+.btn-verzend { background: var(--navy); color: #fff; flex: 2; max-width: 280px; }
+.btn-verzend:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-nieuw { background: var(--gray-100); color: var(--gray-500); }
+.toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--navy); color: #fff; padding: 11px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 999; white-space: nowrap; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.loading { display: flex; align-items: center; justify-content: center; min-height: 200px; flex-direction: column; gap: 12px; color: var(--gray-500); font-size: 14px; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--gray-200); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<h1>PrevX Inspectie app - Laden...</h1>
-<p>Volledige app wordt geladen.</p>
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" style="height:70px;object-fit:contain;">
+      <p>Pre-inspectie rijdend materieel</p>
+    </div>
+    <span class="pin-label">Voer uw pincode in</span>
+    <div class="pin-display" id="pinDisplay">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key enter" onclick="pinLogin()">✓</button>
+    </div>
+    <div class="login-error" id="loginError">Ongeldige pincode. Probeer opnieuw.</div>
+  </div>
+</div>
+<div id="screen-voertuig" class="screen">
+  <div class="app-header">
+    <div class="app-header-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" style="height:30px;object-fit:contain;filter:brightness(0) invert(1);">
+      <div class="logo-name">PrevX<span class="logo-sub">Inspectie</span></div>
+    </div>
+    <div class="header-user" id="headerUser"></div>
+  </div>
+  <div class="screen-content">
+    <h2 class="screen-title">Kies uw voertuig</h2>
+    <div class="voertuig-grid" id="voertuigGrid"><div class="loading"><div class="spinner"></div>Voertuigen laden...</div></div>
+  </div>
+</div>
+<div id="screen-inspectie" class="screen">
+  <div class="app-header">
+    <div class="app-header-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" style="height:30px;object-fit:contain;filter:brightness(0) invert(1);">
+      <div class="logo-name">PrevX<span class="logo-sub" id="headerPlaat">—</span></div>
+    </div>
+    <div class="header-user" id="headerUser2"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="stap-tabs" id="stapTabs"></div>
+  <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
+    <div class="inspectie-card" id="inspectieCard"><div class="loading"><div class="spinner"></div>Checklist laden...</div></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn-nav btn-terug" id="btnTerug" onclick="stapTerug()">← Terug</button>
+    <button class="btn-nav btn-volgende" id="btnVolgende" onclick="stapVolgende()">Volgende →</button>
+  </div>
+</div>
+<div id="screen-rapport" class="screen">
+  <div class="app-header">
+    <div class="app-header-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" style="height:30px;object-fit:contain;filter:brightness(0) invert(1);">
+      <div class="logo-name">PrevX<span class="logo-sub">Rapport</span></div>
+    </div>
+    <div class="header-user" id="headerUser3"></div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
+    <div id="verdictBox"></div>
+    <div class="stats-row">
+      <div class="stat ok"><div class="stat-n" id="sOk">0</div><div class="stat-l">✔ OK</div></div>
+      <div class="stat nok"><div class="stat-n" id="sNok">0</div><div class="stat-l">✗ NOK</div></div>
+      <div class="stat open"><div class="stat-n" id="sOpen">0</div><div class="stat-l">— Open</div></div>
+    </div>
+    <div id="rapportLijst"></div>
+    <div class="sig-wrap">
+      <div class="sig-title">Handtekening chauffeur</div>
+      <div class="sig-canvas-wrap">
+        <canvas id="sigCanvas"></canvas>
+        <div class="sig-placeholder" id="sigPlaceholder">Teken hier met uw vinger of muis</div>
+      </div>
+      <button class="sig-clear" onclick="clearSig()">🗑️ Wissen</button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn-nav btn-terug" onclick="showScreen('inspectie')">← Terug</button>
+    <button class="btn-nav btn-verzend" id="btnVerzend" onclick="verzendRapport()">📤 Verzenden</button>
+    <button class="btn-nav btn-nieuw" onclick="nieuweInspectie()" style="display:none" id="btnNieuw">↺ Nieuw</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SUPABASE_URL='https://axziicyfcghanhvtmgsm.supabase.co';
+const SUPABASE_KEY='sb_publishable_qsdWjzGQnXxt9iH0B_qAjw_wIYGXR2p';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let gebruiker=null,voertuig=null,secties=[],resultaten={},huidigeSectieIdx=0,sigCtx,sigDrawing=false,sigHasSig=false;
+let pin='';
+function pinPress(c){if(pin.length>=4)return;pin+=c;updatePinDisplay();if(pin.length===4)pinLogin();}
+function pinDel(){pin=pin.slice(0,-1);updatePinDisplay();}
+function updatePinDisplay(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pin.length);}
+async function pinLogin(){if(pin.length<4)return;const{data,error}=await sb.from('gebruikers').select('*').eq('pincode',pin).eq('actief',true).single();if(error||!data){document.getElementById('loginError').style.display='block';pin='';updatePinDisplay();setTimeout(()=>document.getElementById('loginError').style.display='none',2500);return;}gebruiker=data;document.getElementById('loginError').style.display='none';await laadVoertuigen();}
+const VOERTUIG_ICONS={'Vrachtwagen':'🚛','Bestelwagen':'🚐','Heftruck':'🏗️','Aanhangwagen':'🚌'};
+async function laadVoertuigen(){showScreen('voertuig');document.getElementById('headerUser').innerHTML='<strong>'+gebruiker.naam+'</strong>'+gebruiker.rol;const grid=document.getElementById('voertuigGrid');grid.innerHTML='<div class="loading"><div class="spinner"></div>Laden...</div>';let voertuigen=[];if(gebruiker.rol==='chauffeur'){const{data}=await sb.from('gebruiker_voertuigen').select('voertuig_id,voertuigen(*)').eq('gebruiker_id',gebruiker.id);voertuigen=data?data.map(d=>d.voertuigen):[];}else{const{data}=await sb.from('voertuigen').select('*').eq('bedrijf_id',gebruiker.bedrijf_id).eq('actief',true);voertuigen=data||[];}if(!voertuigen.length){grid.innerHTML='<p style="color:var(--gray-500);padding:20px;">Geen voertuigen gevonden.</p>';return;}grid.innerHTML='';voertuigen.forEach(v=>{const card=document.createElement('div');card.className='voertuig-card';card.innerHTML='<div class="voertuig-icon">'+(VOERTUIG_ICONS[v.type]||'🚗')+'</div><div class="voertuig-plaat">'+v.nummerplaat+'</div><div class="voertuig-type">'+v.type+'</div><div class="voertuig-omschrijving">'+(v.omschrijving||'')+'</div>';card.onclick=()=>kiesVoertuig(v);grid.appendChild(card);});}
+async function kiesVoertuig(v){voertuig=v;huidigeSectieIdx=0;resultaten={};showScreen('inspectie');document.getElementById('headerPlaat').textContent=v.nummerplaat;document.getElementById('headerUser2').innerHTML='<strong>'+gebruiker.naam+'</strong>'+v.type;const{data}=await sb.from('inspectie_secties').select('*,inspectie_punten(*)').eq('bedrijf_id',gebruiker.bedrijf_id).eq('actief',true).order('volgorde');secties=data||[];secties.forEach(s=>{s.inspectie_punten.sort((a,b)=>a.volgorde-b.volgorde);s.inspectie_punten.forEach(p=>{resultaten[p.id]={status:null,opmerking:'',fotos:[]};});});bouwTabs();toonSectie(0);}
+function bouwTabs(){const tabs=document.getElementById('stapTabs');tabs.innerHTML='';secties.forEach((s,i)=>{const btn=document.createElement('button');btn.className='stap-tab'+(i===0?' active':'');btn.id='tab-'+i;btn.textContent=s.icon+' '+s.naam;btn.onclick=()=>{huidigeSectieIdx=i;toonSectie(i);};tabs.appendChild(btn);});}
+function toonSectie(idx){huidigeSectieIdx=idx;const s=secties[idx];updateTabs();updateProgress();const card=document.getElementById('inspectieCard');card.innerHTML='<div class="sectie-header"><div class="sectie-icon">'+s.icon+'</div><div><div class="sectie-naam">'+s.naam+'</div><div class="sectie-sub">'+s.inspectie_punten.length+' punten</div></div></div><div class="check-list" id="checkList-'+s.id+'"></div>';const list=document.getElementById('checkList-'+s.id);s.inspectie_punten.forEach((p,i)=>list.appendChild(bouwCheckItem(p,i)));document.getElementById('btnTerug').style.display=idx>0?'':'none';document.getElementById('btnVolgende').textContent=idx<secties.length-1?'Volgende →':'Naar rapport →';window.scrollTo({top:0,behavior:'smooth'});}
+function bouwCheckItem(p,i){const div=document.createElement('div');div.className='check-item';div.id='ci-'+p.id;const r=resultaten[p.id];div.innerHTML='<div class="check-num">'+(i+1)+'</div><div class="check-label">'+p.omschrijving+'</div><div class="check-btns"><button class="btn-check ok'+(r.status==='ok'?' sel':'')+'" onclick="setStatus(''+p.id+'','ok')">✔ OK</button><button class="btn-check nok'+(r.status==='nok'?' sel':'')+'" onclick="setStatus(''+p.id+'','nok')">✗ NOK</button><button class="btn-check na'+(r.status==='na'?' sel':'')+'" onclick="setStatus(''+p.id+'','na')">N/A</button></div><div class="check-extras'+(r.status?' show':'')+'" id="ex-'+p.id+'"><textarea class="opmerking" placeholder="Opmerking (optioneel)..." oninput="resultaten[''+p.id+''].opmerking=this.value">'+(r.opmerking||'')+'</textarea><label class="foto-btn">📷 Foto toevoegen<input type="file" accept="image/*" capture="environment" style="display:none" onchange="addFoto(''+p.id+'',this)"></label><div class="foto-row" id="fotos-'+p.id+'"></div></div>';renderFotos(p.id);return div;}
+function setStatus(pid,status){resultaten[pid].status=status;const item=document.getElementById('ci-'+pid);item.className='check-item '+status;item.querySelectorAll('.btn-check').forEach(b=>b.classList.remove('sel'));item.querySelector('.btn-check.'+status).classList.add('sel');document.getElementById('ex-'+pid).classList.add('show');updateProgress();}
+function addFoto(pid,input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{resultaten[pid].fotos.push(e.target.result);renderFotos(pid);};reader.readAsDataURL(file);input.value='';}
+function renderFotos(pid){const c=document.getElementById('fotos-'+pid);if(!c)return;c.innerHTML='';resultaten[pid].fotos.forEach((src,i)=>{const w=document.createElement('div');w.className='foto-thumb';w.innerHTML='<img src="'+src+'"><button class="foto-del" onclick="delFoto(''+pid+'','+i+')">×</button>';c.appendChild(w);});}
+function delFoto(pid,i){resultaten[pid].fotos.splice(i,1);renderFotos(pid);}
+function updateProgress(){const total=Object.keys(resultaten).length;const done=Object.values(resultaten).filter(r=>r.status).length;document.getElementById('progressFill').style.width=total?(done/total*100)+'%':'0%';}
+function updateTabs(){secties.forEach((s,i)=>{const tab=document.getElementById('tab-'+i);if(!tab)return;const allDone=s.inspectie_punten.every(p=>resultaten[p.id].status);tab.className='stap-tab'+(i===huidigeSectieIdx?' active':allDone?' done':'');});}
+function stapTerug(){if(huidigeSectieIdx>0)toonSectie(huidigeSectieIdx-1);}
+function stapVolgende(){if(huidigeSectieIdx<secties.length-1)toonSectie(huidigeSectieIdx+1);else{bouwRapport();showScreen('rapport');}}
+function bouwRapport(){document.getElementById('headerUser3').innerHTML='<strong>'+gebruiker.naam+'</strong>'+voertuig.nummerplaat;let ok=0,nok=0,open=0;Object.values(resultaten).forEach(r=>{if(r.status==='ok')ok++;else if(r.status==='nok')nok++;else if(r.status==='na'){}else open++;});document.getElementById('sOk').textContent=ok;document.getElementById('sNok').textContent=nok;document.getElementById('sOpen').textContent=open;const vbox=document.getElementById('verdictBox');if(open>0)vbox.innerHTML='<div class="verdict-box open">⏳ Onvolledig — '+open+' punt(en) open</div>';else if(nok>0)vbox.innerHTML='<div class="verdict-box nogo">🚫 NIET RIJKLAAR — '+nok+' punt(en) NOK</div>';else vbox.innerHTML='<div class="verdict-box go">✅ RIJKLAAR — Alle '+ok+' punten in orde</div>';const lijst=document.getElementById('rapportLijst');lijst.innerHTML='';secties.forEach(s=>{const sec=document.createElement('div');sec.className='rapport-sectie';sec.innerHTML='<div class="rapport-sectie-header">'+s.icon+' '+s.naam+'</div>';s.inspectie_punten.forEach(p=>{const r=resultaten[p.id];const st=r.status||'open';const labels={ok:'✔ OK',nok:'✗ NOK',na:'N/A',open:'—'};const rij=document.createElement('div');rij.className='rapport-rij';rij.innerHTML='<span class="rapport-badge '+st+'">'+(labels[st]||'—')+'</span><div class="rapport-tekst">'+p.omschrijving+(r.opmerking?'<div class="rapport-note">💬 '+r.opmerking+'</div>':'')+'</div>';sec.appendChild(rij);});lijst.appendChild(sec);});initSig();}
+function initSig(){const canvas=document.getElementById('sigCanvas');canvas.width=canvas.parentElement.offsetWidth||500;canvas.height=150;sigCtx=canvas.getContext('2d');sigCtx.strokeStyle='#003366';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';sigHasSig=false;function pos(e){const r=canvas.getBoundingClientRect();const sx=canvas.width/r.width,sy=canvas.height/r.height;return e.touches?{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy}:{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};}canvas.onmousedown=e=>{sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};canvas.onmousemove=e=>{if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};canvas.onmouseup=canvas.onmouseleave=()=>sigDrawing=false;canvas.ontouchstart=e=>{e.preventDefault();sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};canvas.ontouchmove=e=>{e.preventDefault();if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};canvas.ontouchend=()=>sigDrawing=false;}
+function markSig(){sigHasSig=true;document.getElementById('sigPlaceholder').style.display='none';}
+function clearSig(){const c=document.getElementById('sigCanvas');sigCtx.clearRect(0,0,c.width,c.height);sigHasSig=false;document.getElementById('sigPlaceholder').style.display='';}
+async function verzendRapport(){const btn=document.getElementById('btnVerzend');btn.disabled=true;btn.textContent='⏳ Bezig...';let ok=0,nok=0,open=0;Object.values(resultaten).forEach(r=>{if(r.status==='ok')ok++;else if(r.status==='nok')nok++;else if(!r.status)open++;});const verdict=open>0?'onvolledig':nok>0?'niet_rijklaar':'rijklaar';const handtekening=sigHasSig?document.getElementById('sigCanvas').toDataURL('image/png'):null;const nu=new Date();try{const{data:inspectie,error:iErr}=await sb.from('inspecties').insert({bedrijf_id:gebruiker.bedrijf_id,gebruiker_id:gebruiker.id,voertuig_id:voertuig.id,datum:nu.toISOString().split('T')[0],tijdstip:nu.toTimeString().slice(0,8),verdict,handtekening,verzonden_op:nu.toISOString()}).select().single();if(iErr)throw iErr;const rijen=[];secties.forEach(s=>{s.inspectie_punten.forEach(p=>{const r=resultaten[p.id];rijen.push({inspectie_id:inspectie.id,punt_id:p.id,status:r.status||'open',opmerking:r.opmerking||null,fotos:r.fotos});});});const{error:rErr}=await sb.from('inspectie_resultaten').insert(rijen);if(rErr)throw rErr;showToast('✅ Rapport verzonden!');btn.textContent='✅ Verzonden';document.getElementById('btnNieuw').style.display='';btn.style.display='none';}catch(e){console.error(e);showToast('❌ Fout: '+e.message);btn.disabled=false;btn.textContent='📤 Verzenden';}}
+function nieuweInspectie(){pin='';updatePinDisplay();gebruiker=null;voertuig=null;secties=[];resultaten={};showScreen('login');}
+function showScreen(naam){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+naam).classList.add('active');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+</script>
 </body>
 </html>
