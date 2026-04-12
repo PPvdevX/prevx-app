@@ -10,20 +10,19 @@
 :root {
   --navy: #003366;
   --navy2: #8099B3;
-  --orange: #8099B3;
-  --orange2: #40668C;
+  --accent: #40668C;
   --green: #3FBF3F;
-  --green-bg: #e8f0f8;
+  --green-bg: #e8f5e8;
   --red: #dc2626;
   --red-bg: #fff1f2;
   --gray-50: #f8fafc;
   --gray-100: #f1f5f9;
   --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
   --gray-400: #94a3b8;
   --gray-500: #64748b;
   --gray-700: #334155;
   --gray-900: #0f172a;
-  --white: #fff;
   --radius: 10px;
   --shadow: 0 2px 12px rgba(0,0,0,0.10);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
@@ -40,12 +39,11 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .header-user { font-size: 12px; color: var(--gray-400); text-align: right; }
 .header-user strong { color: #fff; display: block; font-size: 13px; }
 .progress-bar { height: 3px; background: var(--navy2); }
-.progress-fill { height: 100%; background: var(--navy); transition: width 0.4s; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.4s; }
 #screen-login { background: var(--navy); align-items: center; justify-content: center; padding: 40px 20px; }
 .login-box { background: #fff; border-radius: 20px; padding: 36px 28px; width: 100%; max-width: 360px; box-shadow: var(--shadow-lg); text-align: center; }
 .login-logo { margin-bottom: 20px; }
-.login-logo h1 { font-size: 22px; color: var(--navy); margin-top: 10px; }
-.login-logo p { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+.login-logo p { font-size: 12px; color: var(--gray-500); margin-top: 8px; }
 .pin-label { font-size: 12px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
 .pin-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
 .pin-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--gray-200); transition: background 0.2s; }
@@ -55,7 +53,6 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .pin-key:active { background: var(--navy); color: #fff; border-color: var(--navy); transform: scale(0.95); }
 .pin-key.del { font-size: 16px; color: var(--gray-500); }
 .pin-key.enter { background: var(--navy); border-color: var(--navy); color: #fff; }
-.pin-key.enter:active { background: var(--orange2); }
 .login-error { background: var(--red-bg); color: var(--red); padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-top: 14px; display: none; text-align: center; }
 #screen-voertuig { background: var(--gray-100); }
 .screen-content { flex: 1; padding: 20px 16px 100px; max-width: 700px; margin: 0 auto; width: 100%; }
@@ -79,6 +76,7 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .sectie-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 .check-list { padding: 4px 0; }
 .check-item { border-bottom: 1px solid var(--gray-100); padding: 12px 18px; }
+.check-item:last-child { border-bottom: none; }
 .check-item.ok { background: var(--green-bg); }
 .check-item.nok { background: var(--red-bg); }
 .check-label { font-size: 14px; font-weight: 500; color: var(--gray-900); margin-bottom: 10px; line-height: 1.4; }
@@ -95,7 +93,7 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .foto-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .foto-thumb { position: relative; }
 .foto-thumb img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 2px solid var(--gray-200); display: block; }
-.foto-del { position: absolute; top: -5px; right: -5px; background: var(--red); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.foto-del { position: absolute; top: -5px; right: -5px; background: var(--red); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 #screen-rapport { background: var(--gray-100); }
 .verdict-box { margin: 16px; padding: 14px 16px; border-radius: var(--radius); font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
 .verdict-box.go { background: var(--green-bg); color: var(--green); border: 2px solid var(--green); }
@@ -112,13 +110,14 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .stat.open .stat-n { color: var(--gray-500); }
 .stat-l { font-size: 10px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; margin-top: 3px; }
 .rapport-sectie { background: #fff; margin: 0 16px 12px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
-.rapport-sectie-header { background: var(--navy); padding: 10px 16px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+.rapport-sectie-header { background: var(--navy); padding: 10px 16px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: #fff; text-transform: uppercase; }
 .rapport-rij { display: flex; gap: 10px; align-items: flex-start; padding: 10px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+.rapport-rij:last-child { border-bottom: none; }
 .rapport-badge { min-width: 40px; padding: 3px 5px; border-radius: 5px; text-align: center; font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700; }
 .rapport-badge.ok { background: var(--green); color: #fff; }
 .rapport-badge.nok { background: var(--red); color: #fff; }
 .rapport-badge.na { background: var(--gray-500); color: #fff; }
-.rapport-badge.open { background: var(--gray-200); color: var(--gray-600); }
+.rapport-badge.open { background: var(--gray-200); color: var(--gray-700); }
 .rapport-tekst { flex: 1; color: var(--gray-700); line-height: 1.4; }
 .rapport-note { font-size: 11px; color: var(--gray-500); font-style: italic; margin-top: 2px; }
 .sig-wrap { margin: 0 16px 16px; background: #fff; border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
@@ -126,12 +125,12 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .sig-canvas-wrap { position: relative; border: 2px solid var(--gray-200); border-radius: 8px; overflow: hidden; background: #fff; }
 #sigCanvas { display: block; width: 100%; height: 150px; touch-action: none; cursor: crosshair; }
 .sig-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 13px; color: var(--gray-300); pointer-events: none; font-style: italic; white-space: nowrap; }
-.sig-clear { margin-top: 8px; padding: 7px 14px; background: var(--gray-100); border: 2px solid var(--gray-200); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--gray-600); }
+.sig-clear { margin-top: 8px; padding: 7px 14px; background: var(--gray-100); border: 2px solid var(--gray-200); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--gray-500); }
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 2px solid var(--gray-200); padding: 12px 16px; display: flex; gap: 10px; justify-content: center; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); z-index: 40; }
 .btn-nav { flex: 1; max-width: 200px; padding: 13px 16px; border-radius: var(--radius); cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; border: none; transition: all 0.2s; text-align: center; }
 .btn-terug { background: var(--gray-100); color: var(--gray-700); }
 .btn-volgende { background: var(--navy); color: #fff; flex: 2; max-width: 280px; }
-.btn-volgende:hover { background: var(--orange2); }
+.btn-volgende:hover { background: var(--accent); }
 .btn-verzend { background: var(--navy); color: #fff; flex: 2; max-width: 280px; }
 .btn-verzend:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-nieuw { background: var(--gray-100); color: var(--gray-500); }
@@ -143,6 +142,7 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 </style>
 </head>
 <body>
+
 <div id="screen-login" class="screen active">
   <div class="login-box">
     <div class="login-logo">
@@ -151,26 +151,29 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
     </div>
     <span class="pin-label">Voer uw pincode in</span>
     <div class="pin-display" id="pinDisplay">
-      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
     </div>
     <div class="pin-keypad">
-      <button class="pin-key" onclick="pinPress('1')">1</button>
-      <button class="pin-key" onclick="pinPress('2')">2</button>
-      <button class="pin-key" onclick="pinPress('3')">3</button>
-      <button class="pin-key" onclick="pinPress('4')">4</button>
-      <button class="pin-key" onclick="pinPress('5')">5</button>
-      <button class="pin-key" onclick="pinPress('6')">6</button>
-      <button class="pin-key" onclick="pinPress('7')">7</button>
-      <button class="pin-key" onclick="pinPress('8')">8</button>
-      <button class="pin-key" onclick="pinPress('9')">9</button>
-      <button class="pin-key del" onclick="pinDel()">⌫</button>
-      <button class="pin-key" onclick="pinPress('0')">0</button>
-      <button class="pin-key enter" onclick="pinLogin()">✓</button>
+      <button class="pin-key" onclick="doPinPress('1')">1</button>
+      <button class="pin-key" onclick="doPinPress('2')">2</button>
+      <button class="pin-key" onclick="doPinPress('3')">3</button>
+      <button class="pin-key" onclick="doPinPress('4')">4</button>
+      <button class="pin-key" onclick="doPinPress('5')">5</button>
+      <button class="pin-key" onclick="doPinPress('6')">6</button>
+      <button class="pin-key" onclick="doPinPress('7')">7</button>
+      <button class="pin-key" onclick="doPinPress('8')">8</button>
+      <button class="pin-key" onclick="doPinPress('9')">9</button>
+      <button class="pin-key del" onclick="doPinDel()">&#9003;</button>
+      <button class="pin-key" onclick="doPinPress('0')">0</button>
+      <button class="pin-key enter" onclick="doPinLogin()">&#10003;</button>
     </div>
     <div class="login-error" id="loginError">Ongeldige pincode. Probeer opnieuw.</div>
   </div>
 </div>
+
 <div id="screen-voertuig" class="screen">
   <div class="app-header">
     <div class="app-header-logo">
@@ -181,27 +184,33 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
   </div>
   <div class="screen-content">
     <h2 class="screen-title">Kies uw voertuig</h2>
-    <div class="voertuig-grid" id="voertuigGrid"><div class="loading"><div class="spinner"></div>Voertuigen laden...</div></div>
+    <div class="voertuig-grid" id="voertuigGrid">
+      <div class="loading"><div class="spinner"></div>Voertuigen laden...</div>
+    </div>
   </div>
 </div>
+
 <div id="screen-inspectie" class="screen">
   <div class="app-header">
     <div class="app-header-logo">
       <img src="Logo-PrevX.png" alt="PrevX" style="height:30px;object-fit:contain;filter:brightness(0) invert(1);">
-      <div class="logo-name">PrevX<span class="logo-sub" id="headerPlaat">—</span></div>
+      <div class="logo-name">PrevX<span class="logo-sub" id="headerPlaat">&#8212;</span></div>
     </div>
     <div class="header-user" id="headerUser2"></div>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
   <div class="stap-tabs" id="stapTabs"></div>
   <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
-    <div class="inspectie-card" id="inspectieCard"><div class="loading"><div class="spinner"></div>Checklist laden...</div></div>
+    <div class="inspectie-card" id="inspectieCard">
+      <div class="loading"><div class="spinner"></div>Checklist laden...</div>
+    </div>
   </div>
   <div class="bottom-nav">
-    <button class="btn-nav btn-terug" id="btnTerug" onclick="stapTerug()">← Terug</button>
-    <button class="btn-nav btn-volgende" id="btnVolgende" onclick="stapVolgende()">Volgende →</button>
+    <button class="btn-nav btn-terug" id="btnTerug" onclick="stapTerug()">&#8592; Terug</button>
+    <button class="btn-nav btn-volgende" id="btnVolgende" onclick="stapVolgende()">Volgende &#8594;</button>
   </div>
 </div>
+
 <div id="screen-rapport" class="screen">
   <div class="app-header">
     <div class="app-header-logo">
@@ -213,9 +222,9 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
   <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
     <div id="verdictBox"></div>
     <div class="stats-row">
-      <div class="stat ok"><div class="stat-n" id="sOk">0</div><div class="stat-l">✔ OK</div></div>
-      <div class="stat nok"><div class="stat-n" id="sNok">0</div><div class="stat-l">✗ NOK</div></div>
-      <div class="stat open"><div class="stat-n" id="sOpen">0</div><div class="stat-l">— Open</div></div>
+      <div class="stat ok"><div class="stat-n" id="sOk">0</div><div class="stat-l">OK</div></div>
+      <div class="stat nok"><div class="stat-n" id="sNok">0</div><div class="stat-l">NOK</div></div>
+      <div class="stat open"><div class="stat-n" id="sOpen">0</div><div class="stat-l">Open</div></div>
     </div>
     <div id="rapportLijst"></div>
     <div class="sig-wrap">
@@ -224,48 +233,461 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
         <canvas id="sigCanvas"></canvas>
         <div class="sig-placeholder" id="sigPlaceholder">Teken hier met uw vinger of muis</div>
       </div>
-      <button class="sig-clear" onclick="clearSig()">🗑️ Wissen</button>
+      <button class="sig-clear" onclick="clearSig()">Wissen</button>
     </div>
   </div>
   <div class="bottom-nav">
-    <button class="btn-nav btn-terug" onclick="showScreen('inspectie')">← Terug</button>
-    <button class="btn-nav btn-verzend" id="btnVerzend" onclick="verzendRapport()">📤 Verzenden</button>
-    <button class="btn-nav btn-nieuw" onclick="nieuweInspectie()" style="display:none" id="btnNieuw">↺ Nieuw</button>
+    <button class="btn-nav btn-terug" onclick="showScreen('inspectie')">&#8592; Terug</button>
+    <button class="btn-nav btn-verzend" id="btnVerzend" onclick="verzendRapport()">Verzenden</button>
+    <button class="btn-nav btn-nieuw" id="btnNieuw" onclick="nieuweInspectie()" style="display:none">&#8635; Nieuw</button>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script>
-const SUPABASE_URL='https://axziicyfcghanhvtmgsm.supabase.co';
-const SUPABASE_KEY='sb_publishable_qsdWjzGQnXxt9iH0B_qAjw_wIYGXR2p';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let gebruiker=null,voertuig=null,secties=[],resultaten={},huidigeSectieIdx=0,sigCtx,sigDrawing=false,sigHasSig=false;
-let pin='';
-function pinPress(c){if(pin.length>=4)return;pin+=c;updatePinDisplay();if(pin.length===4)pinLogin();}
-function pinDel(){pin=pin.slice(0,-1);updatePinDisplay();}
-function updatePinDisplay(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pin.length);}
-async function pinLogin(){if(pin.length<4)return;const{data,error}=await sb.from('gebruikers').select('*').eq('pincode',pin).eq('actief',true).single();if(error||!data){document.getElementById('loginError').style.display='block';pin='';updatePinDisplay();setTimeout(()=>document.getElementById('loginError').style.display='none',2500);return;}gebruiker=data;document.getElementById('loginError').style.display='none';await laadVoertuigen();}
-const VOERTUIG_ICONS={'Vrachtwagen':'🚛','Bestelwagen':'🚐','Heftruck':'🏗️','Aanhangwagen':'🚌'};
-async function laadVoertuigen(){showScreen('voertuig');document.getElementById('headerUser').innerHTML='<strong>'+gebruiker.naam+'</strong>'+gebruiker.rol;const grid=document.getElementById('voertuigGrid');grid.innerHTML='<div class="loading"><div class="spinner"></div>Laden...</div>';let voertuigen=[];if(gebruiker.rol==='chauffeur'){const{data}=await sb.from('gebruiker_voertuigen').select('voertuig_id,voertuigen(*)').eq('gebruiker_id',gebruiker.id);voertuigen=data?data.map(d=>d.voertuigen):[];}else{const{data}=await sb.from('voertuigen').select('*').eq('bedrijf_id',gebruiker.bedrijf_id).eq('actief',true);voertuigen=data||[];}if(!voertuigen.length){grid.innerHTML='<p style="color:var(--gray-500);padding:20px;">Geen voertuigen gevonden.</p>';return;}grid.innerHTML='';voertuigen.forEach(v=>{const card=document.createElement('div');card.className='voertuig-card';card.innerHTML='<div class="voertuig-icon">'+(VOERTUIG_ICONS[v.type]||'🚗')+'</div><div class="voertuig-plaat">'+v.nummerplaat+'</div><div class="voertuig-type">'+v.type+'</div><div class="voertuig-omschrijving">'+(v.omschrijving||'')+'</div>';card.onclick=()=>kiesVoertuig(v);grid.appendChild(card);});}
-async function kiesVoertuig(v){voertuig=v;huidigeSectieIdx=0;resultaten={};showScreen('inspectie');document.getElementById('headerPlaat').textContent=v.nummerplaat;document.getElementById('headerUser2').innerHTML='<strong>'+gebruiker.naam+'</strong>'+v.type;const{data}=await sb.from('inspectie_secties').select('*,inspectie_punten(*)').eq('bedrijf_id',gebruiker.bedrijf_id).eq('actief',true).order('volgorde');secties=data||[];secties.forEach(s=>{s.inspectie_punten.sort((a,b)=>a.volgorde-b.volgorde);s.inspectie_punten.forEach(p=>{resultaten[p.id]={status:null,opmerking:'',fotos:[]};});});bouwTabs();toonSectie(0);}
-function bouwTabs(){const tabs=document.getElementById('stapTabs');tabs.innerHTML='';secties.forEach((s,i)=>{const btn=document.createElement('button');btn.className='stap-tab'+(i===0?' active':'');btn.id='tab-'+i;btn.textContent=s.icon+' '+s.naam;btn.onclick=()=>{huidigeSectieIdx=i;toonSectie(i);};tabs.appendChild(btn);});}
-function toonSectie(idx){huidigeSectieIdx=idx;const s=secties[idx];updateTabs();updateProgress();const card=document.getElementById('inspectieCard');card.innerHTML='<div class="sectie-header"><div class="sectie-icon">'+s.icon+'</div><div><div class="sectie-naam">'+s.naam+'</div><div class="sectie-sub">'+s.inspectie_punten.length+' punten</div></div></div><div class="check-list" id="checkList-'+s.id+'"></div>';const list=document.getElementById('checkList-'+s.id);s.inspectie_punten.forEach((p,i)=>list.appendChild(bouwCheckItem(p,i)));document.getElementById('btnTerug').style.display=idx>0?'':'none';document.getElementById('btnVolgende').textContent=idx<secties.length-1?'Volgende →':'Naar rapport →';window.scrollTo({top:0,behavior:'smooth'});}
-function bouwCheckItem(p,i){const div=document.createElement('div');div.className='check-item';div.id='ci-'+p.id;const r=resultaten[p.id];div.innerHTML='<div class="check-num">'+(i+1)+'</div><div class="check-label">'+p.omschrijving+'</div><div class="check-btns"><button class="btn-check ok'+(r.status==='ok'?' sel':'')+'" onclick="setStatus(''+p.id+'','ok')">✔ OK</button><button class="btn-check nok'+(r.status==='nok'?' sel':'')+'" onclick="setStatus(''+p.id+'','nok')">✗ NOK</button><button class="btn-check na'+(r.status==='na'?' sel':'')+'" onclick="setStatus(''+p.id+'','na')">N/A</button></div><div class="check-extras'+(r.status?' show':'')+'" id="ex-'+p.id+'"><textarea class="opmerking" placeholder="Opmerking (optioneel)..." oninput="resultaten[''+p.id+''].opmerking=this.value">'+(r.opmerking||'')+'</textarea><label class="foto-btn">📷 Foto toevoegen<input type="file" accept="image/*" capture="environment" style="display:none" onchange="addFoto(''+p.id+'',this)"></label><div class="foto-row" id="fotos-'+p.id+'"></div></div>';renderFotos(p.id);return div;}
-function setStatus(pid,status){resultaten[pid].status=status;const item=document.getElementById('ci-'+pid);item.className='check-item '+status;item.querySelectorAll('.btn-check').forEach(b=>b.classList.remove('sel'));item.querySelector('.btn-check.'+status).classList.add('sel');document.getElementById('ex-'+pid).classList.add('show');updateProgress();}
-function addFoto(pid,input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{resultaten[pid].fotos.push(e.target.result);renderFotos(pid);};reader.readAsDataURL(file);input.value='';}
-function renderFotos(pid){const c=document.getElementById('fotos-'+pid);if(!c)return;c.innerHTML='';resultaten[pid].fotos.forEach((src,i)=>{const w=document.createElement('div');w.className='foto-thumb';w.innerHTML='<img src="'+src+'"><button class="foto-del" onclick="delFoto(''+pid+'','+i+')">×</button>';c.appendChild(w);});}
-function delFoto(pid,i){resultaten[pid].fotos.splice(i,1);renderFotos(pid);}
-function updateProgress(){const total=Object.keys(resultaten).length;const done=Object.values(resultaten).filter(r=>r.status).length;document.getElementById('progressFill').style.width=total?(done/total*100)+'%':'0%';}
-function updateTabs(){secties.forEach((s,i)=>{const tab=document.getElementById('tab-'+i);if(!tab)return;const allDone=s.inspectie_punten.every(p=>resultaten[p.id].status);tab.className='stap-tab'+(i===huidigeSectieIdx?' active':allDone?' done':'');});}
-function stapTerug(){if(huidigeSectieIdx>0)toonSectie(huidigeSectieIdx-1);}
-function stapVolgende(){if(huidigeSectieIdx<secties.length-1)toonSectie(huidigeSectieIdx+1);else{bouwRapport();showScreen('rapport');}}
-function bouwRapport(){document.getElementById('headerUser3').innerHTML='<strong>'+gebruiker.naam+'</strong>'+voertuig.nummerplaat;let ok=0,nok=0,open=0;Object.values(resultaten).forEach(r=>{if(r.status==='ok')ok++;else if(r.status==='nok')nok++;else if(r.status==='na'){}else open++;});document.getElementById('sOk').textContent=ok;document.getElementById('sNok').textContent=nok;document.getElementById('sOpen').textContent=open;const vbox=document.getElementById('verdictBox');if(open>0)vbox.innerHTML='<div class="verdict-box open">⏳ Onvolledig — '+open+' punt(en) open</div>';else if(nok>0)vbox.innerHTML='<div class="verdict-box nogo">🚫 NIET RIJKLAAR — '+nok+' punt(en) NOK</div>';else vbox.innerHTML='<div class="verdict-box go">✅ RIJKLAAR — Alle '+ok+' punten in orde</div>';const lijst=document.getElementById('rapportLijst');lijst.innerHTML='';secties.forEach(s=>{const sec=document.createElement('div');sec.className='rapport-sectie';sec.innerHTML='<div class="rapport-sectie-header">'+s.icon+' '+s.naam+'</div>';s.inspectie_punten.forEach(p=>{const r=resultaten[p.id];const st=r.status||'open';const labels={ok:'✔ OK',nok:'✗ NOK',na:'N/A',open:'—'};const rij=document.createElement('div');rij.className='rapport-rij';rij.innerHTML='<span class="rapport-badge '+st+'">'+(labels[st]||'—')+'</span><div class="rapport-tekst">'+p.omschrijving+(r.opmerking?'<div class="rapport-note">💬 '+r.opmerking+'</div>':'')+'</div>';sec.appendChild(rij);});lijst.appendChild(sec);});initSig();}
-function initSig(){const canvas=document.getElementById('sigCanvas');canvas.width=canvas.parentElement.offsetWidth||500;canvas.height=150;sigCtx=canvas.getContext('2d');sigCtx.strokeStyle='#003366';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';sigHasSig=false;function pos(e){const r=canvas.getBoundingClientRect();const sx=canvas.width/r.width,sy=canvas.height/r.height;return e.touches?{x:(e.touches[0].clientX-r.left)*sx,y:(e.touches[0].clientY-r.top)*sy}:{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy};}canvas.onmousedown=e=>{sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};canvas.onmousemove=e=>{if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};canvas.onmouseup=canvas.onmouseleave=()=>sigDrawing=false;canvas.ontouchstart=e=>{e.preventDefault();sigDrawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};canvas.ontouchmove=e=>{e.preventDefault();if(!sigDrawing)return;const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();markSig();};canvas.ontouchend=()=>sigDrawing=false;}
-function markSig(){sigHasSig=true;document.getElementById('sigPlaceholder').style.display='none';}
-function clearSig(){const c=document.getElementById('sigCanvas');sigCtx.clearRect(0,0,c.width,c.height);sigHasSig=false;document.getElementById('sigPlaceholder').style.display='';}
-async function verzendRapport(){const btn=document.getElementById('btnVerzend');btn.disabled=true;btn.textContent='⏳ Bezig...';let ok=0,nok=0,open=0;Object.values(resultaten).forEach(r=>{if(r.status==='ok')ok++;else if(r.status==='nok')nok++;else if(!r.status)open++;});const verdict=open>0?'onvolledig':nok>0?'niet_rijklaar':'rijklaar';const handtekening=sigHasSig?document.getElementById('sigCanvas').toDataURL('image/png'):null;const nu=new Date();try{const{data:inspectie,error:iErr}=await sb.from('inspecties').insert({bedrijf_id:gebruiker.bedrijf_id,gebruiker_id:gebruiker.id,voertuig_id:voertuig.id,datum:nu.toISOString().split('T')[0],tijdstip:nu.toTimeString().slice(0,8),verdict,handtekening,verzonden_op:nu.toISOString()}).select().single();if(iErr)throw iErr;const rijen=[];secties.forEach(s=>{s.inspectie_punten.forEach(p=>{const r=resultaten[p.id];rijen.push({inspectie_id:inspectie.id,punt_id:p.id,status:r.status||'open',opmerking:r.opmerking||null,fotos:r.fotos});});});const{error:rErr}=await sb.from('inspectie_resultaten').insert(rijen);if(rErr)throw rErr;showToast('✅ Rapport verzonden!');btn.textContent='✅ Verzonden';document.getElementById('btnNieuw').style.display='';btn.style.display='none';}catch(e){console.error(e);showToast('❌ Fout: '+e.message);btn.disabled=false;btn.textContent='📤 Verzenden';}}
-function nieuweInspectie(){pin='';updatePinDisplay();gebruiker=null;voertuig=null;secties=[];resultaten={};showScreen('login');}
-function showScreen(naam){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+naam).classList.add('active');}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+var SUPABASE_URL = 'https://axziicyfcghanhvtmgsm.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_qsdWjzGQnXxt9iH0B_qAjw_wIYGXR2p';
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var gebruiker = null;
+var voertuig = null;
+var secties = [];
+var resultaten = {};
+var huidigeSectieIdx = 0;
+var sigCtx = null;
+var sigDrawing = false;
+var sigHasSig = false;
+var pin = '';
+
+var VOERTUIG_ICONS = {
+  'Vrachtwagen': '&#x1F69B;',
+  'Bestelwagen': '&#x1F690;',
+  'Heftruck': '&#x1F3D7;',
+  'Aanhangwagen': '&#x1F68C;'
+};
+
+function doPinPress(c) {
+  if (pin.length >= 4) return;
+  pin += c;
+  updatePinDisplay();
+  if (pin.length === 4) doPinLogin();
+}
+
+function doPinDel() {
+  pin = pin.slice(0, -1);
+  updatePinDisplay();
+}
+
+function updatePinDisplay() {
+  for (var i = 0; i < 4; i++) {
+    var dot = document.getElementById('d' + i);
+    if (i < pin.length) {
+      dot.classList.add('filled');
+    } else {
+      dot.classList.remove('filled');
+    }
+  }
+}
+
+function doPinLogin() {
+  if (pin.length < 4) return;
+  var pinCode = pin;
+  sb.from('gebruikers').select('*').eq('pincode', pinCode).eq('actief', true).single()
+    .then(function(result) {
+      if (result.error || !result.data) {
+        document.getElementById('loginError').style.display = 'block';
+        pin = '';
+        updatePinDisplay();
+        setTimeout(function() {
+          document.getElementById('loginError').style.display = 'none';
+        }, 2500);
+        return;
+      }
+      gebruiker = result.data;
+      document.getElementById('loginError').style.display = 'none';
+      laadVoertuigen();
+    });
+}
+
+function laadVoertuigen() {
+  showScreen('voertuig');
+  document.getElementById('headerUser').innerHTML = '<strong>' + gebruiker.naam + '</strong>' + gebruiker.rol;
+  var grid = document.getElementById('voertuigGrid');
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div>Laden...</div>';
+
+  var promise;
+  if (gebruiker.rol === 'chauffeur') {
+    promise = sb.from('gebruiker_voertuigen').select('voertuig_id,voertuigen(*)').eq('gebruiker_id', gebruiker.id)
+      .then(function(result) {
+        return result.data ? result.data.map(function(d) { return d.voertuigen; }) : [];
+      });
+  } else {
+    promise = sb.from('voertuigen').select('*').eq('bedrijf_id', gebruiker.bedrijf_id).eq('actief', true)
+      .then(function(result) {
+        return result.data || [];
+      });
+  }
+
+  promise.then(function(voertuigen) {
+    if (!voertuigen.length) {
+      grid.innerHTML = '<p style="color:var(--gray-500);padding:20px;">Geen voertuigen gevonden.</p>';
+      return;
+    }
+    grid.innerHTML = '';
+    voertuigen.forEach(function(v) {
+      var card = document.createElement('div');
+      card.className = 'voertuig-card';
+      var icon = VOERTUIG_ICONS[v.type] || '&#x1F697;';
+      card.innerHTML = '<div class="voertuig-icon">' + icon + '</div>' +
+        '<div class="voertuig-plaat">' + v.nummerplaat + '</div>' +
+        '<div class="voertuig-type">' + v.type + '</div>' +
+        '<div class="voertuig-omschrijving">' + (v.omschrijving || '') + '</div>';
+      card.onclick = function() { kiesVoertuig(v); };
+      grid.appendChild(card);
+    });
+  });
+}
+
+function kiesVoertuig(v) {
+  voertuig = v;
+  huidigeSectieIdx = 0;
+  resultaten = {};
+  showScreen('inspectie');
+  document.getElementById('headerPlaat').textContent = v.nummerplaat;
+  document.getElementById('headerUser2').innerHTML = '<strong>' + gebruiker.naam + '</strong>' + v.type;
+
+  sb.from('inspectie_secties').select('*,inspectie_punten(*)').eq('bedrijf_id', gebruiker.bedrijf_id).eq('actief', true).order('volgorde')
+    .then(function(result) {
+      secties = result.data || [];
+      secties.forEach(function(s) {
+        s.inspectie_punten.sort(function(a, b) { return a.volgorde - b.volgorde; });
+        s.inspectie_punten.forEach(function(p) {
+          resultaten[p.id] = { status: null, opmerking: '', fotos: [] };
+        });
+      });
+      bouwTabs();
+      toonSectie(0);
+    });
+}
+
+function bouwTabs() {
+  var tabs = document.getElementById('stapTabs');
+  tabs.innerHTML = '';
+  secties.forEach(function(s, i) {
+    var btn = document.createElement('button');
+    btn.className = 'stap-tab' + (i === 0 ? ' active' : '');
+    btn.id = 'tab-' + i;
+    btn.textContent = s.icon + ' ' + s.naam;
+    btn.onclick = (function(idx) {
+      return function() { huidigeSectieIdx = idx; toonSectie(idx); };
+    })(i);
+    tabs.appendChild(btn);
+  });
+}
+
+function toonSectie(idx) {
+  huidigeSectieIdx = idx;
+  var s = secties[idx];
+  updateTabs();
+  updateProgress();
+
+  var card = document.getElementById('inspectieCard');
+  card.innerHTML = '<div class="sectie-header"><div class="sectie-icon">' + s.icon + '</div>' +
+    '<div><div class="sectie-naam">' + s.naam + '</div>' +
+    '<div class="sectie-sub">' + s.inspectie_punten.length + ' punten</div></div></div>' +
+    '<div class="check-list" id="checkList-' + s.id + '"></div>';
+
+  var list = document.getElementById('checkList-' + s.id);
+  s.inspectie_punten.forEach(function(p, i) {
+    list.appendChild(bouwCheckItem(p, i));
+  });
+
+  document.getElementById('btnTerug').style.display = idx > 0 ? '' : 'none';
+  document.getElementById('btnVolgende').textContent = idx < secties.length - 1 ? 'Volgende &#8594;' : 'Naar rapport &#8594;';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function bouwCheckItem(p, i) {
+  var div = document.createElement('div');
+  div.className = 'check-item';
+  div.id = 'ci-' + p.id;
+  var r = resultaten[p.id];
+  var pid = p.id;
+  div.innerHTML = '<div class="check-num">' + (i + 1) + '</div>' +
+    '<div class="check-label">' + p.omschrijving + '</div>' +
+    '<div class="check-btns">' +
+    '<button class="btn-check ok' + (r.status === 'ok' ? ' sel' : '') + '" id="btn-ok-' + pid + '">&#10004; OK</button>' +
+    '<button class="btn-check nok' + (r.status === 'nok' ? ' sel' : '') + '" id="btn-nok-' + pid + '">&#10007; NOK</button>' +
+    '<button class="btn-check na' + (r.status === 'na' ? ' sel' : '') + '" id="btn-na-' + pid + '">N/A</button>' +
+    '</div>' +
+    '<div class="check-extras' + (r.status ? ' show' : '') + '" id="ex-' + pid + '">' +
+    '<textarea class="opmerking" placeholder="Opmerking (optioneel)..." id="opm-' + pid + '">' + (r.opmerking || '') + '</textarea>' +
+    '<label class="foto-btn">&#128247; Foto toevoegen<input type="file" accept="image/*" capture="environment" style="display:none" id="foto-input-' + pid + '"></label>' +
+    '<div class="foto-row" id="fotos-' + pid + '"></div>' +
+    '</div>';
+
+  div.querySelector('#btn-ok-' + pid).onclick = function() { setStatus(pid, 'ok'); };
+  div.querySelector('#btn-nok-' + pid).onclick = function() { setStatus(pid, 'nok'); };
+  div.querySelector('#btn-na-' + pid).onclick = function() { setStatus(pid, 'na'); };
+  div.querySelector('#opm-' + pid).oninput = function() { resultaten[pid].opmerking = this.value; };
+  div.querySelector('#foto-input-' + pid).onchange = function() { addFoto(pid, this); };
+
+  renderFotos(pid);
+  return div;
+}
+
+function setStatus(pid, status) {
+  resultaten[pid].status = status;
+  var item = document.getElementById('ci-' + pid);
+  item.className = 'check-item ' + status;
+  ['ok', 'nok', 'na'].forEach(function(s) {
+    var btn = document.getElementById('btn-' + s + '-' + pid);
+    if (btn) btn.classList.remove('sel');
+  });
+  var selBtn = document.getElementById('btn-' + status + '-' + pid);
+  if (selBtn) selBtn.classList.add('sel');
+  document.getElementById('ex-' + pid).classList.add('show');
+  updateProgress();
+}
+
+function addFoto(pid, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    resultaten[pid].fotos.push(e.target.result);
+    renderFotos(pid);
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function renderFotos(pid) {
+  var c = document.getElementById('fotos-' + pid);
+  if (!c) return;
+  c.innerHTML = '';
+  resultaten[pid].fotos.forEach(function(src, i) {
+    var w = document.createElement('div');
+    w.className = 'foto-thumb';
+    var img = document.createElement('img');
+    img.src = src;
+    var btn = document.createElement('button');
+    btn.className = 'foto-del';
+    btn.textContent = 'x';
+    btn.onclick = (function(p, idx) { return function() { delFoto(p, idx); }; })(pid, i);
+    w.appendChild(img);
+    w.appendChild(btn);
+    c.appendChild(w);
+  });
+}
+
+function delFoto(pid, i) {
+  resultaten[pid].fotos.splice(i, 1);
+  renderFotos(pid);
+}
+
+function updateProgress() {
+  var total = Object.keys(resultaten).length;
+  var done = Object.keys(resultaten).filter(function(k) { return resultaten[k].status; }).length;
+  document.getElementById('progressFill').style.width = total ? (done / total * 100) + '%' : '0%';
+}
+
+function updateTabs() {
+  secties.forEach(function(s, i) {
+    var tab = document.getElementById('tab-' + i);
+    if (!tab) return;
+    var allDone = s.inspectie_punten.every(function(p) { return resultaten[p.id].status; });
+    tab.className = 'stap-tab' + (i === huidigeSectieIdx ? ' active' : allDone ? ' done' : '');
+  });
+}
+
+function stapTerug() {
+  if (huidigeSectieIdx > 0) toonSectie(huidigeSectieIdx - 1);
+}
+
+function stapVolgende() {
+  if (huidigeSectieIdx < secties.length - 1) {
+    toonSectie(huidigeSectieIdx + 1);
+  } else {
+    bouwRapport();
+    showScreen('rapport');
+  }
+}
+
+function bouwRapport() {
+  document.getElementById('headerUser3').innerHTML = '<strong>' + gebruiker.naam + '</strong>' + voertuig.nummerplaat;
+  var ok = 0, nok = 0, open = 0;
+  Object.keys(resultaten).forEach(function(k) {
+    var r = resultaten[k];
+    if (r.status === 'ok') ok++;
+    else if (r.status === 'nok') nok++;
+    else if (r.status === 'na') {}
+    else open++;
+  });
+  document.getElementById('sOk').textContent = ok;
+  document.getElementById('sNok').textContent = nok;
+  document.getElementById('sOpen').textContent = open;
+
+  var vbox = document.getElementById('verdictBox');
+  if (open > 0) {
+    vbox.innerHTML = '<div class="verdict-box open">Onvolledig - ' + open + ' punt(en) open</div>';
+  } else if (nok > 0) {
+    vbox.innerHTML = '<div class="verdict-box nogo">NIET RIJKLAAR - ' + nok + ' punt(en) NOK</div>';
+  } else {
+    vbox.innerHTML = '<div class="verdict-box go">RIJKLAAR - Alle ' + ok + ' punten in orde</div>';
+  }
+
+  var lijst = document.getElementById('rapportLijst');
+  lijst.innerHTML = '';
+  secties.forEach(function(s) {
+    var sec = document.createElement('div');
+    sec.className = 'rapport-sectie';
+    var header = document.createElement('div');
+    header.className = 'rapport-sectie-header';
+    header.textContent = s.icon + ' ' + s.naam;
+    sec.appendChild(header);
+    s.inspectie_punten.forEach(function(p) {
+      var r = resultaten[p.id];
+      var st = r.status || 'open';
+      var labels = { ok: 'OK', nok: 'NOK', na: 'N/A', open: '-' };
+      var rij = document.createElement('div');
+      rij.className = 'rapport-rij';
+      rij.innerHTML = '<span class="rapport-badge ' + st + '">' + (labels[st] || '-') + '</span>' +
+        '<div class="rapport-tekst">' + p.omschrijving +
+        (r.opmerking ? '<div class="rapport-note">' + r.opmerking + '</div>' : '') +
+        '</div>';
+      sec.appendChild(rij);
+    });
+    lijst.appendChild(sec);
+  });
+
+  initSig();
+}
+
+function initSig() {
+  var canvas = document.getElementById('sigCanvas');
+  canvas.width = canvas.parentElement.offsetWidth || 500;
+  canvas.height = 150;
+  sigCtx = canvas.getContext('2d');
+  sigCtx.strokeStyle = '#003366';
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+  sigHasSig = false;
+
+  function getPos(e) {
+    var r = canvas.getBoundingClientRect();
+    var sx = canvas.width / r.width;
+    var sy = canvas.height / r.height;
+    if (e.touches) {
+      return { x: (e.touches[0].clientX - r.left) * sx, y: (e.touches[0].clientY - r.top) * sy };
+    }
+    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+  }
+
+  canvas.onmousedown = function(e) { sigDrawing = true; var p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); };
+  canvas.onmousemove = function(e) { if (!sigDrawing) return; var p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); markSig(); };
+  canvas.onmouseup = function() { sigDrawing = false; };
+  canvas.onmouseleave = function() { sigDrawing = false; };
+  canvas.ontouchstart = function(e) { e.preventDefault(); sigDrawing = true; var p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); };
+  canvas.ontouchmove = function(e) { e.preventDefault(); if (!sigDrawing) return; var p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); markSig(); };
+  canvas.ontouchend = function() { sigDrawing = false; };
+}
+
+function markSig() {
+  sigHasSig = true;
+  document.getElementById('sigPlaceholder').style.display = 'none';
+}
+
+function clearSig() {
+  var c = document.getElementById('sigCanvas');
+  sigCtx.clearRect(0, 0, c.width, c.height);
+  sigHasSig = false;
+  document.getElementById('sigPlaceholder').style.display = '';
+}
+
+function verzendRapport() {
+  var btn = document.getElementById('btnVerzend');
+  btn.disabled = true;
+  btn.textContent = 'Bezig...';
+
+  var ok = 0, nok = 0, open = 0;
+  Object.keys(resultaten).forEach(function(k) {
+    var r = resultaten[k];
+    if (r.status === 'ok') ok++;
+    else if (r.status === 'nok') nok++;
+    else if (!r.status) open++;
+  });
+
+  var verdict = open > 0 ? 'onvolledig' : nok > 0 ? 'niet_rijklaar' : 'rijklaar';
+  var handtekening = sigHasSig ? document.getElementById('sigCanvas').toDataURL('image/png') : null;
+  var nu = new Date();
+
+  sb.from('inspecties').insert({
+    bedrijf_id: gebruiker.bedrijf_id,
+    gebruiker_id: gebruiker.id,
+    voertuig_id: voertuig.id,
+    datum: nu.toISOString().split('T')[0],
+    tijdstip: nu.toTimeString().slice(0, 8),
+    verdict: verdict,
+    handtekening: handtekening,
+    verzonden_op: nu.toISOString()
+  }).select().single().then(function(result) {
+    if (result.error) throw result.error;
+    var inspectie = result.data;
+    var rijen = [];
+    secties.forEach(function(s) {
+      s.inspectie_punten.forEach(function(p) {
+        var r = resultaten[p.id];
+        rijen.push({
+          inspectie_id: inspectie.id,
+          punt_id: p.id,
+          status: r.status || 'open',
+          opmerking: r.opmerking || null,
+          fotos: r.fotos
+        });
+      });
+    });
+    return sb.from('inspectie_resultaten').insert(rijen);
+  }).then(function(result) {
+    if (result.error) throw result.error;
+    showToast('Rapport verzonden!');
+    btn.textContent = 'Verzonden';
+    document.getElementById('btnNieuw').style.display = '';
+    btn.style.display = 'none';
+  }).catch(function(e) {
+    console.error(e);
+    showToast('Fout: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Verzenden';
+  });
+}
+
+function nieuweInspectie() {
+  pin = '';
+  updatePinDisplay();
+  gebruiker = null;
+  voertuig = null;
+  secties = [];
+  resultaten = {};
+  showScreen('login');
+}
+
+function showScreen(naam) {
+  var schermen = document.querySelectorAll('.screen');
+  for (var i = 0; i < schermen.length; i++) {
+    schermen[i].classList.remove('active');
+  }
+  document.getElementById('screen-' + naam).classList.add('active');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
 </script>
 </body>
 </html>
