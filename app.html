@@ -15,6 +15,8 @@
   --green-bg: #e8f5e8;
   --red: #dc2626;
   --red-bg: #fff1f2;
+  --orange: #E97F02;
+  --orange-bg: #fff7ed;
   --gray-50: #f8fafc;
   --gray-100: #f1f5f9;
   --gray-200: #e2e8f0;
@@ -81,6 +83,9 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .check-item.nok { background: var(--red-bg); }
 .check-label { font-size: 14px; font-weight: 500; color: var(--gray-900); margin-bottom: 10px; line-height: 1.4; }
 .check-num { font-size: 11px; color: var(--gray-400); font-weight: 600; margin-bottom: 4px; }
+.check-niveau { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+.check-niveau.kritisch { background: var(--red-bg); color: var(--red); }
+.check-niveau.informatief { background: var(--orange-bg); color: var(--orange); }
 .check-btns { display: flex; gap: 6px; }
 .btn-check { flex: 1; padding: 9px 4px; border: 2px solid var(--gray-200); border-radius: 8px; background: #fff; cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: var(--gray-500); transition: all 0.15s; text-align: center; }
 .btn-check.ok.sel { background: var(--green); border-color: var(--green); color: #fff; }
@@ -99,6 +104,7 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
 .verdict-box.go { background: var(--green-bg); color: var(--green); border: 2px solid var(--green); }
 .verdict-box.nogo { background: var(--red-bg); color: var(--red); border: 2px solid var(--red); }
 .verdict-box.open { background: var(--gray-100); color: var(--gray-500); border: 2px solid var(--gray-200); }
+.verdict-box.warn { background: var(--orange-bg); color: var(--orange); border: 2px solid var(--orange); }
 .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 0 16px 16px; }
 .stat { text-align: center; padding: 12px 8px; border-radius: var(--radius); }
 .stat.ok { background: var(--green-bg); }
@@ -293,9 +299,10 @@ function updatePinDisplay() {
 function doPinLogin() {
   if (pin.length < 4) return;
   var pinCode = pin;
-  sb.from('gebruikers').select('*').eq('pincode', pinCode).eq('actief', true).single()
+  sb.rpc('rpc_login_chauffeur', { p_pincode: pinCode })
     .then(function(result) {
-      if (result.error || !result.data) {
+      var rows = result.data;
+      if (result.error || !rows || !rows.length) {
         document.getElementById('loginError').style.display = 'block';
         pin = '';
         updatePinDisplay();
@@ -304,7 +311,7 @@ function doPinLogin() {
         }, 2500);
         return;
       }
-      gebruiker = result.data;
+      gebruiker = rows[0];
       document.getElementById('loginError').style.display = 'none';
       laadVoertuigen();
     });
@@ -316,20 +323,8 @@ function laadVoertuigen() {
   var grid = document.getElementById('voertuigGrid');
   grid.innerHTML = '<div class="loading"><div class="spinner"></div>Laden...</div>';
 
-  var promise;
-  if (gebruiker.rol === 'chauffeur') {
-    promise = sb.from('gebruiker_voertuigen').select('voertuig_id,voertuigen(*)').eq('gebruiker_id', gebruiker.id)
-      .then(function(result) {
-        return result.data ? result.data.map(function(d) { return d.voertuigen; }) : [];
-      });
-  } else {
-    promise = sb.from('voertuigen').select('*').eq('bedrijf_id', gebruiker.bedrijf_id).eq('actief', true)
-      .then(function(result) {
-        return result.data || [];
-      });
-  }
-
-  promise.then(function(voertuigen) {
+  sb.rpc('rpc_voertuigen', { p_gebruiker_id: gebruiker.id }).then(function(result) {
+    var voertuigen = result.data || [];
     if (!voertuigen.length) {
       grid.innerHTML = '<p style="color:var(--gray-500);padding:20px;">Geen voertuigen gevonden.</p>';
       return;
@@ -338,10 +333,10 @@ function laadVoertuigen() {
     voertuigen.forEach(function(v) {
       var card = document.createElement('div');
       card.className = 'voertuig-card';
-      var icon = VOERTUIG_ICONS[v.type] || '&#x1F697;';
+      var icon = VOERTUIG_ICONS[v.type_naam] || '&#x1F697;';
       card.innerHTML = '<div class="voertuig-icon">' + icon + '</div>' +
         '<div class="voertuig-plaat">' + v.nummerplaat + '</div>' +
-        '<div class="voertuig-type">' + v.type + '</div>' +
+        '<div class="voertuig-type">' + (v.type_naam || '') + '</div>' +
         '<div class="voertuig-omschrijving">' + (v.omschrijving || '') + '</div>';
       card.onclick = function() { kiesVoertuig(v); };
       grid.appendChild(card);
@@ -355,15 +350,24 @@ function kiesVoertuig(v) {
   resultaten = {};
   showScreen('inspectie');
   document.getElementById('headerPlaat').textContent = v.nummerplaat;
-  document.getElementById('headerUser2').innerHTML = '<strong>' + gebruiker.naam + '</strong>' + v.type;
+  document.getElementById('headerUser2').innerHTML = '<strong>' + gebruiker.naam + '</strong>' + (v.type_naam || '');
 
-  sb.from('inspectie_secties').select('*,inspectie_punten(*)').eq('bedrijf_id', gebruiker.bedrijf_id).eq('actief', true).order('volgorde')
+  sb.rpc('rpc_checklist', { p_gebruiker_id: gebruiker.id, p_voertuig_id: v.id })
     .then(function(result) {
-      secties = result.data || [];
+      var rijen = result.data || [];
+      var bySectie = {};
+      var volgorde = [];
+      rijen.forEach(function(r) {
+        if (!bySectie[r.sectie_id]) {
+          bySectie[r.sectie_id] = { id: r.sectie_id, naam: r.sectie_naam, icon: r.sectie_icon, volgorde: r.sectie_volgorde, inspectie_punten: [] };
+          volgorde.push(r.sectie_id);
+        }
+        bySectie[r.sectie_id].inspectie_punten.push({ id: r.punt_id, omschrijving: r.punt_omschrijving, volgorde: r.punt_volgorde, niveau: r.punt_niveau });
+      });
+      secties = volgorde.map(function(id) { return bySectie[id]; });
       secties.forEach(function(s) {
-        s.inspectie_punten.sort(function(a, b) { return a.volgorde - b.volgorde; });
         s.inspectie_punten.forEach(function(p) {
-          resultaten[p.id] = { status: null, opmerking: '', fotos: [] };
+          resultaten[p.id] = { status: null, opmerking: '', fotos: [], niveau: p.niveau };
         });
       });
       bouwTabs();
@@ -414,8 +418,11 @@ function bouwCheckItem(p, i) {
   div.id = 'ci-' + p.id;
   var r = resultaten[p.id];
   var pid = p.id;
+  var niveauBadge = p.niveau === 'informatief'
+    ? '<span class="check-niveau informatief">Informatief</span>'
+    : '<span class="check-niveau kritisch">Kritisch</span>';
   div.innerHTML = '<div class="check-num">' + (i + 1) + '</div>' +
-    '<div class="check-label">' + p.omschrijving + '</div>' +
+    '<div class="check-label">' + p.omschrijving + niveauBadge + '</div>' +
     '<div class="check-btns">' +
     '<button class="btn-check ok' + (r.status === 'ok' ? ' sel' : '') + '" id="btn-ok-' + pid + '">&#10004; OK</button>' +
     '<button class="btn-check nok' + (r.status === 'nok' ? ' sel' : '') + '" id="btn-nok-' + pid + '">&#10007; NOK</button>' +
@@ -517,11 +524,14 @@ function stapVolgende() {
 
 function bouwRapport() {
   document.getElementById('headerUser3').innerHTML = '<strong>' + gebruiker.naam + '</strong>' + voertuig.nummerplaat;
-  var ok = 0, nok = 0, open = 0;
+  var ok = 0, nok = 0, open = 0, nokKritisch = 0, nokInformatief = 0;
   Object.keys(resultaten).forEach(function(k) {
     var r = resultaten[k];
     if (r.status === 'ok') ok++;
-    else if (r.status === 'nok') nok++;
+    else if (r.status === 'nok') {
+      nok++;
+      if (r.niveau === 'informatief') nokInformatief++; else nokKritisch++;
+    }
     else if (r.status === 'na') {}
     else open++;
   });
@@ -532,8 +542,10 @@ function bouwRapport() {
   var vbox = document.getElementById('verdictBox');
   if (open > 0) {
     vbox.innerHTML = '<div class="verdict-box open">Onvolledig - ' + open + ' punt(en) open</div>';
-  } else if (nok > 0) {
-    vbox.innerHTML = '<div class="verdict-box nogo">NIET RIJKLAAR - ' + nok + ' punt(en) NOK</div>';
+  } else if (nokKritisch > 0) {
+    vbox.innerHTML = '<div class="verdict-box nogo">NIET RIJKLAAR - ' + nokKritisch + ' kritiek punt(en) NOK</div>';
+  } else if (nokInformatief > 0) {
+    vbox.innerHTML = '<div class="verdict-box warn">RIJKLAAR MET OPMERKINGEN - ' + nokInformatief + ' informatief punt(en) NOK</div>';
   } else {
     vbox.innerHTML = '<div class="verdict-box go">RIJKLAAR - Alle ' + ok + ' punten in orde</div>';
   }
@@ -612,44 +624,39 @@ function verzendRapport() {
   btn.disabled = true;
   btn.textContent = 'Bezig...';
 
-  var ok = 0, nok = 0, open = 0;
+  var nokKritisch = 0, nokInformatief = 0, open = 0;
   Object.keys(resultaten).forEach(function(k) {
     var r = resultaten[k];
-    if (r.status === 'ok') ok++;
-    else if (r.status === 'nok') nok++;
-    else if (!r.status) open++;
+    if (r.status === 'nok') {
+      if (r.niveau === 'informatief') nokInformatief++; else nokKritisch++;
+    } else if (!r.status) open++;
   });
 
-  var verdict = open > 0 ? 'onvolledig' : nok > 0 ? 'niet_rijklaar' : 'rijklaar';
+  var verdict = open > 0 ? 'onvolledig'
+    : nokKritisch > 0 ? 'niet_rijklaar'
+    : nokInformatief > 0 ? 'rijklaar_met_opmerkingen'
+    : 'rijklaar';
   var handtekening = sigHasSig ? document.getElementById('sigCanvas').toDataURL('image/png') : null;
-  var nu = new Date();
 
-  sb.from('inspecties').insert({
-    bedrijf_id: gebruiker.bedrijf_id,
-    gebruiker_id: gebruiker.id,
-    voertuig_id: voertuig.id,
-    datum: nu.toISOString().split('T')[0],
-    tijdstip: nu.toTimeString().slice(0, 8),
-    verdict: verdict,
-    handtekening: handtekening,
-    verzonden_op: nu.toISOString()
-  }).select().single().then(function(result) {
-    if (result.error) throw result.error;
-    var inspectie = result.data;
-    var rijen = [];
-    secties.forEach(function(s) {
-      s.inspectie_punten.forEach(function(p) {
-        var r = resultaten[p.id];
-        rijen.push({
-          inspectie_id: inspectie.id,
-          punt_id: p.id,
-          status: r.status || 'open',
-          opmerking: r.opmerking || null,
-          fotos: r.fotos
-        });
+  var punten = [];
+  secties.forEach(function(s) {
+    s.inspectie_punten.forEach(function(p) {
+      var r = resultaten[p.id];
+      punten.push({
+        punt_id: p.id,
+        status: r.status || 'open',
+        opmerking: r.opmerking || null,
+        fotos: r.fotos
       });
     });
-    return sb.from('inspectie_resultaten').insert(rijen);
+  });
+
+  sb.rpc('rpc_verzend_inspectie', {
+    p_gebruiker_id: gebruiker.id,
+    p_voertuig_id: voertuig.id,
+    p_verdict: verdict,
+    p_handtekening: handtekening,
+    p_resultaten: punten
   }).then(function(result) {
     if (result.error) throw result.error;
     showToast('Rapport verzonden!');

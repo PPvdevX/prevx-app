@@ -80,6 +80,15 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .badge.rijklaar{background:var(--green-bg);color:var(--green)}
 .badge.niet_rijklaar{background:var(--red-bg);color:var(--red)}
 .badge.onvolledig{background:var(--orange-bg);color:var(--orange)}
+.badge.rijklaar_met_opmerkingen{background:var(--orange-bg);color:var(--orange)}
+.niveau-select{padding:4px 8px;border:1px solid var(--gray-200);border-radius:6px;font-family:'Poppins',sans-serif;font-size:12px}
+.type-checks{display:flex;flex-wrap:wrap;gap:10px}
+.type-checks label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--gray-700)}
+.punt-rij-beheer{display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:13px;flex-wrap:wrap}
+.punt-rij-beheer:last-child{border-bottom:none}
+.punt-rij-beheer .punt-omschr{flex:1 1 240px;min-width:200px}
+.btn-add-sm{padding:6px 12px;background:var(--gray-100);border:1px dashed var(--gray-300);border-radius:6px;font-size:12px;color:var(--gray-500);cursor:pointer;font-weight:600}
+.btn-add-sm:hover{border-color:var(--navy);color:var(--navy)}
 .loading-row td{text-align:center;padding:40px;color:var(--gray-400)}
 .spinner-sm{display:inline-block;width:20px;height:20px;border:2px solid var(--gray-200);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -97,6 +106,10 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .detail-verdict.rijklaar{background:var(--green-bg);color:var(--green)}
 .detail-verdict.niet_rijklaar{background:var(--red-bg);color:var(--red)}
 .detail-verdict.onvolledig{background:var(--orange-bg);color:var(--orange)}
+.detail-verdict.rijklaar_met_opmerkingen{background:var(--orange-bg);color:var(--orange)}
+.punt-niveau{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle}
+.punt-niveau.kritisch{background:var(--red-bg);color:var(--red)}
+.punt-niveau.informatief{background:var(--orange-bg);color:var(--orange)}
 .detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
 .detail-meta-item{background:var(--gray-50);border-radius:6px;padding:10px 14px}
 .detail-meta-label{font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px}
@@ -177,6 +190,9 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       <div class="nav-item" id="nav-gebruikers" onclick="toonTab('gebruikers')">
         <span class="nav-icon">&#128100;</span> Gebruikers
       </div>
+      <div class="nav-item" id="nav-checklist" onclick="toonTab('checklist')">
+        <span class="nav-icon">&#9989;</span> Checklist
+      </div>
     </nav>
     <div class="sidebar-bottom">
       <button class="btn-logout" onclick="doLogout()">&#10548; Afmelden</button>
@@ -205,6 +221,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
               <option value="rijklaar">Rijklaar</option>
               <option value="niet_rijklaar">Niet rijklaar</option>
               <option value="onvolledig">Onvolledig</option>
+              <option value="rijklaar_met_opmerkingen">Rijklaar met opmerkingen</option>
             </select>
           </div>
           <div class="filter-group"><span class="filter-label">Voertuig</span><input type="text" class="filter-input" id="filterVoertuig" placeholder="Nummerplaat..."></div>
@@ -227,6 +244,12 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
         <div class="page-subtitle">Overzicht van het wagenpark</div>
       </div>
       <div class="content-area">
+        <div class="table-card" style="margin-bottom:20px">
+          <div class="table-header"><span class="table-title">Voertuigtypes</span>
+            <button class="btn-add-sm" onclick="nieuwVoertuigType()">+ Nieuw type</button>
+          </div>
+          <div id="voertuigTypesLijst" style="padding:14px 20px;font-size:13px;color:var(--gray-500)">Laden...</div>
+        </div>
         <div class="table-card">
           <div class="table-header"><span class="table-title">Wagenpark</span><span class="table-count" id="voertuigenCount">0</span></div>
           <table><thead><tr><th>Nummerplaat</th><th>Type</th><th>Omschrijving</th><th>Status</th><th>Inspecties</th></tr></thead>
@@ -246,6 +269,19 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
           <table><thead><tr><th>Naam</th><th>Rol</th><th>Pincode</th><th>Status</th></tr></thead>
           <tbody id="gebruikersTabel"><tr class="loading-row"><td colspan="4"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
         </div>
+      </div>
+    </div>
+
+    <div id="tab-checklist" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Checklist</div>
+        <div class="page-subtitle">Kritiek/informatief-niveau en voertuigtype-koppeling per vraag</div>
+      </div>
+      <div class="content-area">
+        <div style="margin-bottom:14px">
+          <button class="btn-add-sm" onclick="nieuweSectie()">+ Nieuwe sectie</button>
+        </div>
+        <div id="checklistBeheer">Laden...</div>
       </div>
     </div>
   </div>
@@ -274,6 +310,7 @@ var SUPABASE_KEY='sb_publishable_qsdWjzGQnXxt9iH0B_qAjw_wIYGXR2p';
 var sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 var huidigeBedrijfId=null;
 var alleInspecties=[];
+var alleVoertuigTypes=[];
 
 document.getElementById('loginPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 document.getElementById('loginEmail').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
@@ -305,18 +342,17 @@ sb.auth.getSession().then(function(r){if(r.data&&r.data.session)laadDashboard(r.
 
 function laadDashboard(user){
   document.getElementById('sidebarEmail').textContent=user.email;
-  sb.from('gebruikers').select('*').eq('actief',true).then(function(r){
-    var gebruikers=r.data||[];
-    var gevonden=gebruikers.find(function(g){return g.rol==='beheerder';});
+  sb.from('gebruikers').select('*').eq('auth_user_id',user.id).eq('actief',true).maybeSingle().then(function(r){
+    var gevonden=r.data;
     if(gevonden){document.getElementById('sidebarNaam').textContent=gevonden.naam;huidigeBedrijfId=gevonden.bedrijf_id;}
-    else{document.getElementById('sidebarNaam').textContent=user.email;if(gebruikers.length>0)huidigeBedrijfId=gebruikers[0].bedrijf_id;}
+    else{document.getElementById('sidebarNaam').textContent=user.email;showToast('Dit account is niet gekoppeld aan een bedrijf.');}
     showScreen('dashboard');
     laadInspecties();
   });
 }
 
 function toonTab(naam){
-  var tabs=['inspecties','voertuigen','gebruikers'];
+  var tabs=['inspecties','voertuigen','gebruikers','checklist'];
   tabs.forEach(function(t){
     document.getElementById('tab-'+t).style.display=t===naam?'':'none';
     document.getElementById('nav-'+t).classList.toggle('active',t===naam);
@@ -324,11 +360,12 @@ function toonTab(naam){
   if(naam==='inspecties')laadInspecties();
   else if(naam==='voertuigen')laadVoertuigen();
   else if(naam==='gebruikers')laadGebruikers();
+  else if(naam==='checklist')laadChecklist();
 }
 
 function laadInspecties(){
   if(!huidigeBedrijfId)return;
-  sb.from('inspecties').select('*,voertuigen(nummerplaat,type),gebruikers(naam,rol)').eq('bedrijf_id',huidigeBedrijfId).order('datum',{ascending:false}).order('tijdstip',{ascending:false})
+  sb.from('inspecties').select('*,voertuigen(nummerplaat,type,voertuig_types(naam)),gebruikers(naam,rol)').eq('bedrijf_id',huidigeBedrijfId).order('datum',{ascending:false}).order('tijdstip',{ascending:false})
   .then(function(r){
     alleInspecties=r.data||[];
     updateStats();
@@ -348,11 +385,12 @@ function renderTabel(data){
   var tbody=document.getElementById('inspectiesTabel');
   document.getElementById('tabelCount').textContent=data.length+' resultaten';
   if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">Geen inspecties gevonden.</td></tr>';return;}
-  var labels={rijklaar:'Rijklaar',niet_rijklaar:'Niet rijklaar',onvolledig:'Onvolledig'};
+  var labels={rijklaar:'Rijklaar',niet_rijklaar:'Niet rijklaar',onvolledig:'Onvolledig',rijklaar_met_opmerkingen:'Rijklaar met opm.'};
   tbody.innerHTML='';
   data.forEach(function(ins){
     var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+formatDatum(ins.datum)+'</td><td>'+(ins.tijdstip?ins.tijdstip.slice(0,5):'-')+'</td><td><strong>'+(ins.voertuigen?ins.voertuigen.nummerplaat:'-')+'</strong></td><td>'+(ins.voertuigen?ins.voertuigen.type:'-')+'</td><td>'+(ins.gebruikers?ins.gebruikers.naam:'-')+'</td><td><span class="badge '+ins.verdict+'">'+(labels[ins.verdict]||ins.verdict)+'</span></td><td style="color:var(--gray-400)">&#8250;</td>';
+    var typeNaam=ins.voertuigen?(ins.voertuigen.voertuig_types?ins.voertuigen.voertuig_types.naam:ins.voertuigen.type):'-';
+    tr.innerHTML='<td>'+formatDatum(ins.datum)+'</td><td>'+(ins.tijdstip?ins.tijdstip.slice(0,5):'-')+'</td><td><strong>'+(ins.voertuigen?ins.voertuigen.nummerplaat:'-')+'</strong></td><td>'+typeNaam+'</td><td>'+(ins.gebruikers?ins.gebruikers.naam:'-')+'</td><td><span class="badge '+ins.verdict+'">'+(labels[ins.verdict]||ins.verdict)+'</span></td><td style="color:var(--gray-400)">&#8250;</td>';
     tr.onclick=function(){openDetail(ins.id);};
     tbody.appendChild(tr);
   });
@@ -389,18 +427,18 @@ function resetFilters(){
 function openDetail(id){
   document.getElementById('detailOverlay').classList.add('active');
   document.getElementById('detailBody').innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400)"><div class="spinner-sm"></div>Laden...</div>';
-  sb.from('inspecties').select('*,voertuigen(nummerplaat,type,omschrijving),gebruikers(naam,rol)').eq('id',id).single().then(function(r){
+  sb.from('inspecties').select('*,voertuigen(nummerplaat,type,omschrijving,voertuig_types(naam)),gebruikers(naam,rol)').eq('id',id).single().then(function(r){
     var ins=r.data;
     if(!ins)return;
     document.getElementById('detailTitel').textContent=ins.voertuigen?ins.voertuigen.nummerplaat:'Inspectie';
     document.getElementById('detailSub').textContent=formatDatum(ins.datum)+' om '+(ins.tijdstip?ins.tijdstip.slice(0,5):'-');
-    sb.from('inspectie_resultaten').select('*,inspectie_punten(omschrijving,volgorde,inspectie_secties(naam,icon,volgorde))').eq('inspectie_id',id)
+    sb.from('inspectie_resultaten').select('*,inspectie_punten(omschrijving,volgorde,niveau,inspectie_secties(naam,icon,volgorde))').eq('inspectie_id',id)
     .then(function(rr){renderDetail(ins,rr.data||[]);});
   });
 }
 
 function renderDetail(ins,resultaten){
-  var verdictLabels={rijklaar:'&#10003; RIJKLAAR',niet_rijklaar:'&#10007; NIET RIJKLAAR',onvolledig:'&#9200; ONVOLLEDIG'};
+  var verdictLabels={rijklaar:'&#10003; RIJKLAAR',niet_rijklaar:'&#10007; NIET RIJKLAAR',onvolledig:'&#9200; ONVOLLEDIG',rijklaar_met_opmerkingen:'&#9888; RIJKLAAR MET OPMERKINGEN'};
   var ok=resultaten.filter(function(r){return r.status==='ok';}).length;
   var nok=resultaten.filter(function(r){return r.status==='nok';}).length;
   var open=resultaten.filter(function(r){return r.status==='open'||!r.status;}).length;
@@ -414,7 +452,8 @@ function renderDetail(ins,resultaten){
   var sectieArr=Object.values(secties).sort(function(a,b){return a.volgorde-b.volgorde;});
   var html='<div class="detail-verdict '+ins.verdict+'">'+(verdictLabels[ins.verdict]||ins.verdict)+'</div>';
   html+='<div class="detail-meta"><div class="detail-meta-item"><div class="detail-meta-label">Voertuig</div><div class="detail-meta-value">'+(ins.voertuigen?ins.voertuigen.nummerplaat:'-')+'</div></div>';
-  html+='<div class="detail-meta-item"><div class="detail-meta-label">Type</div><div class="detail-meta-value">'+(ins.voertuigen?ins.voertuigen.type:'-')+'</div></div>';
+  var detailType=ins.voertuigen?(ins.voertuigen.voertuig_types?ins.voertuigen.voertuig_types.naam:ins.voertuigen.type):'-';
+  html+='<div class="detail-meta-item"><div class="detail-meta-label">Type</div><div class="detail-meta-value">'+detailType+'</div></div>';
   html+='<div class="detail-meta-item"><div class="detail-meta-label">Chauffeur</div><div class="detail-meta-value">'+(ins.gebruikers?ins.gebruikers.naam:'-')+'</div></div>';
   html+='<div class="detail-meta-item"><div class="detail-meta-label">Datum &amp; tijd</div><div class="detail-meta-value">'+formatDatum(ins.datum)+' '+(ins.tijdstip?ins.tijdstip.slice(0,5):'')+'</div></div></div>';
   html+='<div class="detail-stats"><div class="detail-stat ok"><div class="detail-stat-n">'+ok+'</div><div class="detail-stat-l">OK</div></div><div class="detail-stat nok"><div class="detail-stat-n">'+nok+'</div><div class="detail-stat-l">NOK</div></div><div class="detail-stat open"><div class="detail-stat-n">'+open+'</div><div class="detail-stat-l">Open</div></div></div>';
@@ -424,7 +463,9 @@ function renderDetail(ins,resultaten){
     s.punten.forEach(function(r){
       var st=r.status||'open';
       var bl={ok:'OK',nok:'NOK',na:'N/A',open:'-'};
-      html+='<div class="punt-rij"><span class="punt-badge '+st+'">'+(bl[st]||'-')+'</span><div class="punt-tekst">'+(r.inspectie_punten?r.inspectie_punten.omschrijving:'-');
+      var niveau=r.inspectie_punten?r.inspectie_punten.niveau:'kritisch';
+      var niveauTag='<span class="punt-niveau '+(niveau==='informatief'?'informatief':'kritisch')+'">'+(niveau==='informatief'?'Informatief':'Kritisch')+'</span>';
+      html+='<div class="punt-rij"><span class="punt-badge '+st+'">'+(bl[st]||'-')+'</span><div class="punt-tekst">'+(r.inspectie_punten?r.inspectie_punten.omschrijving:'-')+niveauTag;
       if(r.opmerking)html+='<div class="punt-opm">&#128172; '+r.opmerking+'</div>';
       if(r.fotos&&r.fotos.length>0){html+='<div class="punt-fotos">';r.fotos.forEach(function(src){html+='<img class="punt-foto" src="'+src+'" onclick="openLightbox(this.src)">';});html+='</div>';}
       html+='</div></div>';
@@ -440,20 +481,56 @@ function sluitDetail(){document.getElementById('detailOverlay').classList.remove
 
 function laadVoertuigen(){
   if(!huidigeBedrijfId)return;
-  sb.from('voertuigen').select('*').eq('bedrijf_id',huidigeBedrijfId).order('nummerplaat').then(function(r){
-    var v=r.data||[];
-    document.getElementById('voertuigenCount').textContent=v.length+' voertuigen';
-    sb.from('inspecties').select('voertuig_id').eq('bedrijf_id',huidigeBedrijfId).then(function(ir){
-      var tel={};(ir.data||[]).forEach(function(i){tel[i.voertuig_id]=(tel[i.voertuig_id]||0)+1;});
-      var tbody=document.getElementById('voertuigenTabel');
-      if(!v.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Geen voertuigen.</td></tr>';return;}
-      tbody.innerHTML='';
-      v.forEach(function(vt){
-        var tr=document.createElement('tr');
-        tr.innerHTML='<td><strong>'+vt.nummerplaat+'</strong></td><td>'+vt.type+'</td><td>'+(vt.omschrijving||'-')+'</td><td><span class="badge '+(vt.actief?'rijklaar':'niet_rijklaar')+'">'+(vt.actief?'Actief':'Inactief')+'</span></td><td>'+(tel[vt.id]||0)+'</td>';
-        tbody.appendChild(tr);
+  sb.from('voertuig_types').select('*').eq('bedrijf_id',huidigeBedrijfId).order('volgorde').then(function(tr){
+    alleVoertuigTypes=tr.data||[];
+    renderVoertuigTypesLijst();
+    sb.from('voertuigen').select('*').eq('bedrijf_id',huidigeBedrijfId).order('nummerplaat').then(function(r){
+      var v=r.data||[];
+      document.getElementById('voertuigenCount').textContent=v.length+' voertuigen';
+      sb.from('inspecties').select('voertuig_id').eq('bedrijf_id',huidigeBedrijfId).then(function(ir){
+        var tel={};(ir.data||[]).forEach(function(i){tel[i.voertuig_id]=(tel[i.voertuig_id]||0)+1;});
+        var tbody=document.getElementById('voertuigenTabel');
+        if(!v.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Geen voertuigen.</td></tr>';return;}
+        tbody.innerHTML='';
+        v.forEach(function(vt){
+          var tr2=document.createElement('tr');
+          var opties='<option value="">- kies type -</option>'+alleVoertuigTypes.map(function(t){
+            return '<option value="'+t.id+'"'+(t.id===vt.type_id?' selected':'')+'>'+t.naam+'</option>';
+          }).join('');
+          tr2.innerHTML='<td><strong>'+vt.nummerplaat+'</strong></td>'+
+            '<td><select class="niveau-select" onchange="wijzigVoertuigType(\''+vt.id+'\',this.value)">'+opties+'</select></td>'+
+            '<td>'+(vt.omschrijving||'-')+'</td>'+
+            '<td><span class="badge '+(vt.actief?'rijklaar':'niet_rijklaar')+'">'+(vt.actief?'Actief':'Inactief')+'</span></td>'+
+            '<td>'+(tel[vt.id]||0)+'</td>';
+          tbody.appendChild(tr2);
+        });
       });
     });
+  });
+}
+
+function renderVoertuigTypesLijst(){
+  var el=document.getElementById('voertuigTypesLijst');
+  if(!alleVoertuigTypes.length){el.textContent='Nog geen voertuigtypes. Voeg er een toe.';return;}
+  el.innerHTML=alleVoertuigTypes.map(function(t){
+    return '<span class="badge" style="background:var(--gray-100);color:var(--gray-700);margin:0 6px 6px 0">'+(t.icon||'')+' '+t.naam+'</span>';
+  }).join('');
+}
+
+function nieuwVoertuigType(){
+  if(!huidigeBedrijfId)return;
+  var naam=prompt('Naam van het nieuwe voertuigtype (bv. Heftruck):');
+  if(!naam)return;
+  sb.from('voertuig_types').insert({bedrijf_id:huidigeBedrijfId,naam:naam.trim(),volgorde:alleVoertuigTypes.length}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    laadVoertuigen();
+  });
+}
+
+function wijzigVoertuigType(voertuigId,typeId){
+  sb.from('voertuigen').update({type_id:typeId||null}).eq('id',voertuigId).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Type bijgewerkt');
   });
 }
 
@@ -470,6 +547,105 @@ function laadGebruikers(){
       var tr=document.createElement('tr');
       tr.innerHTML='<td><strong>'+u.naam+'</strong></td><td>'+(labels[u.rol]||u.rol)+'</td><td><code style="background:var(--gray-100);padding:2px 6px;border-radius:4px;">'+u.pincode+'</code></td><td><span class="badge '+(u.actief?'rijklaar':'niet_rijklaar')+'">'+(u.actief?'Actief':'Inactief')+'</span></td>';
       tbody.appendChild(tr);
+    });
+  });
+}
+
+function laadChecklist(){
+  if(!huidigeBedrijfId)return;
+  document.getElementById('checklistBeheer').textContent='Laden...';
+  sb.from('voertuig_types').select('*').eq('bedrijf_id',huidigeBedrijfId).order('volgorde').then(function(tr){
+    alleVoertuigTypes=tr.data||[];
+    sb.from('inspectie_secties').select('*,inspectie_punten(*,inspectie_punt_types(type_id))').eq('bedrijf_id',huidigeBedrijfId).order('volgorde').then(function(r){
+      renderChecklistBeheer(r.data||[]);
+    });
+  });
+}
+
+function renderChecklistBeheer(secties){
+  var el=document.getElementById('checklistBeheer');
+  if(!secties.length){el.innerHTML='<p style="color:var(--gray-400)">Nog geen secties. Voeg er een toe.</p>';return;}
+  if(!alleVoertuigTypes.length){el.innerHTML='<p style="color:var(--gray-400)">Voeg eerst voertuigtypes toe via het tabblad Voertuigen, anders kan geen enkel punt getoond worden aan chauffeurs.</p>';}
+  else el.innerHTML='';
+  secties.sort(function(a,b){return a.volgorde-b.volgorde;});
+  secties.forEach(function(s){
+    var punten=(s.inspectie_punten||[]).slice().sort(function(a,b){return a.volgorde-b.volgorde;});
+    var blok=document.createElement('div');
+    blok.className='sectie-blok';
+    blok.style.marginBottom='16px';
+    var header=document.createElement('div');
+    header.className='sectie-blok-header';
+    header.style.display='flex';header.style.justifyContent='space-between';header.style.alignItems='center';
+    header.innerHTML='<span>'+(s.icon||'')+' '+s.naam+'</span><button class="btn-add-sm" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff" onclick="nieuwPunt(\''+s.id+'\')">+ Punt</button>';
+    blok.appendChild(header);
+    if(!punten.length){
+      var leeg=document.createElement('div');
+      leeg.className='punt-rij-beheer';
+      leeg.textContent='Nog geen punten in deze sectie.';
+      blok.appendChild(leeg);
+    }
+    punten.forEach(function(p){
+      var toegewezen={};
+      (p.inspectie_punt_types||[]).forEach(function(x){toegewezen[x.type_id]=true;});
+      var rij=document.createElement('div');
+      rij.className='punt-rij-beheer';
+      var typeChecks=alleVoertuigTypes.map(function(t){
+        var checked=toegewezen[t.id]?' checked':'';
+        return '<label><input type="checkbox" value="'+t.id+'"'+checked+' onchange="toggleInspectiePuntType(\''+p.id+'\',\''+t.id+'\',this.checked)">'+t.naam+'</label>';
+      }).join('');
+      rij.innerHTML='<div class="punt-omschr">'+p.omschrijving+'</div>'+
+        '<select class="niveau-select" onchange="wijzigNiveau(\''+p.id+'\',this.value)">'+
+          '<option value="kritisch"'+(p.niveau==='kritisch'?' selected':'')+'>Kritisch</option>'+
+          '<option value="informatief"'+(p.niveau==='informatief'?' selected':'')+'>Informatief</option>'+
+        '</select>'+
+        '<div class="type-checks">'+(typeChecks||'<span style="color:var(--gray-400)">Geen voertuigtypes beschikbaar</span>')+'</div>';
+      blok.appendChild(rij);
+    });
+    el.appendChild(blok);
+  });
+}
+
+function wijzigNiveau(puntId,niveau){
+  sb.from('inspectie_punten').update({niveau:niveau}).eq('id',puntId).then(function(r){
+    if(r.error)showToast('Fout: '+r.error.message);
+  });
+}
+
+function toggleInspectiePuntType(puntId,typeId,aangevinkt){
+  if(aangevinkt){
+    sb.from('inspectie_punt_types').insert({punt_id:puntId,type_id:typeId}).then(function(r){
+      if(r.error)showToast('Fout: '+r.error.message);
+    });
+  }else{
+    sb.from('inspectie_punt_types').delete().eq('punt_id',puntId).eq('type_id',typeId).then(function(r){
+      if(r.error)showToast('Fout: '+r.error.message);
+    });
+  }
+}
+
+function nieuweSectie(){
+  if(!huidigeBedrijfId)return;
+  var naam=prompt('Naam van de nieuwe sectie:');
+  if(!naam)return;
+  sb.from('inspectie_secties').select('volgorde').eq('bedrijf_id',huidigeBedrijfId).order('volgorde',{ascending:false}).limit(1).then(function(r){
+    var volgende=(r.data&&r.data.length)?r.data[0].volgorde+1:1;
+    sb.from('inspectie_secties').insert({bedrijf_id:huidigeBedrijfId,naam:naam.trim(),icon:'🔍',volgorde:volgende,actief:true}).then(function(r2){
+      if(r2.error){showToast('Fout: '+r2.error.message);return;}
+      laadChecklist();
+    });
+  });
+}
+
+function nieuwPunt(sectieId){
+  var omschrijving=prompt('Omschrijving van het nieuwe checklistpunt:');
+  if(!omschrijving)return;
+  sb.from('inspectie_punten').select('volgorde').eq('sectie_id',sectieId).order('volgorde',{ascending:false}).limit(1).then(function(r){
+    var volgende=(r.data&&r.data.length)?r.data[0].volgorde+1:1;
+    sb.from('inspectie_punten').insert({sectie_id:sectieId,omschrijving:omschrijving.trim(),volgorde:volgende,actief:true,niveau:'kritisch'}).select().single().then(function(r2){
+      if(r2.error){showToast('Fout: '+r2.error.message);return;}
+      var koppelingen=alleVoertuigTypes.map(function(t){return {punt_id:r2.data.id,type_id:t.id};});
+      if(!koppelingen.length){laadChecklist();return;}
+      sb.from('inspectie_punt_types').insert(koppelingen).then(function(){laadChecklist();});
     });
   });
 }
