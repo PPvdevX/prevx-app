@@ -670,6 +670,30 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       </div>
     </div>
 
+    <div id="tab-brandpreventie" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Brandpreventiedossier</div>
+        <div class="page-subtitle">De elf onderdelen, en of ze er nog staan</div>
+      </div>
+      <div class="content-area">
+        <div style="margin-bottom:14px">
+          <button class="btn-add-sm" onclick="bundelBrandpreventie()">Bundel voor de hulpdiensten</button>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Onderdelen</span>
+            <span class="table-count" id="bpdCount">0/11</span>
+          </div>
+          <table><thead><tr><th>Onderdeel</th><th>Status</th><th>Datum</th><th>Herkomst</th><th></th></tr></thead>
+          <tbody id="bpdTabel"><tr class="loading-row"><td colspan="5"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+        <p style="font-size:13px;color:var(--gray-500);margin-top:14px;max-width:720px">
+          De wetgeving legt voor dit dossier geen enkele termijn op &mdash; ze zegt alleen dat het wordt bijgewerkt.
+          Enkel de evacuatieoefening (jaarlijks) en de controles onder punt 8 hebben een eigen termijn.
+          Voor de andere onderdelen telt daarom de datum waarop iemand ze effectief nagekeken heeft.
+        </p>
+      </div>
+    </div>
+
     <div id="tab-keuringen" style="display:none">
       <div class="page-header">
         <div class="page-title">Keuringen</div>
@@ -712,6 +736,17 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
                 <option value="TBX">TBX &mdash; Toolbox</option>
                 <option value="FOR">FOR &mdash; Formulier</option>
                 <option value="TPL">TPL &mdash; Template</option>
+                <optgroup label="Brandpreventiedossier">
+                <option value="BRA">BRA &mdash; Brandrisicoanalyse</option>
+                <option value="BBD">BBD &mdash; Organisatie brandbestrijdingsdienst</option>
+                <option value="BPR">BPR &mdash; Schriftelijke procedures</option>
+                <option value="EVP">EVP &mdash; Evacuatieplan</option>
+                <option value="ITD">ITD &mdash; Interventiedossier</option>
+                <option value="EVO">EVO &mdash; Vaststellingen evacuatieoefening</option>
+                <option value="BMP">BMP &mdash; Beschermingsmiddelen: lijst en plan</option>
+                <option value="AFW">AFW &mdash; Afwijking art. 52 ARAB</option>
+                <option value="HLP">HLP &mdash; Info openbare hulpdienst</option>
+                </optgroup>
               </select>
             </div>
             <div class="form-group">
@@ -873,8 +908,8 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
               <button class="btn-add-sm" onclick="nieuwKeuringType()">+ Nieuw keuringstype</button>
             </span>
           </div>
-          <table><thead><tr><th>Type</th><th>Domein</th><th>Wettelijke basis</th><th>Interval</th><th>Status</th><th></th></tr></thead>
-          <tbody id="keuringTypesTabel"><tr class="loading-row"><td colspan="6"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+          <table><thead><tr><th>Type</th><th>Domein</th><th>Wettelijke basis</th><th>Interval</th><th>Brandpreventie</th><th>Status</th><th></th></tr></thead>
+          <tbody id="keuringTypesTabel"><tr class="loading-row"><td colspan="7"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
         </div>
 
         <div class="table-card inklapbaar dicht" style="margin-bottom:12px">
@@ -1347,6 +1382,9 @@ var MENU=[
     {key:'documenten',naam:'Documenten',module:'documenten',laad:function(){laadDocumenten();}},
     {key:'planning',naam:'Planning',module:'planning',laad:function(){laadPlanning();}},
     {key:'keuringen',naam:'Keuringen',module:'planning',laad:function(){laadKeuringen();}},
+    // Hangt aan de module documenten omdat negen van de elf onderdelen daar
+    // liggen; zonder die module is het scherm een lijst van elf keer 'ontbreekt'.
+    {key:'brandpreventie',naam:'Brandpreventiedossier',module:'documenten',laad:function(){laadBrandpreventie();}},
     {key:'kennisbank',naam:'Kennisbank',module:'kennisbank',laad:function(){laadKennisbank();}}
   ]},
   {groep:'Pre-inspectie',icoon:'inspecties',module:'preinspecties',items:[
@@ -1964,6 +2002,172 @@ function magKeuringenBeheren(){
   return ['beheerder','preventieadviseur','leidinggevende'].indexOf(eigenGebruiker.rol)!==-1;
 }
 
+// ---------------------------------------------------------------------------
+// Brandpreventiedossier
+// ---------------------------------------------------------------------------
+// Elf onderdelen uit de fiche van FOD WASO. Tien liggen al ergens in dit
+// portaal, dus dit scherm bewaart niets -- het kijkt op elf plaatsen en zegt
+// wat het ziet.
+//
+// De statusregel is bewust in drie soorten verdeeld, omdat de wet dat ook is:
+//
+//   controles   -> rekent live uit keuringen. Elke keuring draagt zijn eigen
+//                  periodiciteit, dus de termijn staat waar hij hoort.
+//   oefeningen  -> harde termijn van twaalf maanden; de enige die de wet
+//                  voor dit dossier oplegt.
+//   de negen andere -> geen wettelijke termijn. De fiche zegt enkel dat het
+//                  dossier "wordt bijgewerkt". Een aftelklok tonen zou hier
+//                  een uitspraak zijn die niemand gedaan heeft; daarom telt de
+//                  stempel van de preventieadviseur, met naam en datum.
+var BPD_ONDERDELEN=[
+  {key:'risicoanalyse',        naam:'Brandrisicoanalyse en preventiemaatregelen', type:'BRA'},
+  {key:'brandbestrijdingsdienst',naam:'Organisatie van de brandbestrijdingsdienst', type:'BBD'},
+  {key:'procedures',           naam:'Schriftelijke procedures',                   type:'BPR'},
+  {key:'evacuatieplan',        naam:'Evacuatieplan',                              type:'EVP'},
+  {key:'interventiedossier',   naam:'Interventiedossier',                         type:'ITD'},
+  {key:'oefeningen',           naam:'Vaststellingen evacuatieoefeningen',         type:'EVO', termijn:12},
+  {key:'beschermingsmiddelen', naam:'Beschermingsmiddelen: lijst en situering op plan', type:'BMP'},
+  {key:'controles',            naam:'Controles en onderhoud van middelen en installaties', bron:'keuringen'},
+  {key:'afwijkingen',          naam:'Afwijkingen (art. 52 ARAB)',                 type:'AFW'},
+  {key:'adviezen',             naam:'Adviezen van adviseur, comit\u00e9 en hulpdienst', type:'ADV'},
+  {key:'hulpdiensten',         naam:'Informatie aan de openbare hulpdienst',      type:'HLP'}
+];
+
+var bpdGegevens=null;
+
+function laadBrandpreventie(){
+  if(!huidigeBedrijfId)return;
+  var uit={docs:null,keur:null,stat:null};
+  function klaar(){
+    if(uit.docs===null||uit.keur===null||uit.stat===null)return;
+    bpdGegevens=uit;
+    renderBrandpreventie();
+  }
+  sb.from('documenten').select('type,titel,versie,bestand_url,geupload_op')
+    .eq('bedrijf_id',huidigeBedrijfId).order('geupload_op',{ascending:false})
+    .then(function(r){ uit.docs=r.data||[]; klaar(); });
+  sb.from('keuringen').select('omschrijving,vervaldatum,laatste_keuring,uitvoerder,attest_url,keuring_types(naam,in_brandpreventiedossier)')
+    .eq('bedrijf_id',huidigeBedrijfId).eq('actief',true).order('vervaldatum',{ascending:true})
+    .then(function(r){
+      uit.keur=(r.data||[]).filter(function(k){ return k.keuring_types&&k.keuring_types.in_brandpreventiedossier; });
+      klaar();
+    });
+  sb.from('brandpreventie_status').select('*').eq('bedrijf_id',huidigeBedrijfId)
+    .then(function(r){ uit.stat=r.data||[]; klaar(); });
+}
+
+// Maanden verschil, niet dagen: alle termijnen hier zijn in maanden uitgedrukt
+// en 'twaalf maanden' mag niet afhangen van hoeveel dagen februari had.
+function bpdMaandenGeleden(datum){
+  if(!datum)return null;
+  var d=new Date(datum+'T00:00:00'), nu=new Date();
+  return (nu.getFullYear()-d.getFullYear())*12+(nu.getMonth()-d.getMonth());
+}
+
+function bpdStand(o){
+  var stat=(bpdGegevens.stat||[]).filter(function(x){return x.onderdeel===o.key;})[0]||null;
+
+  if(o.bron==='keuringen'){
+    var k=bpdGegevens.keur;
+    if(!k.length)return {badge:'niet_rijklaar',tekst:'Geen keuringen aangeduid',datum:'',bron:'Keuringen',tab:'keuringen'};
+    var verlopen=k.filter(function(x){ return keuringStand(x.vervaldatum).dagen<0; });
+    if(verlopen.length)return {badge:'niet_rijklaar',tekst:verlopen.length+' verlopen',datum:formatDatum(k[0].vervaldatum),bron:'Keuringen',tab:'keuringen'};
+    return {badge:'rijklaar',tekst:k.length+' in orde',datum:'eerstvolgende '+formatDatum(k[0].vervaldatum),bron:'Keuringen',tab:'keuringen'};
+  }
+
+  var docs=bpdGegevens.docs.filter(function(d){return d.type===o.type;});
+  if(!docs.length)return {badge:'niet_rijklaar',tekst:'Ontbreekt',datum:'',bron:'Documenten',tab:'documenten'};
+  var laatste=docs[0].geupload_op ? docs[0].geupload_op.slice(0,10) : null;
+
+  // Enige onderdeel met een wettelijke termijn: jaarlijks oefenen.
+  if(o.termijn){
+    var m=bpdMaandenGeleden(laatste);
+    if(m!==null&&m>=o.termijn)return {badge:'niet_rijklaar',tekst:'Ouder dan '+o.termijn+' maanden',datum:formatDatum(laatste),bron:'Documenten',tab:'documenten'};
+    return {badge:'rijklaar',tekst:'Binnen termijn',datum:formatDatum(laatste),bron:'Documenten',tab:'documenten'};
+  }
+
+  if(!stat||!stat.nagekeken_op)
+    return {badge:'onvolledig',tekst:'Nog niet nagekeken',datum:laatste?formatDatum(laatste):'',bron:'Documenten',tab:'documenten',stat:stat};
+  var mm=bpdMaandenGeleden(stat.nagekeken_op);
+  if(mm!==null&&mm>=(stat.hertermijn_maanden||12))
+    return {badge:'onvolledig',tekst:'Opnieuw na te kijken',datum:formatDatum(stat.nagekeken_op),bron:'Documenten',tab:'documenten',stat:stat};
+  return {badge:'rijklaar',tekst:'Nagekeken'+(stat.door?' door '+stat.door:''),datum:formatDatum(stat.nagekeken_op),bron:'Documenten',tab:'documenten',stat:stat};
+}
+
+function renderBrandpreventie(){
+  var tb=document.getElementById('bpdTabel'); tb.innerHTML='';
+  var inOrde=0;
+  BPD_ONDERDELEN.forEach(function(o){
+    var st=bpdStand(o);
+    if(st.badge==='rijklaar')inOrde++;
+    var knop = (isSuperbeheerder&&o.bron!=='keuringen')
+      ? '<button class="btn-add-sm" onclick="event.stopPropagation();bpdNagekeken(\''+o.key+'\')">Nagekeken</button>' : '';
+    var tr=document.createElement('tr');
+    tr.onclick=function(){ toonTab(st.tab); };
+    tr.innerHTML='<td>'+onthtml(o.naam)+'</td>'+
+      '<td><span class="badge '+st.badge+'">'+onthtml(st.tekst)+'</span></td>'+
+      '<td>'+(st.datum||'-')+'</td>'+
+      '<td>'+st.bron+'</td>'+
+      '<td style="text-align:right">'+knop+'</td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById('bpdCount').textContent=inOrde+'/'+BPD_ONDERDELEN.length;
+}
+
+function bpdNagekeken(key){
+  var naam=(eigenGebruiker&&eigenGebruiker.naam)||'';
+  var rij={bedrijf_id:huidigeBedrijfId,onderdeel:key,nagekeken_op:datumTekst(new Date()),door:naam,bijgewerkt_op:new Date().toISOString()};
+  sb.from('brandpreventie_status').upsert(rij,{onConflict:'bedrijf_id,onderdeel'}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Nagekeken op vandaag');
+    laadBrandpreventie();
+  });
+}
+
+// De bundelknop. Geen PDF-bibliotheek erbij: de browser kan zelf naar PDF
+// afdrukken, en een tweede bibliotheek naast SheetJS is gewicht zonder winst.
+function bundelBrandpreventie(){
+  if(!bpdGegevens){showToast('Nog aan het laden');return;}
+  var naam=(huidigBedrijfData&&huidigBedrijfData.naam)||'';
+  var rijen='';
+  BPD_ONDERDELEN.forEach(function(o,i){
+    var st=bpdStand(o);
+    rijen+='<tr><td>'+(i+1)+'</td><td>'+onthtml(o.naam)+'</td><td>'+onthtml(st.tekst)+'</td><td>'+(st.datum||'-')+'</td></tr>';
+  });
+  var keur='';
+  bpdGegevens.keur.forEach(function(k){
+    keur+='<tr><td>'+onthtml(k.omschrijving||'')+'</td><td>'+onthtml((k.keuring_types&&k.keuring_types.naam)||'')+'</td>'+
+      '<td>'+onthtml(k.uitvoerder||'')+'</td><td>'+(k.laatste_keuring?formatDatum(k.laatste_keuring):'-')+'</td>'+
+      '<td>'+formatDatum(k.vervaldatum)+'</td></tr>';
+  });
+  var docs='';
+  BPD_ONDERDELEN.forEach(function(o){
+    if(!o.type)return;
+    bpdGegevens.docs.filter(function(d){return d.type===o.type;}).forEach(function(d){
+      docs+='<tr><td>'+o.type+'</td><td>'+onthtml(d.titel||'')+'</td><td>'+onthtml(d.versie||'')+'</td>'+
+        '<td>'+(d.geupload_op?formatDatum(d.geupload_op.slice(0,10)):'-')+'</td></tr>';
+    });
+  });
+  var w=window.open('','_blank');
+  if(!w){showToast('Sta pop-ups toe om te kunnen bundelen');return;}
+  w.document.write('<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><title>Brandpreventiedossier '+onthtml(naam)+'</title>'+
+   '<style>body{font:13px/1.5 system-ui,sans-serif;color:#0f172a;margin:32px;max-width:900px}'+
+   'h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px;border-bottom:2px solid #003366;padding-bottom:4px}'+
+   '.kop{color:#64748b;margin-bottom:22px}table{border-collapse:collapse;width:100%;margin-bottom:8px}'+
+   'th,td{border-bottom:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top}'+
+   'th{background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:.4px}'+
+   '.voet{margin-top:26px;font-size:11px;color:#64748b}@media print{body{margin:0}}</style></head><body>'+
+   '<h1>Brandpreventiedossier</h1><div class="kop">'+onthtml(naam)+' &mdash; samengesteld op '+formatDatum(datumTekst(new Date()))+'</div>'+
+   '<h2>De elf onderdelen</h2><table><thead><tr><th></th><th>Onderdeel</th><th>Status</th><th>Datum</th></tr></thead><tbody>'+rijen+'</tbody></table>'+
+   '<h2>Controles en onderhoud</h2>'+(keur?'<table><thead><tr><th>Wat</th><th>Type</th><th>Uitvoerder</th><th>Laatste</th><th>Vervalt</th></tr></thead><tbody>'+keur+'</tbody></table>':'<p>Geen keuringen aangeduid als onderdeel van dit dossier.</p>')+
+   '<h2>Documenten in het dossier</h2>'+(docs?'<table><thead><tr><th>Type</th><th>Titel</th><th>Versie</th><th>Datum</th></tr></thead><tbody>'+docs+'</tbody></table>':'<p>Nog geen documenten.</p>')+
+   '<div class="voet">Dit overzicht toont wat er in het dossier zit en van wanneer het dateert. '+
+   'De wetgeving legt voor het brandpreventiedossier geen termijnen op; ze bepaalt enkel dat het wordt bijgewerkt. '+
+   'Ter beschikking te houden van het comit\u00e9, de met het toezicht belaste ambtenaren en de openbare hulpdiensten.</div>'+
+   '</body></html>');
+  w.document.close();
+}
+
 function laadKeuringen(){
   if(!huidigeBedrijfId)return;
   document.getElementById('keuringenNieuwKnop').style.display=magKeuringenBeheren()?'':'none';
@@ -2317,7 +2521,7 @@ function verwijderDocument(id,code,titel){
 }
 
 function renderDocumenten(data){
-  var typeLabels={RPT:'Rapport',RIS:'Risicoanalyse',GPP:'GPP',JAP:'JAP',ADV:'Advies',AUD:'Audit',CHL:'Checklist',TBX:'Toolbox',FOR:'Formulier',TPL:'Template'};
+  var typeLabels={RPT:'Rapport',RIS:'Risicoanalyse',GPP:'GPP',JAP:'JAP',ADV:'Advies',AUD:'Audit',CHL:'Checklist',TBX:'Toolbox',FOR:'Formulier',TPL:'Template',BRA:'Brandrisicoanalyse',BBD:'Brandbestrijdingsdienst',BPR:'Schriftelijke procedures',EVP:'Evacuatieplan',ITD:'Interventiedossier',EVO:'Vaststellingen oefening',BMP:'Beschermingsmiddelen',AFW:'Afwijking art. 52 ARAB',HLP:'Info hulpdienst'};
   var plan=data.filter(function(d){return d.type==='GPP'||d.type==='JAP';});
   var overige=data.filter(function(d){return d.type!=='GPP'&&d.type!=='JAP';});
   function renderRijen(tbodyId,rows,leegText){
@@ -2960,7 +3164,7 @@ function laadKeuringTypes(callback){
 function renderKeuringTypesTabel(){
   document.getElementById('keuringTypesCount').textContent=alleKeuringTypes.length+' types';
   var tbody=document.getElementById('keuringTypesTabel');
-  if(!alleKeuringTypes.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">Nog geen keuringstypes.</td></tr>';return;}
+  if(!alleKeuringTypes.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">Nog geen keuringstypes.</td></tr>';return;}
   tbody.innerHTML='';
   alleKeuringTypes.forEach(function(t){
     var tr=document.createElement('tr');
@@ -2968,8 +3172,9 @@ function renderKeuringTypesTabel(){
       '<td><span class="badge '+(t.domein==='milieu'?'onvolledig':'rijklaar')+'">'+(t.domein==='milieu'?'Milieu':'Veiligheid')+'</span></td>'+
       '<td>'+(t.wettelijke_basis||'-')+'</td>'+
       '<td>'+(t.standaard_periodiciteit_maanden?t.standaard_periodiciteit_maanden+' mnd':'-')+'</td>'+
+      '<td>'+(t.in_brandpreventiedossier?'<span class="badge rijklaar">In dossier</span>':'-')+'</td>'+
       '<td><span class="badge '+(t.actief?'rijklaar':'niet_rijklaar')+'">'+(t.actief?'Actief':'Gearchiveerd')+'</span></td>'+
-      '<td><button class="btn-add-sm" onclick="toggleKeuringTypeActief(\''+t.id+'\','+(!t.actief)+')">'+(t.actief?'Archiveer':'Herstel')+'</button></td>';
+      '<td><button class="btn-add-sm" onclick="toggleKeuringTypeActief(\''+t.id+'\','+(!t.actief)+')">'+(t.actief?'Archiveer':'Herstel')+'</button> '+bpdKnopHtml(t)+'</td>';
     tbody.appendChild(tr);
   });
 }
@@ -2994,6 +3199,25 @@ function nieuwKeuringType(){
       showToast('Keuringstype toegevoegd');
       laadKeuringTypes(renderKeuringTypesTabel);
     });
+}
+
+function bpdKnopHtml(t){
+  var aan=!!t.in_brandpreventiedossier;
+  return '<button class="btn-add-sm" onclick="toggleKeuringTypeBpd(&#39;'+t.id+'&#39;,'+(!aan)+')">'+
+    (aan?'Uit dossier':'In dossier')+'</button>';
+}
+
+// De vlag staat op het TYPE en niet op de keuring: zo duidt de superbeheerder
+// hem één keer aan en klopt onderdeel 8 van het brandpreventiedossier bij
+// elke klant, in plaats van twintig keer aangevinkt en de eenentwintigste keer
+// vergeten. Dat onderdeel is breder dan brand alleen: ook gas, verwarming,
+// airco en de elektrische installatie horen erbij.
+function toggleKeuringTypeBpd(id,waarde){
+  sb.from('keuring_types').update({in_brandpreventiedossier:waarde}).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast(waarde?'Telt mee voor het brandpreventiedossier':'Uit het brandpreventiedossier gehaald');
+    laadKeuringTypes(renderKeuringTypesTabel);
+  });
 }
 
 // Archiveren, nooit hard verwijderen: een type dat al aan keuringen hangt moet
