@@ -78,35 +78,24 @@ function ontsnap(tekst) {
 }
 
 // ---------------------------------------------------------------------------
-// De pagina's die een bezoeker na het klikken te zien krijgt
+// Waarom deze functie geen pagina teruggeeft maar doorstuurt
 // ---------------------------------------------------------------------------
-// Bewust hier en niet op de website: dit moet blijven werken ook als de site
-// verhuist, en het moet er zijn op het moment dat de functie antwoordt.
-function pagina(titel, boodschap, kleur) {
-  const html = `<!doctype html>
-<html lang="nl"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>${ontsnap(titel)} — PrevX</title>
-<style>
-  body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#f1f5f9;color:#334155}
-  .kaart{max-width:460px;margin:12vh auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08)}
-  .kop{background:#003366;padding:18px 24px;color:#fff;font-weight:800;letter-spacing:.5px;font-size:15px}
-  .inhoud{padding:24px}
-  h1{font-size:19px;margin:0 0 10px;color:${kleur}}
-  p{font-size:14px;line-height:1.6;margin:0 0 14px}
-  a.knop{display:inline-block;background:#003366;color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600}
-</style></head>
-<body><div class="kaart">
-  <div class="kop">PREVX</div>
-  <div class="inhoud">
-    <h1>${ontsnap(titel)}</h1>
-    <p>${boodschap}</p>
-    <a class="knop" href="${SITE_URL}">Naar prevx.be</a>
-  </div>
-</div></body></html>`;
-  return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+// Supabase weigert HTML te serveren vanaf functions/v1 op het gedeelde
+// supabase.co-domein: het overschrijft Content-Type naar text/plain en zet er
+// X-Content-Type-Options: nosniff bij. Een pagina teruggeven kan hier dus
+// niet -- de bezoeker krijgt de broncode als kale tekst te zien. Dat is geen
+// bug maar beleid: een gedeeld domein waarop iedereen willekeurige pagina's
+// kan hosten, is precies wat phishers zoeken.
+//
+// Dus doet deze functie het databankwerk en stuurt ze de bezoeker daarna door
+// naar een gewone pagina op prevx.be. Dat is meer dan een omweg om een
+// beperking: de bezoeker ziet nu prevx.be in zijn adresbalk in plaats van een
+// supabase.co-adres, en dat is precies wat je wil bij een link uit een mail.
+//
+// LET OP: de one-click-POST van Gmail en Outlook krijgt GEEN omleiding. Die
+// verwacht een kale 200 en volgt niets -- zie uitschrijven(..., stil).
+function naarPagina(pad) {
+  return new Response(null, { status: 302, headers: { Location: `${SITE_URL}/${pad}` } });
 }
 
 function json(req, data, status) {
@@ -263,19 +252,11 @@ async function bevestigen(req, sb, token) {
     // Ook het normale geval: iemand klikt de link een tweede keer. Het token is
     // dan al gewist, dus we komen hier. Geen foutmelding tonen aan wie gewoon
     // twee keer duwde -- zeggen wat er aan de hand is volstaat.
-    return pagina(
-      'Deze link is al gebruikt',
-      'Je inschrijving is waarschijnlijk al bevestigd. Krijg je binnenkort geen nieuwsbrief, schrijf je dan gerust opnieuw in.',
-      '#003366'
-    );
+    return naarPagina('nieuwsbrief-link');
   }
 
   if (abonnee.bevestig_verloopt_op && new Date(abonnee.bevestig_verloopt_op) < new Date()) {
-    return pagina(
-      'Deze link is vervallen',
-      'Bevestigingslinks blijven zeven dagen geldig. Schrijf je opnieuw in op de website, dan sturen we een verse link.',
-      '#E97F02'
-    );
+    return naarPagina('nieuwsbrief-link');
   }
 
   const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
@@ -290,14 +271,10 @@ async function bevestigen(req, sb, token) {
 
   if (error) {
     console.error('Bevestigen faalde:', error);
-    return pagina('Er ging iets mis', 'Probeer de link straks nog eens. Blijft het misgaan, laat het ons weten.', '#dc2626');
+    return naarPagina('nieuwsbrief-fout');
   }
 
-  return pagina(
-    'Je inschrijving is bevestigd',
-    'Bedankt. Je krijgt vanaf nu de nieuwsbrief van PrevX. Elke mail heeft onderaan een uitschrijflink, voor als het je toch niet bevalt.',
-    '#3FBF3F'
-  );
+  return naarPagina('nieuwsbrief-bevestigd');
 }
 
 // ---------------------------------------------------------------------------
@@ -320,11 +297,7 @@ async function uitschrijven(req, sb, token, stil) {
 
   if (!abonnee) {
     if (stil) return new Response('ok', { status: 200 });
-    return pagina(
-      'Deze link kennen we niet',
-      'Mogelijk is je adres al uit de lijst gehaald. Krijg je toch nog mail van ons, laat het ons dan weten.',
-      '#E97F02'
-    );
+    return naarPagina('nieuwsbrief-link');
   }
 
   // Wie al afgemeld is nog eens afmelden hoeft niet, maar mag ook geen fout
@@ -338,16 +311,12 @@ async function uitschrijven(req, sb, token, stil) {
     if (error) {
       console.error('Uitschrijven faalde:', error);
       if (stil) return new Response('fout', { status: 500 });
-      return pagina('Er ging iets mis', 'We konden je uitschrijving niet verwerken. Probeer het straks nog eens.', '#dc2626');
+      return naarPagina('nieuwsbrief-fout');
     }
   }
 
   if (stil) return new Response('ok', { status: 200 });
-  return pagina(
-    'Je bent uitgeschreven',
-    'Je krijgt geen nieuwsbrief meer van PrevX. Rapporten en berichten over je dossier blijven wel gewoon toekomen — die staan hier los van.',
-    '#003366'
-  );
+  return naarPagina('nieuwsbrief-uitgeschreven');
 }
 
 // ---------------------------------------------------------------------------
@@ -371,12 +340,12 @@ async function verwerk(req) {
   const token = url.searchParams.get('token');
 
   if (actie === 'bevestigen') {
-    if (!token) return pagina('Link onvolledig', 'Er ontbreekt iets aan deze link. Kopieer hem volledig uit de mail.', '#E97F02');
+    if (!token) return naarPagina('nieuwsbrief-link');
     return await bevestigen(req, sb, token);
   }
 
   if (actie === 'uitschrijven') {
-    if (!token) return pagina('Link onvolledig', 'Er ontbreekt iets aan deze link. Kopieer hem volledig uit de mail.', '#E97F02');
+    if (!token) return naarPagina('nieuwsbrief-link');
     return await uitschrijven(req, sb, token, req.method === 'POST');
   }
 
