@@ -107,9 +107,26 @@ function voettekst(uitschrijfUrl) {
 </table>`;
 }
 
-function bouwHtml(campagneHtml, uitschrijfUrl) {
+// De voorbeeldtekst (preheader) is het regeltje dat Gmail en Outlook naast het
+// onderwerp tonen. Hij hoort ONZICHTBAAR bovenaan de mail te staan, niet in de
+// zichtbare inhoud -- vandaar de verborgen div. mso-hide:all is er speciaal voor
+// Outlook, dat display:none op die plek negeert.
+//
+// De tweede rij met onzichtbare tekens is geen opvulsel om het opvulsel: zonder
+// die tekens zoekt de mailclient na jouw regeltje gewoon verder in de inhoud en
+// plakt daar de eerste woorden van je titel achter. Die tekens duwen dat weg.
+function preheader(tekst) {
+  const schoon = String(tekst || '').trim();
+  if (!schoon) return '';
+  const veilig = schoon.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const opvulling = '&#847;&zwnj;&nbsp;'.repeat(60);
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${veilig}</div>` +
+         `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${opvulling}</div>`;
+}
+
+function bouwHtml(campagneHtml, uitschrijfUrl, voorbeeldtekst) {
   const romp = String(campagneHtml || '').split('{{uitschrijflink}}').join(uitschrijfUrl);
-  return `
+  return `${preheader(voorbeeldtekst)}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9">
   <tr><td align="center" style="padding:24px 12px">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:12px">
@@ -182,7 +199,7 @@ async function verwerk(req) {
 
   const { data: campagne, error: cFout } = await sb
     .from('nieuwsbrief_campagnes')
-    .select('id,onderwerp,html,tekst,status')
+    .select('id,onderwerp,voorbeeldtekst,html,tekst,status')
     .eq('id', campagne_id)
     .maybeSingle();
 
@@ -208,7 +225,7 @@ async function verwerk(req) {
       from: AFZENDER,
       to: [String(test_naar)],
       subject: `[TEST] ${campagne.onderwerp}`,
-      html: bouwHtml(campagne.html, nepUrl),
+      html: bouwHtml(campagne.html, nepUrl, campagne.voorbeeldtekst),
       text: bouwTekst(campagne.tekst, nepUrl)
     };
     if (ANTWOORD_AAN) bericht.reply_to = ANTWOORD_AAN;
@@ -278,7 +295,7 @@ async function verwerk(req) {
         from: AFZENDER,
         to: [rij.email],
         subject: campagne.onderwerp,
-        html: bouwHtml(campagne.html, uitschrijfUrl),
+        html: bouwHtml(campagne.html, uitschrijfUrl, campagne.voorbeeldtekst),
         text: bouwTekst(campagne.tekst, uitschrijfUrl),
         // Hiermee toont Gmail zijn eigen Uitschrijven-knop naast de afzender.
         // Dat is geen beleefdheid maar reputatiebeheer: wie die knop niet

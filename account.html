@@ -6557,8 +6557,16 @@ function nbUploadAfbeelding(invoer){
       return;
     }
     var url=sb.storage.from('nieuwsbrief-media').getPublicUrl(pad).data.publicUrl;
-    nbVoegInTekst('<img src="'+url+'" width="536" style="width:100%;max-width:536px;height:auto;display:block;border:0" alt="">');
-    showToast('Afbeelding toegevoegd');
+
+    // Outlook blokkeert standaard afbeeldingen van een afzender die de lezer nog
+    // niet vertrouwt. Zonder alt-tekst staat er dan een leeg kadertje waar je
+    // logo hoorde te staan. Deze beschrijving is dus geen bijzaak voor
+    // schermlezers alleen -- ze is wat de meeste lezers de eerste keer zien.
+    var omschrijving=prompt('Korte beschrijving van de afbeelding.\n\nOutlook toont deze tekst zolang de lezer de afbeeldingen niet inlaadt.','');
+    var altTekst=(omschrijving||'').replace(/"/g,'&quot;');
+
+    nbVoegInTekst('<img src="'+url+'" width="536" style="width:100%;max-width:536px;height:auto;display:block;border:0" alt="'+altTekst+'">');
+    showToast(altTekst?'Afbeelding toegevoegd':'Afbeelding toegevoegd, maar zonder beschrijving');
   });
 }
 
