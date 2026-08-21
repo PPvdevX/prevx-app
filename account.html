@@ -921,7 +921,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
           <div class="table-header"><span class="table-title">Bedrijven</span>
             <span class="table-count" id="klantenCount">0</span>
           </div>
-          <table><thead><tr><th>Bedrijfsnaam</th><th>Klantcode</th><th>Pre-inspecties</th><th>Actiepunten</th><th>Documenten</th><th>Planning</th><th>Kennisbank</th><th></th></tr></thead>
+          <table><thead id="klantenKop"><tr><th>Bedrijfsnaam</th><th>Klantcode</th><th></th></tr></thead>
           <tbody id="klantenTabel"><tr class="loading-row"><td colspan="8"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
         </div>
       </div>
@@ -3171,17 +3171,24 @@ function verwijderBedrijf(bedrijfId,naam){
   });
 }
 
+// De kolommen komen uit de modulecatalogus, niet uit een lijst hier. Voordien
+// stonden er vijf hardgecodeerd en ontbraken meldingen, vuurvergunning en LMRA;
+// sinds een pakket alle acht aanstuurt (0094) kon je de stand van die drie hier
+// niet meer zien, laat staan bijstellen.
 function laadKlanten(){
-  sb.from('bedrijven').select('id,naam,klantcode').order('naam').then(function(br){
-    var bedrijven=br.data||[];
-    sb.from('bedrijf_modules').select('bedrijf_id,module_key,actief').then(function(mr){
-      var modules={};
-      (mr.data||[]).forEach(function(m){
-        if(!modules[m.bedrijf_id])modules[m.bedrijf_id]={};
-        modules[m.bedrijf_id][m.module_key]=m.actief;
-      });
-      renderKlantenTabel(bedrijven,modules);
+  Promise.all([
+    sb.from('bedrijven').select('id,naam,klantcode').order('naam'),
+    sb.from('bedrijf_modules').select('bedrijf_id,module_key,actief'),
+    sb.from('modules').select('key,naam,volgorde').eq('actief',true).order('volgorde')
+  ]).then(function(r){
+    var bedrijven=r[0].data||[];
+    var modules={};
+    (r[1].data||[]).forEach(function(m){
+      if(!modules[m.bedrijf_id])modules[m.bedrijf_id]={};
+      modules[m.bedrijf_id][m.module_key]=m.actief;
     });
+    alleModules=r[2].data||[];
+    renderKlantenTabel(bedrijven,modules);
   });
 }
 
@@ -3649,32 +3656,63 @@ function nieuwPakket(){
 function renderKlantenTabel(bedrijven,modules){
   document.getElementById('klantenCount').textContent=bedrijven.length+' bedrijven';
   var tbody=document.getElementById('klantenTabel');
-  if(!bedrijven.length){tbody.innerHTML='<tr class="empty-row"><td colspan="8">Geen bedrijven.</td></tr>';return;}
+  // Twee vaste kolommen, één per module, en de knoppenkolom -- meetellen in
+  // plaats van vastzetten, want het aantal modules ligt niet meer vast.
+  if(!bedrijven.length){tbody.innerHTML='<tr class="empty-row"><td colspan="'+(alleModules.length+3)+'">Geen bedrijven.</td></tr>';return;}
   tbody.innerHTML='';
+  // Koprij mee opbouwen, anders lopen kolommen en bolletjes uiteen zodra er een
+  // module bijkomt.
+  document.getElementById('klantenKop').innerHTML='<tr><th>Bedrijfsnaam</th><th>Klantcode</th>'+
+    alleModules.map(function(m){return '<th>'+m.naam+'</th>';}).join('')+'<th></th></tr>';
+
   bedrijven.forEach(function(b){
-    var preinspectiesActief=!(modules[b.id]&&modules[b.id].preinspecties===false);
-    var actiepuntenActief=!(modules[b.id]&&modules[b.id].actiepunten===false);
-    var documentenActief=!(modules[b.id]&&modules[b.id].documenten===false);
-    var planningActief=!(modules[b.id]&&modules[b.id].planning===false);
-    var kennisbankActief=!(modules[b.id]&&modules[b.id].kennisbank===false);
     var tr=document.createElement('tr');
     tr.innerHTML='<td><input value="'+b.naam.replace(/"/g,'&quot;')+'" onchange="wijzigBedrijfsnaam(\''+b.id+'\',this)" style="width:160px;border:1px solid var(--gray-300);border-radius:6px;padding:5px 7px;font-weight:500;font-size:13px"></td>'+
       // Deze code geeft de klant aan zijn chauffeurs; zij voeren hem één keer in.
       '<td><code style="font-family:monospace;font-size:13px;letter-spacing:1px;background:var(--gray-100);padding:3px 8px;border-radius:5px">'+(b.klantcode||'—')+'</code></td>'+
-      '<td>'+moduleDot(b.id,'preinspecties','Pre-inspecties',preinspectiesActief)+'</td>'+
-      '<td>'+moduleDot(b.id,'actiepunten','Actiepunten',actiepuntenActief)+'</td>'+
-      '<td>'+moduleDot(b.id,'documenten','Documenten',documentenActief)+'</td>'+
-      '<td>'+moduleDot(b.id,'planning','Planning',planningActief)+'</td>'+
-      '<td>'+moduleDot(b.id,'kennisbank','Kennisbank',kennisbankActief)+'</td>'+
+      alleModules.map(function(m){
+        var aan=moduleStaatAan(modules[b.id]||{},m.key);
+        return '<td>'+moduleDot(b.id,m.key,m.naam,aan)+'</td>';
+      }).join('')+
       '<td style="white-space:nowrap"><button class="btn-add-sm" onclick="bekijkDossier(\''+b.id+'\',\''+b.naam.replace(/'/g,"\\'")+'\')">Bekijk dossier</button> '+
         '<button class="btn-add-sm" onclick="verwijderBedrijf(\''+b.id+'\',\''+b.naam.replace(/'/g,"\\'")+'\')">Verwijder</button></td>';
     tbody.appendChild(tr);
   });
 }
 
+// Dezelfde regel als de zijbalk (menuGroepZichtbaar): een module die je erbij
+// koopt staat uit tot er een rij zegt van wel; een dossiermodule staat aan tot
+// er een rij zegt van niet. De optIn-vlag uit MENU is daarvan de bron, zodat
+// deze lijst nooit iets anders beweert dan wat de klant werkelijk ziet.
+function moduleIsOptIn(key){
+  return MENU.some(function(e){return e.module===key&&e.optIn;});
+}
+
+function moduleStaatAan(standen,key){
+  if(moduleIsOptIn(key))return standen[key]===true;
+  return standen[key]!==false;
+}
+
+// Vuurvergunning aanzetten is meer dan een vlag: de werktypes en de
+// standaardvragen moeten mee gekopieerd worden, anders opent de klant een lege
+// vragenlijst. Vandaar de omweg via de RPC, die precies dat doet en die je
+// tweemaal mag aanroepen zonder schade (0050).
+function toggleKlantModuleSlim(bedrijfId,moduleKey,actief){
+  if(moduleKey==='vuurvergunning'&&actief){
+    if(!confirm('Vuurvergunning activeren voor deze klant?\n\nDe werktypes en de PrevX-standaardvragen worden gekopieerd.'))return;
+    sb.rpc('rpc_vuurvergunning_activeren',{p_bedrijf_id:bedrijfId}).then(function(r){
+      if(r.error){showToast('Fout: '+r.error.message);return;}
+      showToast('Vuurvergunning geactiveerd');
+      laadKlanten();
+    });
+    return;
+  }
+  toggleKlantModule(bedrijfId,moduleKey,actief);
+}
+
 function moduleDot(bedrijfId,moduleKey,label,actief){
   var titel=label+': '+(actief?'actief':'inactief')+' — klik om te '+(actief?'deactiveren':'activeren');
-  return '<button class="module-dot '+(actief?'aan':'uit')+'" title="'+titel+'" onclick="toggleKlantModule(\''+bedrijfId+'\',\''+moduleKey+'\','+(!actief)+')"></button>';
+  return '<button class="module-dot '+(actief?'aan':'uit')+'" title="'+titel+'" onclick="toggleKlantModuleSlim(\''+bedrijfId+'\',\''+moduleKey+'\','+(!actief)+')"></button>';
 }
 
 function bekijkDossier(bedrijfId,bedrijfNaam){
