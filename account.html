@@ -1077,6 +1077,18 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 
         <div class="table-card inklapbaar dicht">
           <div class="table-header">
+            <span class="table-title">Gevarenaanduidingen</span>
+            <span style="display:flex;align-items:center;gap:10px">
+              <span class="table-count" id="gevaarzinnenCount">0</span>
+              <button class="btn-add-sm" onclick="nieuweGevaarzin()">+ H-zin</button>
+            </span>
+          </div>
+          <table><thead><tr><th>Code</th><th>Tekst</th><th>Titel 2</th><th></th></tr></thead>
+          <tbody id="gevaarzinnenTabel"><tr class="loading-row"><td colspan="4"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+
+        <div class="table-card inklapbaar dicht">
+          <div class="table-header">
             <span class="table-title">Pakketten</span>
             <span style="display:flex;align-items:center;gap:10px">
               <span class="table-count" id="pakkettenCount">0</span>
@@ -3088,6 +3100,270 @@ var kennisbankToegewezenData=[];
 var kennisbankBibliotheekData=[];
 var kennisbankToegewezenIdsData=[];
 
+// Codelijst met gevarenaanduidingen. De vlag titel2 dient om het in een scherm
+// te tonen; het oordeel over een product velt valt_onder_titel2 in de databank.
+var alleGevaarzinnen=[];
+
+function laadGevaarzinnen(callback){
+  sb.from('gevaarzinnen').select('*').order('volgorde').order('code').then(function(r){
+    alleGevaarzinnen=r.data||[];
+    if(callback)callback();
+  });
+}
+
+function renderGevaarzinnenTabel(){
+  document.getElementById('gevaarzinnenCount').textContent=alleGevaarzinnen.length+' aanduidingen';
+  var tbody=document.getElementById('gevaarzinnenTabel');
+  if(!alleGevaarzinnen.length){
+    tbody.innerHTML='<tr class="empty-row"><td colspan="4">Nog geen aanduidingen.</td></tr>';return;
+  }
+  tbody.innerHTML='';
+  alleGevaarzinnen.forEach(function(g){
+    var tr=document.createElement('tr');
+    if(!g.actief)tr.style.opacity='.55';
+    tr.innerHTML='<td style="font-family:monospace;font-weight:600">'+g.code+'</td>'+
+      '<td><input value="'+(g.tekst||'').replace(/"/g,'&quot;')+'" onchange="wijzigGevaarzin(\''+g.code+'\',this.value)" style="width:100%;min-width:260px;border:1px solid var(--gray-300);border-radius:6px;padding:5px 7px;font-size:13px"></td>'+
+      '<td>'+(g.titel2?'<span class="badge niet_rijklaar">titel 2</span>':'<span style="color:var(--gray-400)">-</span>')+'</td>'+
+      '<td><button class="btn-add-sm" onclick="toggleGevaarzinActief(\''+g.code+'\','+(!g.actief)+')">'+(g.actief?'Archiveer':'Herstel')+'</button></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function wijzigGevaarzin(code,tekst){
+  if(!tekst.trim()){showToast('De tekst mag niet leeg zijn.');laadGevaarzinnen(renderGevaarzinnenTabel);return;}
+  sb.from('gevaarzinnen').update({tekst:tekst.trim()}).eq('code',code).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Opgeslagen');
+  });
+}
+
+function toggleGevaarzinActief(code,actief){
+  sb.from('gevaarzinnen').update({actief:actief}).eq('code',code).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    laadGevaarzinnen(renderGevaarzinnenTabel);
+  });
+}
+
+function nieuweGevaarzin(){
+  var code=prompt('Code van de gevarenaanduiding (bv. H315 of EUH208):');
+  if(!code||!code.trim())return;
+  code=code.trim().toUpperCase();
+  if(!/^(H|EUH)\d+[A-Z]*$/.test(code)){showToast('Een code ziet eruit als H315, H360FD of EUH208.');return;}
+  var tekst=prompt('De officiele tekst bij '+code+'.\n\nNeem ze letterlijk over van het etiket of uit de CLP-verordening -- deze zin komt bij de klant in beeld.');
+  if(!tekst||!tekst.trim())return;
+  // De titel2-vlag zetten we hier bewust NIET: welke codes onder titel 2 vallen,
+  // ligt vast in valt_onder_titel2 (0098). Een vinkje hier zou de indruk wekken
+  // dat je dat oordeel kan bijsturen, en dat kan je niet.
+  sb.from('gevaarzinnen').insert({code:code,tekst:tekst.trim(),volgorde:100}).then(function(r){
+    if(r.error){
+      if(r.error.code==='23505')showToast('Deze code staat er al.');
+      else showToast('Fout: '+r.error.message);
+      return;
+    }
+    showToast('Aanduiding toegevoegd');
+    laadGevaarzinnen(renderGevaarzinnenTabel);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Chemische agentia
+// ---------------------------------------------------------------------------
+// De lijst is niet het doel. Het doel is wat eruit volgt: welk product onder
+// titel 2 van boek VI valt, en waar het blad ontbreekt waarop die beoordeling
+// hoort te steunen. Dat oordeel komt uit de databank (valt_onder_titel2,
+// migratie 0098) en wordt hier alleen getoond -- zodat scherm en app nooit iets
+// anders beweren dan wat er opgeslagen staat.
+var chemieProducten=[];
+var gevaarTeksten={};
+
+// Bijwerken mag PrevX, en de klant-beheerder van dit bedrijf. Dezelfde grens als
+// in de policies van 0098: een productlijst die enkel de adviseur kan aanvullen,
+// veroudert tussen twee bezoeken door -- en dan wekt ze vertrouwen dat ze niet
+// verdient.
+function magChemieBeheren(){
+  return isSuperbeheerder ||
+    (eigenGebruiker && eigenGebruiker.dossier_rol === 'klant_beheerder'
+      && huidigeBedrijfId === eigenBedrijfId);
+}
+
+function laadChemie(){
+  if(!huidigeBedrijfId)return;
+  document.getElementById('chemieNieuwKnop').style.display=magChemieBeheren()?'':'none';
+  Promise.all([
+    sb.from('chemische_producten').select('*').eq('bedrijf_id',huidigeBedrijfId).order('naam'),
+    sb.from('gevaarzinnen').select('code,tekst,titel2').eq('actief',true)
+  ]).then(function(r){
+    if(r[0].error){showToast('Fout: '+r[0].error.message);return;}
+    chemieProducten=r[0].data||[];
+    gevaarTeksten={};
+    (r[1].data||[]).forEach(function(g){gevaarTeksten[g.code]={tekst:g.tekst,titel2:g.titel2};});
+    renderChemie();
+  });
+}
+
+// Codes zoals ze op het etiket staan: hoofdletters, geen spaties, en de
+// EUH-codes horen er evengoed in als de H-codes.
+function leesHZinnen(tekst){
+  return String(tekst||'').split(/[,;\s]+/)
+    .map(function(c){return c.trim().toUpperCase();})
+    .filter(function(c){return /^(H|EUH)\d+[A-Za-z]*$/i.test(c);});
+}
+
+function chemieGevaarBadges(codes){
+  if(!codes||!codes.length)return '<span style="color:var(--gray-400)">-</span>';
+  return codes.map(function(c){
+    var g=gevaarTeksten[c];
+    // Een code waarvan we de tekst niet kennen, tonen we als code. Weglaten zou
+    // erger zijn: dan lijkt een product ongevaarlijk omdat wij een zin missen.
+    var titel=g?g.tekst:'Tekst nog niet in de codelijst';
+    var stijl=(g&&g.titel2)?'background:var(--red-bg);color:var(--red-tekst)':'background:var(--gray-100);color:var(--gray-700)';
+    return '<span class="badge" style="'+stijl+';margin:0 4px 4px 0" title="'+String(titel).replace(/"/g,'&quot;')+'">'+c+'</span>';
+  }).join('');
+}
+
+function jarenGeleden(datum){
+  if(!datum)return null;
+  var d=new Date(datum+'T00:00:00');
+  if(isNaN(d))return null;
+  return (new Date()-d)/(365.25*24*3600*1000);
+}
+
+function renderChemie(){
+  var actief=chemieProducten.filter(function(p){return p.actief;});
+  document.getElementById('chemieCount').textContent=actief.length+' producten';
+
+  var zonderVib=actief.filter(function(p){return !p.vib_url;}).length;
+  var titel2=actief.filter(function(p){return p.onder_titel2;}).length;
+  var oud=actief.filter(function(p){var j=jarenGeleden(p.vib_datum);return p.vib_url&&(j===null||j>5);}).length;
+
+  function kaart(getal,tekst,kleur,uitleg){
+    var stijl=kleur==='rood'?'background:var(--red-bg);color:var(--red-tekst)'
+             :kleur==='oranje'?'background:var(--orange-bg);color:var(--orange)'
+             :'background:var(--gray-100);color:var(--gray-700)';
+    return '<div style="'+stijl+';border-radius:var(--radius);padding:12px 16px;min-width:170px">'+
+      '<div style="font-size:22px;font-weight:700;line-height:1.2">'+getal+'</div>'+
+      '<div style="font-size:12px;font-weight:600">'+tekst+'</div>'+
+      '<div style="font-size:11px;opacity:.85;margin-top:3px;line-height:1.4">'+uitleg+'</div></div>';
+  }
+
+  document.getElementById('chemieSignalen').innerHTML=
+    kaart(zonderVib,'zonder veiligheidsinformatieblad',zonderVib?'rood':'grijs',
+          'Zonder blad kan de wettelijke toets niet gebeuren.')+
+    kaart(titel2,'onder titel 2 van boek VI',titel2?'rood':'grijs',
+          'Kankerverwekkend, mutageen, reprotoxisch of hormoonontregelend.')+
+    kaart(oud,'blad ouder dan 5 jaar of zonder datum',oud?'oranje':'grijs',
+          'Leveranciers herzien hun bladen; niemand krijgt daar bericht van.');
+
+  var tbody=document.getElementById('chemieTabel');
+  if(!chemieProducten.length){
+    tbody.innerHTML='<tr class="empty-row"><td colspan="6">Nog geen producten vastgelegd.</td></tr>';
+    return;
+  }
+  tbody.innerHTML='';
+  var mag=magChemieBeheren();
+  chemieProducten.forEach(function(p){
+    var tr=document.createElement('tr');
+    if(!p.actief)tr.style.opacity='.55';
+
+    var vib=p.vib_url
+      ? '<a href="'+p.vib_url+'" target="_blank" rel="noopener">Bekijk</a>'+
+        (p.vib_datum?'<div style="font-size:11px;color:var(--gray-500)">'+formatDatum(p.vib_datum)+'</div>':
+                     '<div style="font-size:11px;color:var(--orange)">datum onbekend</div>')
+      : '<span class="badge niet_rijklaar">ontbreekt</span>';
+    if(mag){
+      vib+='<label class="btn-add-sm" style="display:inline-block;margin-top:6px">'+(p.vib_url?'Vervang':'Opladen')+
+        '<input type="file" accept="application/pdf" style="display:none" onchange="uploadVib(\''+p.id+'\',this)"></label>';
+    }
+
+    var actie=mag
+      ? '<button class="btn-add-sm" onclick="toggleChemischProductActief(\''+p.id+'\','+(!p.actief)+')">'+(p.actief?'Archiveer':'Herstel')+'</button>'
+      : '-';
+
+    tr.innerHTML='<td><div style="font-weight:500">'+p.naam+'</div>'+
+        (p.toepassing?'<div style="font-size:12px;color:var(--gray-500)">'+p.toepassing+'</div>':'')+
+        (p.onder_titel2?'<span class="badge niet_rijklaar" style="margin-top:4px;display:inline-block">titel 2</span>':'')+'</td>'+
+      '<td>'+(p.leverancier||'-')+'</td>'+
+      '<td>'+(p.locatie||'-')+(p.hoeveelheid?'<div style="font-size:12px;color:var(--gray-500)">'+p.hoeveelheid+'</div>':'')+'</td>'+
+      '<td style="max-width:220px">'+chemieGevaarBadges(p.h_zinnen)+'</td>'+
+      '<td>'+vib+'</td>'+
+      '<td style="white-space:nowrap">'+actie+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function toonChemieFormulier(){
+  var el=document.getElementById('chemieNieuwFormulier');
+  el.style.display=el.style.display==='none'?'':'none';
+}
+
+function nieuwChemischProduct(){
+  var naam=document.getElementById('chNaam').value.trim();
+  if(!naam){showToast('Geef minstens de naam die op het etiket staat.');return;}
+  var rij={
+    bedrijf_id:huidigeBedrijfId,
+    naam:naam,
+    leverancier:document.getElementById('chLeverancier').value.trim()||null,
+    toepassing:document.getElementById('chToepassing').value.trim()||null,
+    locatie:document.getElementById('chLocatie').value.trim()||null,
+    hoeveelheid:document.getElementById('chHoeveelheid').value.trim()||null,
+    h_zinnen:leesHZinnen(document.getElementById('chHZinnen').value),
+    vib_datum:document.getElementById('chVibDatum').value||null,
+    opmerking:document.getElementById('chOpmerking').value.trim()||null,
+    toegevoegd_door:(eigenGebruiker&&eigenGebruiker.naam)||null
+  };
+  sb.from('chemische_producten').insert(rij).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    ['chNaam','chLeverancier','chToepassing','chLocatie','chHoeveelheid','chHZinnen','chVibDatum','chOpmerking']
+      .forEach(function(id){document.getElementById(id).value='';});
+    showToast('Product toegevoegd');
+    laadChemie();
+  });
+}
+
+function toggleChemischProductActief(id,actief){
+  sb.from('chemische_producten').update({actief:actief}).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast(actief?'Product hersteld':'Product gearchiveerd');
+    laadChemie();
+  });
+}
+
+// Het blad gaat via een Edge Function met de service-role naar Storage, om
+// dezelfde reden als de andere uploads (zie upload-bedrijfsmiddel-foto).
+function uploadVib(productId,input){
+  var file=input.files[0];
+  if(!file)return;
+  showToast('Veiligheidsinformatieblad opladen...');
+  sb.auth.getSession().then(function(sr){
+    var token=sr.data&&sr.data.session&&sr.data.session.access_token;
+    if(!token){showToast('Geen geldige sessie, log opnieuw in.');return;}
+    var form=new FormData();
+    form.append('access_token',token);
+    form.append('product_id',productId);
+    form.append('file',file);
+    return fetch(SUPABASE_URL+'/functions/v1/upload-vib',{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY},
+      body:form
+    }).then(function(resp){
+      return resp.json().then(function(body){return {ok:resp.ok,status:resp.status,body:body};});
+    });
+  }).then(function(res){
+    if(!res)return;
+    if(!res.ok){
+      console.error('VIB-upload mislukt:',res.status,res.body);
+      showToast('Fout bij opladen: '+((res.body&&res.body.error)||'onbekende fout ('+res.status+')'));
+      return;
+    }
+    showToast('Blad opgeladen');
+    laadChemie();
+  }).catch(function(e){
+    console.error('VIB-upload exception:',e);
+    showToast('Onverwachte fout bij opladen, zie console (F12).');
+  });
+  input.value='';
+}
+
 function laadKennisbank(){
   if(!huidigeBedrijfId)return;
   document.getElementById('kennisbankBeheerSectie').style.display=isSuperbeheerder?'':'none';
@@ -3271,6 +3547,7 @@ function laadCodelijsten(){
   laadKeuringTypes(renderKeuringTypesTabel);
   laadSectorCodes(renderSectorCodesTabel);
   laadParitaireComites(renderParitaireComitesTabel);
+  laadGevaarzinnen(renderGevaarzinnenTabel);
   // Eerst de modulecatalogus en de matrix, anders tekent de pakkettentabel haar
   // aanvinklijst leeg en lijkt elk pakket "niets aangevinkt" te hebben.
   laadModulesEnMatrix(function(){ laadPakketten(renderPakkettenTabel); });
