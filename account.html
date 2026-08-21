@@ -281,7 +281,10 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
    terwijl het over dezelfde samenwerking gaat. Een streepje links volstaat. */
 .sw-hoofd{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .sw-hoofd-links{min-width:0}
-.klant-bezoek{border-left:3px solid var(--gray-200);padding-left:14px}
+/* Geen eigen streepje meer aan de linkerkant. Met een streep links en rechts
+   stond dit blok tussen haakjes; de enige scheiding die iets zegt, is die
+   tussen de datum en de knop. */
+.klant-bezoek{padding-left:0}
 .klant-bezoek-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);margin-bottom:4px}
 .klant-bezoek-datum{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:700;color:var(--navy-text)}
 .klant-bezoek-sub{font-size:12px;color:var(--gray-500);margin-top:2px}
@@ -370,7 +373,10 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .sw-streep{width:3px;border-radius:2px;background:var(--gray-200);flex:0 0 auto}
 /* Zonder pictogram: een rode knop met "Melding maken" erop zegt het al, en het
    waarschuwingsdriehoekje herhaalde enkel wat de kleur ook zegt. */
-.knop-melding{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border:none;border-radius:var(--radius);padding:10px 20px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
+/* Gewone knophoogte, verticaal gecentreerd tegen het bezoekblok. Even hoog
+   maken als dat blok leek logisch, maar dan leest het als een rood paneel in
+   plaats van als iets waar je op duwt. */
+.knop-melding{flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border:none;border-radius:var(--radius);padding:11px 20px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
 .knop-melding:hover{filter:brightness(1.08)}
 @media (max-width:640px){
   .sw-hoofd-rechts{width:100%;flex-wrap:wrap}
