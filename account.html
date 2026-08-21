@@ -292,6 +292,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .kaart-groep{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:26px}
 /* Klein en rustig: de kaarten dragen de aandacht al, de kop hoeft alleen te
    zeggen waar je bent. */
+.kaart-leeg{font-size:13px;color:var(--gray-400);margin:0 0 18px;padding-left:2px}
 .kaart-ook{font-size:13px;color:var(--gray-500);line-height:1.6;margin:4px 0 0;padding-top:16px;border-top:1px solid var(--gray-200);max-width:640px}
 .kaart-ook a{color:var(--accent-tekst);font-weight:600;text-decoration:none}
 .kaart-ook a:hover{text-decoration:underline}
@@ -1997,14 +1998,14 @@ var keuringAssets=[];
 var klantModus=false;
 
 var KLANT_KAARTEN=[
-  {groep:'opvolging',key:'actiepunten',naam:'Actiepunten',module:'actiepunten',icoon:'actiepunten',
+  {groep:'dossier',key:'actiepunten',naam:'Actiepunten',module:'actiepunten',icoon:'actiepunten',
    sub:'Adviezen en vaststellingen uit onze bezoeken, met opvolging.'},
   // Meldingen stonden enkel in de zijbalk, en die heeft een klant niet. Wie
   // vanaf de vloer iets meldt, zag zijn melding dus nergens terug -- en dat is
   // erger dan geen meldknop: de melder denkt dat er iets mee gebeurt.
-  {groep:'opvolging',key:'meldingen',naam:'Meldingen',module:'actiepunten',icoon:'meldingen',
+  {groep:'dossier',key:'meldingen',naam:'Meldingen',module:'actiepunten',icoon:'meldingen',
    sub:'Wat uw mensen melden vanaf de vloer, en wat ermee gebeurd is.'},
-  {groep:'opvolging',key:'keuringen',naam:'Keuringen',module:'planning',icoon:'keuringen',
+  {groep:'veiligheid',key:'keuringen',naam:'Keuringen',module:'planning',icoon:'keuringen',
    sub:'Wat wanneer vervalt, en wat er al verlopen is.'},
   {groep:'dossier',key:'documenten',naam:'Documenten',module:'documenten',icoon:'documenten',
    sub:'Risicoanalyses, verslagen, preventieplan — altijd de recentste versie.'},
@@ -2015,26 +2016,26 @@ var KLANT_KAARTEN=[
   // onbereikbaar -- in klantmodus is er geen zijbalk, dus is een kaart de enige
   // weg ernaartoe. Lezen mag hij; nakijken en afvinken blijft bij PrevX, zowel
   // in het scherm zelf als in de policies (0088).
-  {groep:'dossier',key:'brandpreventie',naam:'Brandpreventiedossier',module:'documenten',icoon:'brandpreventie',
+  {groep:'veiligheid',key:'brandpreventie',naam:'Brandpreventiedossier',module:'documenten',icoon:'brandpreventie',
    kleur:'rood',
    sub:'De elf onderdelen van het dossier, klaar om aan de hulpdiensten te geven.'},
-  {groep:'vloer',key:'voertuigen',naam:'Assets',icoon:'assets',
+  {groep:'veiligheid',key:'voertuigen',naam:'Assets',icoon:'assets',
    sub:'Uw machines, voertuigen en installaties.'},
-  {groep:'vloer',key:'lmra',naam:'LMRA',module:'lmra',icoon:'lmra',
+  {groep:'veiligheid',key:'lmra',naam:'LMRA',module:'lmra',icoon:'lmra',
    sub:'De laatste controle, vlak voor het werk begint.'},
-  {groep:'vloer',key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
+  {groep:'hygiene',key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
    sub:'Welke producten er staan, waar, en het veiligheidsinformatieblad erbij.'},
   {groep:'dossier',key:'kennisbank',naam:'Kennisbank',module:'kennisbank',icoon:'kennisbank',
    sub:'Checklists en toolboxfiches voor uw sector.'},
-  {groep:'vloer',key:'inspecties',naam:'Pre-inspecties',module:'preinspecties',icoon:'inspecties',
+  {groep:'veiligheid',key:'inspecties',naam:'Pre-inspecties',module:'preinspecties',icoon:'inspecties',
    sub:'Controles vóór gebruik, uitgevoerd in de PrevX app.'},
-  {groep:'vloer',key:'vergunningen',naam:'Vuurvergunningen',module:'vuurvergunning',icoon:'vuurvergunning',
+  {groep:'veiligheid',key:'vergunningen',naam:'Vuurvergunningen',module:'vuurvergunning',icoon:'vuurvergunning',
    sub:'Vergunningen voor brandgevaarlijk werk, aangevraagd in de app.'},
   // Staat er bewust bij zonder te werken. Een klant hoort te zien wat PrevX
   // aanbiedt en wat er in zijn formule zit; een module die je gewoon weglaat,
   // bestaat voor hem niet. De kaart gaat vanzelf open zodra de module actief
   // staat en er een scherm achter zit -- zie kaartVergrendeld().
-  {groep:'vloer',key:'vorming',naam:'Vorming &amp; opleiding',module:'vorming',icoon:'vorming',
+  {groep:'dossier',key:'vorming',naam:'Vorming &amp; opleiding',module:'vorming',icoon:'vorming',
    formule:'Formule Plus',
    sub:'Toolboxen en opleidingen voor uw medewerkers, met attesten.'}
 ];
@@ -2151,12 +2152,32 @@ function laadVolgendBezoek(){
 
 function onthtml(t){var d=document.createElement('div');d.innerHTML=t;return d.textContent;}
 
-// De groepen liggen vast en bewegen niet mee met wat toevallig actief is: een
-// kaart die je gisteren linksboven vond, staat daar vandaag weer.
+// De pagina volgt de zeven welzijnsdomeinen uit artikel 4 van de welzijnswet,
+// in de volgorde van de wet. Eén groep hoort daar niet bij en staat er bewust
+// boven: actiepunten, meldingen, documenten, planning en kennisbank zijn geen
+// domein maar instrumenten -- ze dienen alle zeven tegelijk. Ze onder een
+// domein duwen zou een indeling suggereren die niet bestaat.
+//
+// Domeinen zonder kaart worden gewoon getoond, als open plek: "Ergonomie: nog
+// niets in uw dossier". Dat is een keuze die volgt uit wat dit portaal wil zijn.
+// Is het een verzameling schermen, dan is vijf keer "niets" ontmoedigend en zet
+// je dit uit. Is het de centrale plek voor alles wat met de preventiedienst te
+// maken heeft, dan is de volledige inhoudstafel juist het punt -- ook de
+// hoofdstukken die nog blanco zijn. Een klant die niet weet dat ergonomie tot
+// zijn welzijnsbeleid hoort, komt er anders nooit achter.
+//
+// Eén woord om terug te draaien.
+var TOON_LEGE_DOMEINEN=true;
+
 var KAART_GROEPEN=[
-  {key:'opvolging',naam:'Vraagt opvolging'},
-  {key:'dossier',  naam:'Uw dossier'},
-  {key:'vloer',    naam:'Wat uw mensen gebruiken'}
+  {key:'dossier',      naam:'Uw dossier'},
+  {key:'veiligheid',   naam:'Arbeidsveiligheid'},
+  {key:'gezondheid',   naam:'Gezondheid van de werknemer'},
+  {key:'psychosociaal',naam:'Psychosociale aspecten'},
+  {key:'ergonomie',    naam:'Ergonomie'},
+  {key:'hygiene',      naam:'Arbeidshygiëne'},
+  {key:'verfraaiing',  naam:'Verfraaiing van de arbeidsplaatsen'},
+  {key:'milieu',       naam:'Leefmilieu'}
 ];
 
 function tekenKlantKaarten(){
@@ -2170,7 +2191,13 @@ function tekenKlantKaarten(){
       if(kaartVergrendeld(k)){opSlot.push(k);return false;}
       return true;
     });
-    if(kaarten.length)houder.appendChild(bouwKaartGroep(groep.naam,kaarten));
+    if(kaarten.length){houder.appendChild(bouwKaartGroep(groep.naam,kaarten));}
+    else if(TOON_LEGE_DOMEINEN&&groep.key!=='dossier'){
+      var leeg=document.createElement('p');
+      leeg.className='kaart-leeg';
+      leeg.textContent=groep.naam+': nog niets in uw dossier.';
+      houder.appendChild(leeg);
+    }
   });
 
   // Wat de klant niet afneemt, staat in één regel onderaan -- geen rij kaarten
