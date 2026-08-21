@@ -1935,6 +1935,11 @@ var klantModus=false;
 var KLANT_KAARTEN=[
   {key:'actiepunten',naam:'Actiepunten',module:'actiepunten',icoon:'actiepunten',
    sub:'Adviezen en vaststellingen uit onze bezoeken, met opvolging.'},
+  // Meldingen stonden enkel in de zijbalk, en die heeft een klant niet. Wie
+  // vanaf de vloer iets meldt, zag zijn melding dus nergens terug -- en dat is
+  // erger dan geen meldknop: de melder denkt dat er iets mee gebeurt.
+  {key:'meldingen',naam:'Meldingen',module:'actiepunten',icoon:'meldingen',
+   sub:'Wat uw mensen melden vanaf de vloer, en wat ermee gebeurd is.'},
   {key:'keuringen',naam:'Keuringen',module:'planning',icoon:'keuringen',
    sub:'Wat wanneer vervalt, en wat er al verlopen is.'},
   {key:'documenten',naam:'Documenten',module:'documenten',icoon:'documenten',
@@ -1977,6 +1982,7 @@ var KAART_ICONEN={
   planning:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
   assets:'<path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M9 17v-4h6v4"/>',
   kennisbank:'<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 7h7M9 11h7"/>',
+  meldingen:'<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
   chemie:'<path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/>',
   inspecties:'<rect x="6" y="4" width="12" height="17" rx="1.5"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/>',
   vuurvergunning:'<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6.5-4.5-10C13 8 12 9 10.5 9.5 9 7 8 5 8 5c-2 3-3 5.5-3 10a7 7 0 0 0 7 7z"/>',
@@ -2116,6 +2122,17 @@ function laadKaartTellers(){
       t.push({tekst:rijen.length+' open',kleur:'grijs'});
       zetTeller('actiepunten',t);
     });
+
+  sb.from('meldingen').select('status').eq('bedrijf_id',huidigeBedrijfId).then(function(r){
+    var rijen=r.data||[]; if(!rijen.length)return;
+    // 'Nieuw' betekent: er heeft nog niemand naar gekeken. Dat hoort op te
+    // vallen bij de klant, niet alleen bij ons.
+    var nieuw=rijen.filter(function(m){return m.status==='nieuw';}).length;
+    var t=[];
+    if(nieuw)t.push({tekst:nieuw+' nieuw',kleur:'rood'});
+    t.push({tekst:rijen.length+' in totaal',kleur:'grijs'});
+    zetTeller('meldingen',t);
+  });
 
   sb.from('keuringen').select('vervaldatum').eq('bedrijf_id',huidigeBedrijfId).eq('actief',true)
     .lte('vervaldatum',datumTekst(over90)).then(function(r){
