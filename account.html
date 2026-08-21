@@ -5223,7 +5223,11 @@ function renderVergunningDetail(v,antwoorden){
         '<span class="badge '+kleur+'">'+label+'</span>'+
         '<div><div>'+(vr.vraagtekst||'')+'</div>'+
         (a.motivering?'<div class="detail-motivering">'+a.motivering+'</div>':'')+
-        (a.foto_url?'<img src="'+a.foto_url+'" class="detail-foto" onclick="openLightbox(\''+a.foto_url+'\')">':'')+
+        // data-prive-src, niet src: deze foto's staan in inspectie-media, en die
+        // bucket is sinds 0070 afgeschermd. Rechtstreeks geladen gaf een 403 --
+        // een leeg kader in het vergunningsdossier, precies waar het bewijs hoort.
+        // openLightbox krijgt this.src, dus het intussen ondertekende adres.
+        (a.foto_url?'<img data-prive-src="'+a.foto_url+'" class="detail-foto" onclick="openLightbox(this.src)">':'')+
         '</div></div>';
     });
     h+='</div>';
