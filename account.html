@@ -5947,6 +5947,220 @@ function renderSignalen(rubberStampArr,piek,buitenWerkurenArr,korteArr){
   }).join('');
   return rijen.length;
 }
+
+// ===========================================================================
+// Nieuwsbrief
+// ===========================================================================
+// Platformbreed, enkel voor de superbeheerder. De tabellen hangen aan geen
+// bedrijf_id (migratie 0089), dus hier staat nergens een klantfilter -- dat is
+// geen vergetelheid maar de opzet.
+
+var alleCampagnes=[];
+
+// Eigen ontsnapper met nb-voorvoegsel: campagnetekst en abonneenamen komen van
+// buiten en gaan hieronder als HTML de tabel in.
+function nbEsc(v){
+  return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+var NB_STATUS_KLASSE={klad:'onvolledig',wachtrij:'rijklaar_met_opmerkingen',bezig:'rijklaar_met_opmerkingen',verzonden:'rijklaar',gestopt:'niet_rijklaar'};
+var NB_ABONNEE_KLASSE={aangemeld:'rijklaar',bevestiging_open:'onvolledig',afgemeld:'niet_rijklaar',bounce:'niet_rijklaar',klacht:'niet_rijklaar'};
+var NB_ABONNEE_LABEL={aangemeld:'Aangemeld',bevestiging_open:'Bevestiging open',afgemeld:'Afgemeld',bounce:'Bounce',klacht:'Spamklacht'};
+
+// De verzendfunctie is de enige met Verify JWT AAN, dus hier moet de sessie mee
+// in de Authorization-header. De andere functies in dit bestand geven hun token
+// in de body mee; dat werkt hier niet.
+function nbRoepVerzendFunctie(body){
+  return sb.auth.getSession().then(function(sr){
+    var token=sr.data&&sr.data.session?sr.data.session.access_token:null;
+    if(!token){showToast('Sessie verlopen, log opnieuw in.');return null;}
+    return fetch(SUPABASE_URL+'/functions/v1/verzend-nieuwsbrief',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify(body)
+    }).then(function(res){return res.json().then(function(b){return {ok:res.ok,body:b};});});
+  });
+}
+
+function laadCampagnes(){
+  sb.from('nieuwsbrief_campagnes').select('*').order('aangemaakt_op',{ascending:false}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    alleCampagnes=r.data||[];
+    renderCampagnesTabel();
+  });
+}
+
+function renderCampagnesTabel(){
+  document.getElementById('campagnesCount').textContent=alleCampagnes.length+' campagnes';
+  var tbody=document.getElementById('campagnesTabel');
+  if(!alleCampagnes.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Nog geen campagnes.</td></tr>';return;}
+  tbody.innerHTML=alleCampagnes.map(function(c){
+    return '<tr style="cursor:pointer" onclick="openCampagne(\'' + c.id + '\')">'+
+      '<td>'+nbEsc(c.onderwerp)+'</td>'+
+      '<td><span class="badge '+(NB_STATUS_KLASSE[c.status]||'onvolledig')+'">'+c.status+'</span></td>'+
+      '<td>'+(c.verzonden_op?formatDatum(c.verzonden_op.slice(0,10)):'-')+'</td>'+
+      '<td>'+formatDatum(c.aangemaakt_op.slice(0,10))+'</td>'+
+      '<td><button class="btn-add-sm" onclick="event.stopPropagation();openCampagne(\'' + c.id + '\')">Openen</button></td></tr>';
+  }).join('');
+}
+
+function nieuweCampagne(){
+  var onderwerp=prompt('Onderwerp van de nieuwsbrief:');
+  if(!onderwerp||!onderwerp.trim())return;
+  sb.from('nieuwsbrief_campagnes').insert({onderwerp:onderwerp.trim(),status:'klad'}).select().single().then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    laadCampagnes();
+    openCampagne(r.data.id);
+  });
+}
+
+// Het bewerkscherm zit in het bestaande schuifpaneel. De afdrukknop hoort hier
+// niet -- die staat standaard aan omdat openDetail() hem voor inspecties toont.
+function openCampagne(id){
+  document.getElementById('detailOverlay').classList.add('active');
+  document.getElementById('detailPrintKnop').style.display='none';
+  document.getElementById('detailBody').innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400)"><div class="spinner-sm"></div>Laden...</div>';
+
+  Promise.all([
+    sb.from('nieuwsbrief_campagnes').select('*').eq('id',id).single(),
+    sb.from('nieuwsbrief_verzendingen').select('status').eq('campagne_id',id),
+    sb.from('nieuwsbrief_abonnees').select('id',{count:'exact',head:true}).eq('status','aangemeld')
+  ]).then(function(res){
+    var c=res[0].data; if(!c)return;
+    var rijen=res[1].data||[];
+    var aangemeld=res[2].count||0;
+    var tel=function(st){return rijen.filter(function(r){return r.status===st;}).length;};
+
+    document.getElementById('detailTitel').textContent=c.onderwerp;
+    document.getElementById('detailSub').textContent='Status: '+c.status;
+
+    var h='';
+    h+='<div class="detail-stats">'+
+       '<div class="detail-stat open"><div class="detail-stat-n">'+tel('wachtrij')+'</div><div class="detail-stat-l">Wachtrij</div></div>'+
+       '<div class="detail-stat ok"><div class="detail-stat-n">'+tel('verzonden')+'</div><div class="detail-stat-l">Verzonden</div></div>'+
+       '<div class="detail-stat nok"><div class="detail-stat-n">'+(tel('mislukt')+tel('bounce')+tel('klacht'))+'</div><div class="detail-stat-l">Mislukt</div></div></div>';
+
+    var uit=(c.status==='verzonden');
+    h+='<div style="margin-bottom:14px"><label class="form-label">Onderwerp</label>'+
+       '<input class="form-input" id="nbOnderwerp" value="'+nbEsc(c.onderwerp)+'"'+(uit?' disabled':'')+'></div>';
+    h+='<div style="margin-bottom:14px"><label class="form-label">Voorbeeldtekst (het regeltje naast het onderwerp in de inbox)</label>'+
+       '<input class="form-input" id="nbVoorbeeld" value="'+nbEsc(c.voorbeeldtekst)+'"'+(uit?' disabled':'')+'></div>';
+    h+='<div style="margin-bottom:14px"><label class="form-label">HTML &mdash; gebruik {{uitschrijflink}} als je de link ook in je tekst wil</label>'+
+       '<textarea class="form-input" id="nbHtml" rows="12" style="font-family:monospace;font-size:12px"'+(uit?' disabled':'')+'>'+nbEsc(c.html)+'</textarea></div>';
+    h+='<div style="margin-bottom:18px"><label class="form-label">Platte tekst &mdash; hoort erbij, scheelt in de spamscore</label>'+
+       '<textarea class="form-input" id="nbTekst" rows="6" style="font-size:13px"'+(uit?' disabled':'')+'>'+nbEsc(c.tekst)+'</textarea></div>';
+
+    if(uit){
+      h+='<p style="font-size:13px;color:var(--gray-500)">Deze campagne is verzonden en kan niet meer gewijzigd worden.</p>';
+    }else{
+      h+='<div style="display:flex;flex-wrap:wrap;gap:8px">'+
+         '<button class="btn-add-sm" onclick="bewaarCampagne(\'' + id + '\')">Bewaren</button>'+
+         '<button class="btn-add-sm" onclick="testCampagne(\'' + id + '\')">Testmail naar mij</button>'+
+         '<button class="btn-add-sm" onclick="klaarzetCampagne(\'' + id + '\')">Ontvangers klaarzetten ('+aangemeld+')</button>'+
+         '<button class="btn-add-sm" style="background:var(--navy);color:#fff" onclick="verzendCampagne(\'' + id + '\')">Verzenden</button>'+
+         '<button class="btn-add-sm" style="color:#dc2626" onclick="verwijderCampagne(\'' + id + '\')">Verwijderen</button></div>';
+      h+='<p style="font-size:12px;color:var(--gray-500);margin-top:12px">Bewaar voor je test of verstuurt &mdash; de knoppen lezen wat in de databank staat, niet wat op je scherm staat.</p>';
+    }
+    document.getElementById('detailBody').innerHTML=h;
+  });
+}
+
+function bewaarCampagne(id){
+  sb.from('nieuwsbrief_campagnes').update({
+    onderwerp:document.getElementById('nbOnderwerp').value.trim(),
+    voorbeeldtekst:document.getElementById('nbVoorbeeld').value.trim()||null,
+    html:document.getElementById('nbHtml').value,
+    tekst:document.getElementById('nbTekst').value
+  }).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Bewaard');
+    laadCampagnes();
+  });
+}
+
+function testCampagne(id){
+  sb.auth.getUser().then(function(u){
+    var adres=u.data&&u.data.user?u.data.user.email:null;
+    if(!adres){showToast('Geen e-mailadres bij je account gevonden.');return;}
+    showToast('Testmail versturen...');
+    nbRoepVerzendFunctie({campagne_id:id,test_naar:adres}).then(function(r){
+      if(!r)return;
+      showToast(r.ok?('Testmail verstuurd naar '+adres):('Fout: '+(r.body.error||'mislukt')));
+    });
+  });
+}
+
+function klaarzetCampagne(id){
+  sb.rpc('rpc_nieuwsbrief_klaarzetten',{p_campagne_id:id}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast(r.data+' ontvanger(s) toegevoegd aan de wachtrij');
+    openCampagne(id);
+    laadCampagnes();
+  });
+}
+
+// Blijft aanroepen tot de wachtrij leeg is: de functie stopt zichzelf na 100
+// seconden en meldt wat er rest. Zonder deze lus zou je bij een grote lijst
+// zelf meermaals op Verzenden moeten duwen zonder te weten hoe vaak.
+function verzendCampagne(id){
+  if(!confirm('Verzenden naar iedereen in de wachtrij. Dit kan niet teruggedraaid worden.\n\nDoorgaan?'))return;
+  showToast('Verzenden gestart...');
+  var ronde=function(){
+    nbRoepVerzendFunctie({campagne_id:id}).then(function(r){
+      if(!r)return;
+      if(!r.ok){showToast('Fout: '+(r.body.error||'verzenden mislukt'));openCampagne(id);return;}
+      if(r.body.klaar){
+        showToast('Klaar. '+r.body.verzonden+' verzonden'+(r.body.mislukt?', '+r.body.mislukt+' mislukt':'')+'.');
+        openCampagne(id);laadCampagnes();return;
+      }
+      showToast('Bezig... nog '+r.body.resterend+' te gaan');
+      ronde();
+    });
+  };
+  ronde();
+}
+
+function verwijderCampagne(id){
+  if(!confirm('Deze campagne verwijderen? De verzendlogboeken gaan mee.'))return;
+  sb.from('nieuwsbrief_campagnes').delete().eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    sluitDetail();showToast('Campagne verwijderd');laadCampagnes();
+  });
+}
+
+// ---- Abonnees ----
+function laadAbonnees(){
+  sb.from('nieuwsbrief_abonnees').select('*').order('aangemaakt_op',{ascending:false}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    renderAbonneesTabel(r.data||[]);
+  });
+}
+
+function renderAbonneesTabel(rijen){
+  var aangemeld=rijen.filter(function(a){return a.status==='aangemeld';}).length;
+  document.getElementById('abonneesCount').textContent=aangemeld+' aangemeld van '+rijen.length;
+  var tbody=document.getElementById('abonneesTabel');
+  if(!rijen.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">Nog geen abonnees.</td></tr>';return;}
+  tbody.innerHTML=rijen.map(function(a){
+    return '<tr><td>'+nbEsc(a.email)+'</td>'+
+      '<td>'+nbEsc(a.naam||'-')+'</td>'+
+      '<td><span class="badge '+(NB_ABONNEE_KLASSE[a.status]||'onvolledig')+'">'+(NB_ABONNEE_LABEL[a.status]||a.status)+'</span></td>'+
+      '<td>'+(a.toestemming_op?formatDatum(a.toestemming_op.slice(0,10)):'-')+'</td>'+
+      '<td>'+nbEsc(a.bron||'-')+'</td>'+
+      '<td><button class="btn-add-sm" style="color:#dc2626" onclick="wisAbonnee(\'' + a.id + '\')">Wissen</button></td></tr>';
+  }).join('');
+}
+
+// Uitdrukkelijk iets anders dan uitschrijven: dit gooit ook de blokkeerlijst
+// weg. Vandaar de waarschuwing die zegt wat het gevolg is.
+function wisAbonnee(id){
+  if(!confirm('Deze abonnee volledig wissen?\n\nDit is niet hetzelfde als uitschrijven. Na wissen is er niets meer dat hem tegenhoudt als hij zich later opnieuw inschrijft. Doe dit enkel als iemand er uitdrukkelijk om vraagt.'))return;
+  sb.rpc('rpc_nieuwsbrief_wissen',{p_abonnee_id:id}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Abonnee gewist');laadAbonnees();
+  });
+}
 </script>
 </body>
 </html>

@@ -137,7 +137,7 @@ async function verwerk(req) {
     return antwoord({ error: 'Enkel de superbeheerder mag een nieuwsbrief versturen' }, 403);
   }
 
-  const { campagne_id } = await req.json().catch(() => ({}));
+  const { campagne_id, test_naar } = await req.json().catch(() => ({}));
   if (!campagne_id) return antwoord({ error: 'campagne_id ontbreekt' }, 400);
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -149,12 +149,48 @@ async function verwerk(req) {
     .maybeSingle();
 
   if (cFout || !campagne) return antwoord({ error: 'Onbekende campagne' }, 404);
+  if (!campagne.onderwerp || !campagne.html) {
+    return antwoord({ error: 'Campagne heeft geen onderwerp of geen html' }, 422);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Testmail
+  // ---------------------------------------------------------------------------
+  // Staat bewust voor de statuscontroles hieronder: een test hoort te werken
+  // terwijl de campagne nog een klad is. Dat is het hele punt -- je wil de
+  // opmaak in je eigen mailbox zien voordat je ontvangers klaarzet, niet erna.
+  //
+  // Raakt de wachtrij niet aan en schrijft niets weg. De uitschrijflink wijst
+  // naar een verzonnen token, zodat de pagina 'link werkt niet meer' toont in
+  // plaats van iemand echt uit te schrijven -- maar de knop staat er wel, want
+  // juist die wil je in een test kunnen zien.
+  if (test_naar) {
+    const nepUrl = `${LINK_BASIS}?actie=uitschrijven&token=test`;
+    const bericht = {
+      from: AFZENDER,
+      to: [String(test_naar)],
+      subject: `[TEST] ${campagne.onderwerp}`,
+      html: bouwHtml(campagne.html, nepUrl),
+      text: bouwTekst(campagne.tekst, nepUrl)
+    };
+    if (ANTWOORD_AAN) bericht.reply_to = ANTWOORD_AAN;
+
+    const tResp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(bericht)
+    });
+    const tRuw = await tResp.text();
+    if (!tResp.ok) {
+      console.error('Testmail vertrok niet:', tResp.status, tRuw.slice(0, 500));
+      return antwoord({ error: `Testmail vertrok niet: ${tRuw.slice(0, 200)}` }, 502);
+    }
+    return antwoord({ ok: true, test: true, boodschap: `Testmail verstuurd naar ${test_naar}.` });
+  }
+
   if (campagne.status === 'verzonden') return antwoord({ error: 'Deze campagne is al verzonden' }, 409);
   if (campagne.status === 'klad') {
     return antwoord({ error: 'Zet eerst de ontvangers klaar met rpc_nieuwsbrief_klaarzetten' }, 409);
-  }
-  if (!campagne.onderwerp || !campagne.html) {
-    return antwoord({ error: 'Campagne heeft geen onderwerp of geen html' }, 422);
   }
 
   await sb.from('nieuwsbrief_campagnes').update({ status: 'bezig' }).eq('id', campagne_id);
