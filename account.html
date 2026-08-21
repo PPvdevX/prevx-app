@@ -4371,7 +4371,11 @@ function nieuweGebruiker(){
 // browser een code en vroeg hij "bestaat die al?" -- die vraag was een orakel
 // waarmee geldige pincodes van andere klanten te vinden waren.
 function genereerUniekePincode(callback){
-  sb.rpc('rpc_genereer_pincode').then(function(r){
+  // Met het bedrijf erbij (0093): de voorraad van vier cijfers loopt per klant,
+  // en als superbeheerder in het dossier van een klant is huidig_bedrijf_id()
+  // jouw eigen bedrijf -- zonder deze parameter zou de code in de verkeerde
+  // voorraad gezocht worden en kon er binnen een klant een dubbele ontstaan.
+  sb.rpc('rpc_genereer_pincode_voor',{p_bedrijf_id:huidigeBedrijfId}).then(function(r){
     if(r.error||!r.data){showToast('Fout: '+((r.error&&r.error.message)||'kon geen pincode genereren'));return;}
     callback(r.data);
   });
