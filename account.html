@@ -1016,8 +1016,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 
         <p style="font-size:13px;color:var(--gray-500);margin-top:14px;max-width:720px">
           Deze lijst is geen risicoanalyse. Ze houdt bij waarop die analyse steunt: wat er staat, waar,
-          en welk blad erbij hoort. Ontbreekt dat blad, dan kan de wettelijke toets niet gebeuren &mdash;
-          vandaar dat het bovenaan in het rood staat en niet onderaan als opmerking.
+          en welk blad erbij hoort. Ontbreekt dat blad, dan kan de wettelijke toets niet gebeuren.
         </p>
       </div>
     </div>
@@ -3847,7 +3846,9 @@ function jarenGeleden(datum){
 
 function renderChemie(){
   var actief=chemieProducten.filter(function(p){return p.actief;});
-  document.getElementById('chemieCount').textContent=actief.length+' producten';
+  var uitDienst=chemieProducten.length-actief.length;
+  document.getElementById('chemieCount').textContent=
+    actief.length+' in gebruik'+(uitDienst?' · '+uitDienst+' uit dienst':'');
 
   var zonderVib=actief.filter(function(p){return !p.vib_url;}).length;
   var titel2=actief.filter(function(p){return p.onder_titel2;}).length;
@@ -3883,7 +3884,24 @@ function renderChemie(){
   }
   tbody.innerHTML='';
   var mag=magChemieBeheren();
-  chemieProducten.forEach(function(p){
+
+  // Eerst wat in gebruik is, dan wat uit dienst staat, met een streep ertussen.
+  // De tellers bovenaan gaan alleen over de eerste groep. Zonder die streep tel
+  // je zes rijen onder een teller die vijf zegt, en dan ga je twijfelen aan het
+  // getal in plaats van aan de lijst.
+  var gesorteerd=chemieProducten.slice().sort(function(a,b){
+    return (a.actief===b.actief)?0:(a.actief?-1:1);
+  });
+  var streepGezet=false;
+
+  gesorteerd.forEach(function(p){
+    if(!p.actief&&!streepGezet){
+      streepGezet=true;
+      var sep=document.createElement('tr');
+      sep.innerHTML='<td colspan="6" style="padding:16px 0 6px;font-size:12px;color:var(--gray-500);'+
+        'border-top:1px solid var(--gray-200)">Uit dienst &mdash; telt niet mee in de signalen hierboven</td>';
+      tbody.appendChild(sep);
+    }
     var tr=document.createElement('tr');
     if(!p.actief)tr.style.opacity='.55';
 
