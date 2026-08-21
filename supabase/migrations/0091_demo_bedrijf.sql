@@ -101,6 +101,8 @@ declare
   v_t_heftruck uuid;
   v_t_hoogwerker uuid;
   v_t_aanhang uuid;
+  v_t_werkpost uuid;
+  v_t_zone uuid;
 
   v_a_bestel1 uuid;
   v_a_bestel2 uuid;
@@ -322,6 +324,11 @@ begin
   insert into voertuig_types (bedrijf_id, naam, volgorde) values (v_bedrijf, 'Heftruck', 20)      returning id into v_t_heftruck;
   insert into voertuig_types (bedrijf_id, naam, volgorde) values (v_bedrijf, 'Hoogwerker', 30)    returning id into v_t_hoogwerker;
   insert into voertuig_types (bedrijf_id, naam, volgorde) values (v_bedrijf, 'Aanhangwagen', 40)  returning id into v_t_aanhang;
+  -- Werkpost en Zone zijn voor de checklistmotor gewone assettypes. Daarmee
+  -- dekken ergonomie en verfraaiing zich met wat er al staat: een werkpost of
+  -- een kleedkamer doorlopen is dezelfde handeling als een heftruck nakijken.
+  insert into voertuig_types (bedrijf_id, naam, volgorde) values (v_bedrijf, 'Werkpost', 50) returning id into v_t_werkpost;
+  insert into voertuig_types (bedrijf_id, naam, volgorde) values (v_bedrijf, 'Zone', 60)     returning id into v_t_zone;
 
   insert into voertuigen (bedrijf_id, nummerplaat, omschrijving, serienummer, type, type_id, actief)
   values (v_bedrijf, '1-DEM-001', 'Bestelwagen montageploeg noord', 'WF0DEMO2025001', 'Bestelwagen', v_t_bestel, true)
@@ -346,6 +353,14 @@ begin
   insert into voertuigen (bedrijf_id, nummerplaat, omschrijving, serienummer, type, type_id, actief)
   values (v_bedrijf, 'AHW-01', 'Aanhangwagen geremd 1350 kg', 'AH-1350-0224', 'Aanhangwagen', v_t_aanhang, true)
   returning id into v_a_aanhang;
+
+  insert into voertuigen (bedrijf_id, nummerplaat, omschrijving, type, type_id, actief) values
+    (v_bedrijf, 'WP-01', 'Lasplaats 1', 'Werkpost', v_t_werkpost, true),
+    (v_bedrijf, 'WP-02', 'Slijpcabine', 'Werkpost', v_t_werkpost, true),
+    (v_bedrijf, 'WP-03', 'Inpaktafel verzending', 'Werkpost', v_t_werkpost, true),
+    (v_bedrijf, 'ZN-01', 'Kleedkamers en douches', 'Zone', v_t_zone, true),
+    (v_bedrijf, 'ZN-02', 'Refter', 'Zone', v_t_zone, true),
+    (v_bedrijf, 'ZN-03', 'Productiehal', 'Zone', v_t_zone, true);
 
   -- Wie ziet wat in de app. Kevin en Younes rijden, Marc doet het magazijn.
   insert into gebruiker_voertuigen (gebruiker_id, voertuig_id) values
@@ -407,6 +422,30 @@ begin
     (v_sectie, 'Zijn de leuningen en het toegangshek onbeschadigd?', 10, 'kritisch', true),
     (v_sectie, 'Werkt de kantelbeveiliging of de hellingssensor?', 20, 'kritisch', true),
     (v_sectie, 'Is de belastingtabel leesbaar aanwezig?', 30, 'informatief', true);
+
+  -- Ergonomie: wat je aan een werkpost bekijkt. Kort gehouden -- een lijst die
+  -- niemand afwerkt, levert niets op.
+  insert into inspectie_secties (bedrijf_id, naam, icon, volgorde, actief)
+  values (v_bedrijf, 'Werkpost en houding', 'gereedschap', 70, true) returning id into v_sectie;
+  insert into inspectie_sectie_types (sectie_id, voertuig_type_id) values (v_sectie, v_t_werkpost);
+  insert into inspectie_punten (sectie_id, omschrijving, volgorde, niveau, actief) values
+    (v_sectie, 'Staat het werkvlak op de juiste hoogte voor wie er werkt?', 10, 'kritisch', true),
+    (v_sectie, 'Kan het werk afwisselend zittend en staand gebeuren?', 20, 'informatief', true),
+    (v_sectie, 'Ligt alles wat vaak nodig is binnen handbereik, zonder draaien of reiken?', 30, 'kritisch', true),
+    (v_sectie, 'Is er een tilhulp aanwezig voor lasten boven 25 kg?', 40, 'kritisch', true),
+    (v_sectie, 'Is de verlichting op de werkpost voldoende en zonder verblinding?', 50, 'kritisch', true);
+
+  -- Verfraaiing: de sociale voorzieningen en de staat van de arbeidsplaats.
+  insert into inspectie_secties (bedrijf_id, naam, icon, volgorde, actief)
+  values (v_bedrijf, 'Voorzieningen en netheid', 'algemeen', 80, true) returning id into v_sectie;
+  insert into inspectie_sectie_types (sectie_id, voertuig_type_id) values (v_sectie, v_t_zone);
+  insert into inspectie_punten (sectie_id, omschrijving, volgorde, niveau, actief) values
+    (v_sectie, 'Zijn de kleedkamers en het sanitair proper en in orde?', 10, 'kritisch', true),
+    (v_sectie, 'Is er drinkbaar water beschikbaar?', 20, 'kritisch', true),
+    (v_sectie, 'Is de refter gescheiden van de werkzone?', 30, 'kritisch', true),
+    (v_sectie, 'Zijn de gangen en nooduitgangen vrij van obstakels?', 40, 'kritisch', true),
+    (v_sectie, 'Is de verlichting in de zone voldoende, ook bij donker weer?', 50, 'informatief', true),
+    (v_sectie, 'Ligt er niets rond dat er niet hoort te liggen?', 60, 'informatief', true);
 
   -- --- KPI-selectie: de standaardvier, expliciet vastgelegd ---------------
   insert into bedrijf_kpis (bedrijf_id, kpi_key, volgorde, actief, label) values

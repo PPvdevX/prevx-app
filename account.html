@@ -808,6 +808,15 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
         <div id="keuringenNieuwKnop" style="margin-bottom:14px;display:none">
           <button class="btn-add-sm" onclick="nieuweKeuring()">+ Nieuwe keuring</button>
         </div>
+        <div class="filters-bar">
+          <div class="filter-group"><span class="filter-label">Domein</span>
+            <select class="filter-input" id="keuringenFilterDomein" onchange="laadKeuringen()">
+              <option value="">Alle keuringen</option>
+              <option value="veiligheid">Arbeidsveiligheid</option>
+              <option value="milieu">Leefmilieu</option>
+            </select>
+          </div>
+        </div>
         <div class="table-card">
           <div class="table-header"><span class="table-title">Vervalkalender</span>
             <span class="table-count" id="keuringenCount">0</span>
@@ -1292,6 +1301,13 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
         <div class="page-subtitle">Overzicht van de assets</div>
       </div>
       <div class="content-area">
+        <div class="filters-bar">
+          <div class="filter-group"><span class="filter-label">Type</span>
+            <select class="filter-input" id="voertuigenFilterType" onchange="laadVoertuigen()">
+              <option value="">Alle assets</option>
+            </select>
+          </div>
+        </div>
         <div class="table-card" style="margin-bottom:20px">
           <div class="table-header"><span class="table-title">Assettypes</span>
             <button class="btn-add-sm" id="voertuigTypeNieuwKnop" style="display:none" onclick="nieuwVoertuigType()">+ Nieuw type</button>
@@ -2163,6 +2179,19 @@ var KLANT_KAARTEN=[
    sub:'Uw machines, voertuigen en installaties.'},
   {groep:'veiligheid',key:'lmra',naam:'LMRA',module:'lmra',icoon:'lmra',
    sub:'De laatste controle, vlak voor het werk begint.'},
+  // Drie kaarten die naar een BESTAAND scherm wijzen met een filter erop. Dat is
+  // wat fase 1 goedkoop maakt: het werk zit al in de databank, alleen de weg
+  // ernaartoe ontbrak. tab zegt welk scherm, filter welke keuzelijst daar op
+  // welke waarde gaat.
+  {groep:'ergonomie',key:'werkposten',tab:'voertuigen',filterVeld:'voertuigenFilterType',filterNaam:'Werkpost',
+   naam:'Werkposten',icoon:'ergonomie',
+   sub:'De werkposten en wat er bij de laatste doorlichting is vastgesteld.'},
+  {groep:'verfraaiing',key:'zones',tab:'voertuigen',filterVeld:'voertuigenFilterType',filterNaam:'Zone',
+   naam:'Zones en voorzieningen',icoon:'zone',
+   sub:'Kleedkamers, sanitair, refter en de staat van de werkplaats.'},
+  {groep:'milieu',key:'milieukeuringen',tab:'keuringen',module:'planning',filterVeld:'keuringenFilterDomein',filterWaarde:'milieu',
+   naam:'Milieukeuringen',icoon:'milieu',
+   sub:'Stookolietank, koelinstallatie, afvalwater en wat daar nog bij hoort.'},
   {groep:'hygiene',key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
    sub:'Welke producten er staan, waar, en het veiligheidsinformatieblad erbij.'},
   {groep:'dossier',key:'kennisbank',naam:'Kennisbank',module:'kennisbank',icoon:'kennisbank',
@@ -2193,6 +2222,9 @@ var KAART_ICONEN={
   kennisbank:'<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 7h7M9 11h7"/>',
   meldingen:'<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
   vragen:'<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/><path d="M9.5 9a2.5 2.5 0 1 1 3 2.4V13"/><path d="M12.5 16h.01"/>',
+  ergonomie:'<circle cx="12" cy="4.5" r="2"/><path d="M6 20v-4l3-3 1-3.5h4l1 3.5 3 3v4"/><path d="M10 9.5h4"/>',
+  zone:'<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/><path d="M3 21h18"/>',
+  milieu:'<path d="M12 21c5-2 8-6 8-11V5l-8-2-8 2v5c0 5 3 9 8 11z"/><path d="M12 16c0-3 1.5-5 4-6"/>',
   chemie:'<path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/>',
   inspecties:'<rect x="6" y="4" width="12" height="17" rx="1.5"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/>',
   vuurvergunning:'<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6.5-4.5-10C13 8 12 9 10.5 9.5 9 7 8 5 8 5c-2 3-3 5.5-3 10a7 7 0 0 0 7 7z"/>',
@@ -2233,7 +2265,19 @@ function werkKruimelBij(naam){
 // Elke kaart blijft staan; wat de klant niet afneemt, komt op slot te staan in
 // de laatste groep. Een module die je gewoon weglaat, bestaat voor hem niet --
 // en dan moet jij hem in een gesprek uitleggen wat hij mist.
+var heeftMilieukeuringen=false;
+
 function klantKaartZichtbaar(k){
+  // Een kaart die op een assettype steunt (Werkposten, Zones) hoort er alleen te
+  // staan wanneer die klant zo'n type heeft. Anders belooft ze een leeg scherm
+  // -- en dan is een open domein eerlijker: het domein toont dan gewoon "nog
+  // niets in uw dossier".
+  if(k.filterNaam){
+    return alleVoertuigTypes.some(function(t){return t.naam===k.filterNaam;});
+  }
+  // Zelfde redenering voor het domein leefmilieu: dat steunt op keuringen met
+  // domein 'milieu'. Heeft de klant er geen, dan is de kaart een lege belofte.
+  if(k.key==='milieukeuringen')return heeftMilieukeuringen;
   return true;
 }
 
@@ -2248,8 +2292,9 @@ function kaartVergrendeld(k){
     : actieveModules[k.module]!==false;
   if(!aan)return true;
   // Module staat aan maar er is nog geen scherm gebouwd (vorming): ook slot,
-  // anders klikt de klant zich naar een lege pagina.
-  return !document.getElementById('tab-'+k.key);
+  // anders klikt de klant zich naar een lege pagina. Wijst de kaart naar een
+  // ander scherm dan haar eigen sleutel, dan telt dat scherm.
+  return !document.getElementById('tab-'+(k.tab||k.key));
 }
 
 
@@ -2276,8 +2321,19 @@ function laadKlantHome(){
   laadSamenwerking(['klant']);
   laadVolgendBezoek();
   laadKlantContacten();
-  tekenKlantKaarten();
-  laadKaartTellers();
+  // Eerst de assettypes: de kaarten Werkposten en Zones bestaan alleen wanneer
+  // deze klant die types heeft.
+  Promise.all([
+    sb.from('voertuig_types').select('*').eq('bedrijf_id',huidigeBedrijfId).order('volgorde'),
+    sb.from('keuringen').select('keuring_types(domein)').eq('bedrijf_id',huidigeBedrijfId).eq('actief',true)
+  ]).then(function(r){
+    alleVoertuigTypes=r[0].data||[];
+    heeftMilieukeuringen=(r[1].data||[]).some(function(k){
+      return k.keuring_types && k.keuring_types.domein==='milieu';
+    });
+    tekenKlantKaarten();
+    laadKaartTellers();
+  });
 }
 
 // Wie bel je als er iets gebeurt? Die gegevens stonden al in de bedrijfsfiche,
@@ -2420,6 +2476,23 @@ function bouwKaartGroep(naam,kaarten){
   return blok;
 }
 
+// Een kaart mag naar een bestaand scherm wijzen met een filter erop. De filter
+// wordt gezet vóór het scherm laadt, want die schermen lezen hun keuzelijst bij
+// het openen -- daarna zetten zou een tweede oproep vragen.
+// Onthoudt welke filter het volgende scherm moet toepassen. Nodig omdat de
+// keuzelijst van de assets pas bestaat nadat dat scherm zijn types geladen
+// heeft: rechtstreeks zetten zou op een lege lijst belanden.
+var wachtendTypeFilter=null;
+
+function opendKaart(k){
+  if(k.filterNaam)wachtendTypeFilter=k.filterNaam;
+  if(k.filterVeld&&k.filterWaarde){
+    var sel=document.getElementById(k.filterVeld);
+    if(sel)sel.value=k.filterWaarde;
+  }
+  toonTab(k.tab||k.key);
+}
+
 function bouwKlantKaart(k){
   return (function(){
     var opSlot=kaartVergrendeld(k);
@@ -2438,7 +2511,7 @@ function bouwKlantKaart(k){
       // In klantmodus is er geen zijbalk, dus ook geen knop om de adviseur te
       // bereiken. Zonder deze link toont de kaart een slot zonder sleutel.
       (opSlot?'<a class="kaart-vraag" href="mailto:'+ADVISEUR_EMAIL+'?subject='+encodeURIComponent('Vraag over '+onthtml(k.naam))+'">Vraag ernaar bij uw adviseur</a>':'');
-    if(!opSlot)el.onclick=function(){toonTab(k.key);};
+    if(!opSlot)el.onclick=function(){opendKaart(k);};
     return el;
   })();
 }
@@ -2754,7 +2827,15 @@ function laadKeuringen(){
     .eq('bedrijf_id',huidigeBedrijfId).eq('actief',true)
     .order('vervaldatum',{ascending:true}).then(function(r){
       if(r.error){showToast('Fout: '+r.error.message);return;}
-      renderKeuringen(r.data||[]);
+      // Het domein zit op het TYPE, niet op de keuring (0074), dus filteren
+      // gebeurt hier en niet in de query. Een keuring zonder type valt buiten
+      // elk domein en verschijnt dus alleen bij "Alle keuringen" -- zichtbaar
+      // blijven is belangrijker dan netjes ingedeeld zijn.
+      var kies=(document.getElementById('keuringenFilterDomein')||{}).value||'';
+      var rijen=(r.data||[]).filter(function(k){
+        return !kies || (k.keuring_types && k.keuring_types.domein===kies);
+      });
+      renderKeuringen(rijen);
     });
 }
 
@@ -5080,8 +5161,10 @@ function laadVoertuigen(){
   sb.from('voertuig_types').select('*').eq('bedrijf_id',huidigeBedrijfId).order('volgorde').then(function(tr){
     alleVoertuigTypes=tr.data||[];
     renderVoertuigTypesLijst();
+    vulVoertuigTypeFilter();
     sb.from('voertuigen').select('*').eq('bedrijf_id',huidigeBedrijfId).order('nummerplaat').then(function(r){
-      var v=r.data||[];
+      var kiesType=(document.getElementById('voertuigenFilterType')||{}).value||'';
+      var v=(r.data||[]).filter(function(x){return !kiesType||x.type_id===kiesType;});
       document.getElementById('voertuigenCount').textContent=v.length+' assets';
       sb.from('inspecties').select('voertuig_id').eq('bedrijf_id',huidigeBedrijfId).then(function(ir){
         var tel={};(ir.data||[]).forEach(function(i){tel[i.voertuig_id]=(tel[i.voertuig_id]||0)+1;});
@@ -5115,6 +5198,27 @@ function laadVoertuigen(){
       });
     });
   });
+}
+
+// De keuzelijst volgt de types van deze klant. Zo werkt hij ook voor types die
+// er later bijkomen -- Werkpost, Zone -- zonder dat hier iets aangepast moet
+// worden.
+function vulVoertuigTypeFilter(){
+  var sel=document.getElementById('voertuigenFilterType');
+  if(!sel)return;
+  var huidig=sel.value;
+  // Kwam je hier via een kaart van het dashboard, dan staat de gevraagde soort
+  // klaar als naam; het id kennen we pas nu.
+  if(wachtendTypeFilter){
+    var treffer=alleVoertuigTypes.filter(function(t){return t.naam===wachtendTypeFilter;})[0];
+    huidig=treffer?treffer.id:'';
+    wachtendTypeFilter=null;
+  }
+  sel.innerHTML='<option value="">Alle assets</option>'+
+    alleVoertuigTypes.map(function(t){
+      return '<option value="'+t.id+'"'+(t.id===huidig?' selected':'')+'>'+t.naam+'</option>';
+    }).join('');
+  sel.value=huidig||'';
 }
 
 function renderVoertuigTypesLijst(){
