@@ -285,7 +285,11 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .klant-bezoek-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);margin-bottom:4px}
 .klant-bezoek-datum{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:700;color:var(--navy-text)}
 .klant-bezoek-sub{font-size:12px;color:var(--gray-500);margin-top:2px}
-.kaart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;padding:18px 32px 32px}
+.kaart-grid{padding:18px 32px 32px}
+.kaart-groep{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:26px}
+/* Klein en rustig: de kaarten dragen de aandacht al, de kop hoeft alleen te
+   zeggen waar je bent. */
+.kaart-groep-kop{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-500);margin:0 0 10px}
 .klant-kaart{background:var(--surface);border:1px solid var(--gray-300);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;position:relative}
 .klant-kaart:hover{border-color:var(--navy)}
 .klant-kaart:active{transform:scale(.995)}
@@ -355,11 +359,22 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
    betekenen dat rood niet langer een vaste betekenis heeft.
    Groen, waar hij mee begon, betekent hier 'rijklaar' en zei dus het
    tegenovergestelde van waar de knop voor dient. */
-.sw-voet{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:4px}
-.sw-voet .sw-inbegrepen{flex:1 1 240px;min-width:0}
-.knop-melding{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;background:var(--red);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+/* Bezoekdatum en meldknop staan naast elkaar aan de rechterkant, met een
+   verticaal streepje ertussen. align-items:stretch geeft de knop dezelfde
+   hoogte als het bezoekblok -- anders zweeft een klein pilletje naast een blok
+   van drie regels.
+   Rood: melden is een veiligheidshandeling en daar is rood de conventie. Wel
+   dezelfde --red als elders; een tweede rood zou betekenen dat rood in dit
+   portaal geen vaste betekenis meer heeft. */
+.sw-hoofd-rechts{display:flex;align-items:stretch;gap:16px}
+.sw-streep{width:3px;border-radius:2px;background:var(--gray-200);flex:0 0 auto}
+.knop-melding{flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:var(--red);color:#fff;border:none;border-radius:var(--radius);padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
 .knop-melding:hover{filter:brightness(1.08)}
-@media (max-width:640px){.knop-melding{width:100%;justify-content:center;padding:11px 16px}}
+@media (max-width:640px){
+  .sw-hoofd-rechts{width:100%;flex-wrap:wrap}
+  .sw-streep{display:none!important}
+  .knop-melding{width:100%;flex-direction:row;padding:12px 16px}
+}
 @media (max-width:640px){
   .klant-topbar,.klant-hero,.kaart-grid,.kruimel{padding-left:16px;padding-right:16px}
   .sw-hoofd{gap:12px}
@@ -632,18 +647,19 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
              lege rij. Het hoort hier: het gaat over dezelfde samenwerking als de
              balk ernaast, en het is naslag dat een klant komt opzoeken -- dus
              het moet blijven staan, niet wegvagen. -->
-        <div class="klant-bezoek" id="klantBezoek" style="display:none">
-          <div class="klant-bezoek-label">Volgend bezoek</div>
-          <div class="klant-bezoek-datum" id="klantBezoekDatum"></div>
-          <div class="klant-bezoek-sub" id="klantBezoekSub"></div>
+        <div class="sw-hoofd-rechts">
+          <div class="klant-bezoek" id="klantBezoek" style="display:none">
+            <div class="klant-bezoek-label">Volgend bezoek</div>
+            <div class="klant-bezoek-datum" id="klantBezoekDatum"></div>
+            <div class="klant-bezoek-sub" id="klantBezoekSub"></div>
+          </div>
+          <span class="sw-streep" id="klantSwStreep" style="display:none"></span>
+          <button class="knop-melding" onclick="meldingMaken()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
         </div>
       </div>
       <div class="sw-balk"><div class="sw-balk-vol" id="klantSwBalk" style="width:0%"></div></div>
       </div>
-      <div class="sw-voet">
-        <div class="sw-inbegrepen" id="klantSwInbegrepen"></div>
-        <button class="knop-melding" onclick="meldingMaken()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
-      </div>
+      <div class="sw-inbegrepen" id="klantSwInbegrepen"></div>
     </div>
     <div class="kaart-grid" id="klantKaarten"></div>
   </div>
@@ -1966,42 +1982,44 @@ var keuringAssets=[];
 var klantModus=false;
 
 var KLANT_KAARTEN=[
-  {key:'actiepunten',naam:'Actiepunten',module:'actiepunten',icoon:'actiepunten',
+  {groep:'opvolging',key:'actiepunten',naam:'Actiepunten',module:'actiepunten',icoon:'actiepunten',
    sub:'Adviezen en vaststellingen uit onze bezoeken, met opvolging.'},
   // Meldingen stonden enkel in de zijbalk, en die heeft een klant niet. Wie
   // vanaf de vloer iets meldt, zag zijn melding dus nergens terug -- en dat is
   // erger dan geen meldknop: de melder denkt dat er iets mee gebeurt.
-  {key:'meldingen',naam:'Meldingen',module:'actiepunten',icoon:'meldingen',
+  {groep:'opvolging',key:'meldingen',naam:'Meldingen',module:'actiepunten',icoon:'meldingen',
    sub:'Wat uw mensen melden vanaf de vloer, en wat ermee gebeurd is.'},
-  {key:'keuringen',naam:'Keuringen',module:'planning',icoon:'keuringen',
+  {groep:'opvolging',key:'keuringen',naam:'Keuringen',module:'planning',icoon:'keuringen',
    sub:'Wat wanneer vervalt, en wat er al verlopen is.'},
-  {key:'documenten',naam:'Documenten',module:'documenten',icoon:'documenten',
+  {groep:'dossier',key:'documenten',naam:'Documenten',module:'documenten',icoon:'documenten',
    sub:'Risicoanalyses, verslagen, preventieplan — altijd de recentste versie.'},
-  {key:'planning',naam:'Planning',module:'planning',icoon:'planning',
+  {groep:'dossier',key:'planning',naam:'Planning',module:'planning',icoon:'planning',
    sub:'Geplande bezoeken, toolboxen en afspraken.'},
   // Hangt aan dezelfde module als het menu-item (documenten): negen van de elf
   // onderdelen liggen daar. Zonder deze kaart was het scherm voor een klant
   // onbereikbaar -- in klantmodus is er geen zijbalk, dus is een kaart de enige
   // weg ernaartoe. Lezen mag hij; nakijken en afvinken blijft bij PrevX, zowel
   // in het scherm zelf als in de policies (0088).
-  {key:'brandpreventie',naam:'Brandpreventiedossier',module:'documenten',icoon:'brandpreventie',
+  {groep:'dossier',key:'brandpreventie',naam:'Brandpreventiedossier',module:'documenten',icoon:'brandpreventie',
    kleur:'rood',
    sub:'De elf onderdelen van het dossier, klaar om aan de hulpdiensten te geven.'},
-  {key:'voertuigen',naam:'Assets',icoon:'assets',
+  {groep:'vloer',key:'voertuigen',naam:'Assets',icoon:'assets',
    sub:'Uw machines, voertuigen en installaties.'},
-  {key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
+  {groep:'vloer',key:'lmra',naam:'LMRA',module:'lmra',icoon:'lmra',
+   sub:'De laatste controle, vlak voor het werk begint.'},
+  {groep:'vloer',key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
    sub:'Welke producten er staan, waar, en het veiligheidsinformatieblad erbij.'},
-  {key:'kennisbank',naam:'Kennisbank',module:'kennisbank',icoon:'kennisbank',
+  {groep:'dossier',key:'kennisbank',naam:'Kennisbank',module:'kennisbank',icoon:'kennisbank',
    sub:'Checklists en toolboxfiches voor uw sector.'},
-  {key:'inspecties',naam:'Pre-inspecties',module:'preinspecties',icoon:'inspecties',
+  {groep:'vloer',key:'inspecties',naam:'Pre-inspecties',module:'preinspecties',icoon:'inspecties',
    sub:'Controles vóór gebruik, uitgevoerd in de PrevX app.'},
-  {key:'vergunningen',naam:'Vuurvergunningen',module:'vuurvergunning',icoon:'vuurvergunning',
+  {groep:'vloer',key:'vergunningen',naam:'Vuurvergunningen',module:'vuurvergunning',icoon:'vuurvergunning',
    sub:'Vergunningen voor brandgevaarlijk werk, aangevraagd in de app.'},
   // Staat er bewust bij zonder te werken. Een klant hoort te zien wat PrevX
   // aanbiedt en wat er in zijn formule zit; een module die je gewoon weglaat,
   // bestaat voor hem niet. De kaart gaat vanzelf open zodra de module actief
   // staat en er een scherm achter zit -- zie kaartVergrendeld().
-  {key:'vorming',naam:'Vorming &amp; opleiding',module:'vorming',icoon:'vorming',
+  {groep:'vloer',key:'vorming',naam:'Vorming &amp; opleiding',module:'vorming',icoon:'vorming',
    formule:'Formule Plus',
    sub:'Toolboxen en opleidingen voor uw medewerkers, met attesten.'}
 ];
@@ -2025,6 +2043,15 @@ var KAART_ICONEN={
   brandpreventie:'<path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V6z"/><path d="M12 8.5c1 1.6 2 2.6 2 4a2 2 0 0 1-4 0c0-.8.4-1.5 1-2.2"/>',
   vorming:'<path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11.2V16c0 1.1 2.2 2 5 2s5-.9 5-2v-4.8"/><path d="M21 9v5"/>'
 };
+
+// Het streepje hoort alleen te staan als er links ervan ook iets staat. Wordt
+// aangeroepen op dezelfde plekken waar het bezoekblok getoond of verborgen wordt.
+function nbStreepBij(){
+  var bezoek=document.getElementById('klantBezoek');
+  var streep=document.getElementById('klantSwStreep');
+  if(!bezoek||!streep)return;
+  streep.style.display=(bezoek.style.display==='none')?'none':'';
+}
 
 function zetKlantModus(aan){
   klantModus=aan;
@@ -2094,10 +2121,11 @@ function laadVolgendBezoek(){
     .gte('datum',vandaag).order('datum').limit(1).then(function(r){
       var vak=document.getElementById('klantBezoek');
       var p=(r.data||[])[0];
-      if(!p){vak.style.display='none';return;}
+      if(!p){vak.style.display='none';nbStreepBij();return;}
       vak.style.display='';
       document.getElementById('klantBezoekDatum').textContent=formatDatum(p.datum);
       document.getElementById('klantBezoekSub').textContent=p.type||'';
+      nbStreepBij();
     });
 }
 
