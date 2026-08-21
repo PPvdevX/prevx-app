@@ -3630,8 +3630,12 @@ function renderGevaarzinnenTabel(){
   alleGevaarzinnen.forEach(function(g){
     var tr=document.createElement('tr');
     if(!g.actief)tr.style.opacity='.55';
-    tr.innerHTML='<td style="font-family:monospace;font-weight:600">'+g.code+'</td>'+
-      '<td><input value="'+(g.tekst||'').replace(/"/g,'&quot;')+'" onchange="wijzigGevaarzin(\''+g.code+'\',this.value)" style="width:100%;min-width:260px;border:1px solid var(--gray-300);border-radius:6px;padding:5px 7px;font-size:13px"></td>'+
+    // De bron hangt als tooltip aan de code, de opmerking staat onder de tekst.
+    // Wie hier iets wijzigt, hoort te zien waar de zin vandaan kwam voor hij
+    // erover schrijft.
+    tr.innerHTML='<td style="font-family:monospace;font-weight:600" title="'+(g.bron||'bron niet vermeld').replace(/"/g,'&quot;')+'">'+g.code+'</td>'+
+      '<td><input value="'+(g.tekst||'').replace(/"/g,'&quot;')+'" onchange="wijzigGevaarzin(\''+g.code+'\',this.value)" style="width:100%;min-width:260px;border:1px solid var(--gray-300);border-radius:6px;padding:5px 7px;font-size:13px">'+
+        (g.opmerking?'<div style="font-size:11px;color:var(--gray-500);margin-top:3px">'+g.opmerking+'</div>':'')+'</td>'+
       '<td>'+(g.titel2?'<span class="badge niet_rijklaar">titel 2</span>':'<span style="color:var(--gray-400)">-</span>')+'</td>'+
       '<td><button class="btn-add-sm" onclick="toggleGevaarzinActief(\''+g.code+'\','+(!g.actief)+')">'+(g.actief?'Archiveer':'Herstel')+'</button></td>';
     tbody.appendChild(tr);
@@ -3640,7 +3644,9 @@ function renderGevaarzinnenTabel(){
 
 function wijzigGevaarzin(code,tekst){
   if(!tekst.trim()){showToast('De tekst mag niet leeg zijn.');laadGevaarzinnen(renderGevaarzinnenTabel);return;}
-  sb.from('gevaarzinnen').update({tekst:tekst.trim()}).eq('code',code).then(function(r){
+  // De bron gaat mee: pas je de zin aan, dan komt ze niet langer letterlijk uit
+  // de verordening en mag de tabel dat niet blijven beweren.
+  sb.from('gevaarzinnen').update({tekst:tekst.trim(),bron:'Handmatig aangepast in het portaal'}).eq('code',code).then(function(r){
     if(r.error){showToast('Fout: '+r.error.message);return;}
     showToast('Opgeslagen');
   });
@@ -3657,7 +3663,8 @@ function nieuweGevaarzin(){
   toonInvulScherm({
     titel:'Nieuwe gevarenaanduiding',
     velden:[
-      {id:'code',label:'Code',verplicht:true,hint:'bv. H315, H360FD of EUH208',
+      {id:'code',label:'Code',verplicht:true,
+       hint:'bv. H315, H360FD of EUH208. Hoofdletters tellen mee: H360Fd en H360fD zijn twee verschillende aanduidingen.',
        patroon:/^(H|EUH)\d+[A-Za-z]*$/,patroonFout:'Een code ziet eruit als H315, H360FD of EUH208.'},
       {id:'tekst',label:'Officiële tekst',type:'tekstvak',verplicht:true,
        hint:'Neem ze letterlijk over van het etiket of uit de CLP-verordening — deze zin komt bij de klant in beeld.'}
@@ -3667,7 +3674,10 @@ function nieuweGevaarzin(){
       // De titel2-vlag zetten we hier bewust NIET: welke codes onder titel 2
       // vallen, ligt vast in valt_onder_titel2. Een vinkje hier zou de indruk
       // wekken dat je dat oordeel kan bijsturen, en dat kan je niet.
-      sb.from('gevaarzinnen').insert({code:w.code.toUpperCase(),tekst:w.tekst,volgorde:100}).then(function(r){
+      // Niet naar hoofdletters omzetten: H350i, H360Fd en H360fD bestaan naast
+      // elkaar en betekenen elk iets anders. Wat je intikt, blijft staan.
+      sb.from('gevaarzinnen').insert({code:w.code.trim(),tekst:w.tekst,volgorde:5000,
+                                      bron:'Handmatig toegevoegd in het portaal'}).then(function(r){
         if(r.error){
           if(r.error.code==='23505')showToast('Deze code staat er al.');
           else showToast('Fout: '+r.error.message);
@@ -3788,6 +3798,7 @@ function beantwoordVraag(id){
 // anders beweren dan wat er opgeslagen staat.
 var chemieProducten=[];
 var gevaarTeksten={};
+var gevaarTekstenRuim={};
 
 // Bijwerken mag PrevX, en de klant-beheerder van dit bedrijf. Dezelfde grens als
 // in de policies van 0098: een productlijst die enkel de adviseur kan aanvullen,
@@ -3804,12 +3815,22 @@ function laadChemie(){
   document.getElementById('chemieNieuwKnop').style.display=magChemieBeheren()?'':'none';
   Promise.all([
     sb.from('chemische_producten').select('*').eq('bedrijf_id',huidigeBedrijfId).order('naam'),
-    sb.from('gevaarzinnen').select('code,tekst,titel2').eq('actief',true)
+    sb.from('gevaarzinnen').select('code,tekst,titel2,opmerking').eq('actief',true)
   ]).then(function(r){
     if(r[0].error){showToast('Fout: '+r[0].error.message);return;}
     chemieProducten=r[0].data||[];
     gevaarTeksten={};
-    (r[1].data||[]).forEach(function(g){gevaarTeksten[g.code]={tekst:g.tekst,titel2:g.titel2};});
+    gevaarTekstenRuim={};
+    (r[1].data||[]).forEach(function(g){
+      var rij={tekst:g.tekst,titel2:g.titel2,opmerking:g.opmerking};
+      gevaarTeksten[g.code]=rij;
+      // Tweede lijst op hoofdletters, als terugval wanneer een code met andere
+      // hoofdletters is ingetikt. Botsen er twee codes op dezelfde hoofdletters,
+      // dan zetten we die op false: H360Fd en H360fD schelen enkel daarin en
+      // betekenen iets anders. Liever geen tekst dan de verkeerde.
+      var sleutel=g.code.toUpperCase();
+      gevaarTekstenRuim[sleutel]=gevaarTekstenRuim.hasOwnProperty(sleutel)?false:rij;
+    });
     renderChemie();
   });
 }
@@ -3822,13 +3843,36 @@ function leesHZinnen(tekst){
     .filter(function(c){return /^(H|EUH)\d+[A-Za-z]*$/i.test(c);});
 }
 
+// Zoekt de zin bij één code op. Eerst exact, dan pas op hoofdletters.
+function gevaarZoek(code){
+  var c=String(code).trim();
+  if(gevaarTeksten[c])return gevaarTeksten[c];
+  var ruim=gevaarTekstenRuim[c.toUpperCase()];
+  return ruim||null;
+}
+
+// Een gecombineerde aanduiding (H302+H312, H300+H310+H330) staat niet als
+// aparte regel in de codelijst en hoeft dat ook niet: ze is de losse zinnen
+// achter elkaar. Zo werkt elke combinatie, ook eentje die niemand vooraf
+// bedacht heeft. Kennen we één deel niet, dan geven we niets terug -- een halve
+// uitleg is misleidender dan geen.
+function gevaarUitleg(code){
+  var delen=String(code).split('+');
+  var zinnen=[];
+  for(var i=0;i<delen.length;i++){
+    var g=gevaarZoek(delen[i]);
+    if(!g)return null;
+    zinnen.push(g.tekst+(g.opmerking?' ('+g.opmerking+')':''));
+  }
+  return zinnen.join(' ');
+}
+
 function chemieGevaarBadges(codes){
   if(!codes||!codes.length)return '<span style="color:var(--gray-400)">-</span>';
   return codes.map(function(c){
-    var g=gevaarTeksten[c];
     // Een code waarvan we de tekst niet kennen, tonen we als code. Weglaten zou
     // erger zijn: dan lijkt een product ongevaarlijk omdat wij een zin missen.
-    var titel=g?g.tekst:'Tekst nog niet in de codelijst';
+    var titel=gevaarUitleg(c)||'Tekst nog niet in de codelijst';
     // Allemaal dezelfde kleur: welke code het product onder titel 2 brengt, zegt
     // de badge onder de productnaam al. Twee keer dezelfde boodschap in dezelfde
     // kleur is wat een tabel druk maakt.
