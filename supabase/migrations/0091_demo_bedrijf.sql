@@ -178,6 +178,9 @@ begin
   if to_regclass('public.chemische_producten') is not null then
     delete from chemische_producten where bedrijf_id = v_bedrijf;
   end if;
+  if to_regclass('public.vragen') is not null then
+    delete from vragen where bedrijf_id = v_bedrijf;
+  end if;
   -- Het brandpreventiedossier komt uit 0088. Staat die migratie nog niet in de
   -- databank, dan slaan we dat onderdeel over in plaats van hier te crashen: de
   -- demo mag niet afhangen van de volgorde waarin jij je migraties uitvoert.
@@ -890,6 +893,72 @@ begin
      'Vervangen door een chroomvrije primer. Rest afgevoerd via erkende ophaler.', false, 'PrevX');
 
   raise notice 'Zes chemische producten toegevoegd. Laad bij een van hen een pdf op om ook de VIB-knop te tonen.';
+end
+$$;
+
+
+-- ---------------------------------------------------------------------------
+-- BLOK 4C -- twee vragen
+-- ---------------------------------------------------------------------------
+-- Eén beantwoord en één open, zodat het scherm allebei de toestanden toont
+-- zonder dat je er tijdens een demo eerst zelf een moet stellen.
+--
+-- De beantwoorde vraag is met opzet die over jobstudenten en chemische agentia:
+-- ze raakt aan twee modules tegelijk en het antwoord wijst terug naar de
+-- productlijst. Dat is precies wat een portaal doet wat een mail niet doet.
+--
+-- Het antwoord is nagelezen bij FOD WASO op 21 aug 2026 (boek X titel 3,
+-- jongeren op het werk). Wat daar staat en hier verwerkt is: een jobstudent valt
+-- onder categorie e; het verbod op gevaarlijke arbeid geldt voor alle
+-- categorieën en dekt onder meer kankerverwekkende, mutagene, reprotoxische en
+-- hormoonontregelende stoffen; het verbod is niet absoluut, want de
+-- risicoanalyse moet aantonen dat het risico reëel is; en die analyse gebeurt
+-- vóór de start, jaarlijks opnieuw en bij elke wijziging van werkpost.
+-- De precieze afwijkingsvoorwaarden per categorie staan er ook, maar die heb ik
+-- hier niet in verwerkt -- gebruik dit antwoord dus als demomateriaal, en toets
+-- het aan de bron voor je het aan een echte klant geeft.
+do $$
+declare
+  v_bedrijf uuid := 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  v_sofie uuid;
+  v_kevin uuid;
+begin
+  if to_regclass('public.vragen') is null then
+    raise notice 'Tabel vragen bestaat nog niet (migratie 0101 nog niet gedraaid). Vragen overgeslagen.';
+    return;
+  end if;
+
+  select id into v_sofie from gebruikers where bedrijf_id = v_bedrijf and naam = 'Sofie Delaere';
+  select id into v_kevin from gebruikers where bedrijf_id = v_bedrijf and naam = 'Kevin De Smet';
+
+  -- De trigger op vragen verwittigt PrevX per mail bij elke nieuwe vraag. Zonder
+  -- deze onderbreking krijg je twee berichten telkens je de demo reset -- over
+  -- vragen die je zelf net gezaaid hebt. Even uit, en meteen weer aan: bij een
+  -- fout rolt de transactie de hele blok terug, inclusief dit.
+  alter table vragen disable trigger trg_meld_nieuwe_vraag;
+
+  insert into vragen (bedrijf_id, gebruiker_id, gesteld_door, vraag, gesteld_op,
+                      antwoord, beantwoord_op, beantwoord_door, status)
+  values (
+    v_bedrijf, v_sofie, 'Sofie Delaere',
+    'Mogen jobstudenten chemische agentia gebruiken? We nemen er twee aan voor de zomer, voor het ontvetten en het opkuisen van de werkplaats.',
+    now() - interval '9 days',
+    'Kort: niet zomaar, en voor een deel van uw producten niet.' || chr(10) || chr(10) ||
+    'Een jobstudent valt onder titel 3 van boek X van de codex (jongeren op het werk), als student-werknemer met een studentenovereenkomst. Voor die groep geldt een verbod op werk waarbij ze worden blootgesteld aan onder meer kankerverwekkende, mutagene en reprotoxische stoffen en aan stoffen met hormoonontregelende eigenschappen.' || chr(10) || chr(10) ||
+    'Dat verbod is niet absoluut: het is uw risicoanalyse die moet aantonen of het risico reëel is, en er gelden voorwaarden om ervan af te wijken. Die analyse moet er zijn vóór ze beginnen, wordt jaarlijks hernieuwd en opnieuw bij een wijziging van werkpost.' || chr(10) || chr(10) ||
+    'Praktisch voor uw situatie: in uw productlijst staat bij elk product of het onder titel 2 van boek VI valt. Die producten houdt u buiten hun bereik tot we samen bekeken hebben of er een werkbare afwijking bestaat. Voor de gewone ontvetter en de kuisproducten volstaat een degelijk onthaal, de juiste PBM en toezicht van een ervaren collega.' || chr(10) || chr(10) ||
+    'Ik neem dit mee op het volgende bezoek en zet de risicoanalyse jongeren in uw dossier.',
+    now() - interval '7 days', 'Peter Van Deyk', 'beantwoord'),
+
+  (
+    v_bedrijf, v_kevin, 'Kevin De Smet',
+    'Moet er op elke bestelwagen een EHBO-koffer liggen, of volstaat één koffer in de werkplaats?',
+    now() - interval '2 days',
+    null, null, null, 'open');
+
+  alter table vragen enable trigger trg_meld_nieuwe_vraag;
+
+  raise notice 'Twee vragen toegevoegd: een beantwoorde en een open. Geen mail verstuurd -- de trigger stond even uit.';
 end
 $$;
 
