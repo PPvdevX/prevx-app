@@ -316,7 +316,11 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .klant-kaart.brand:hover{border-color:#7f1d1d}
 .klant-kaart.brand .klant-kaart-naam{color:#fff}
 .klant-kaart.brand .klant-kaart-sub{color:rgba(255,255,255,.92)}
-.klant-kaart.brand .klant-kaart-icoon{background:rgba(255,255,255,.18);color:#fff}
+/* Geen icoonvlak op deze kaart. De band zegt al waar ze over gaat, en zonder
+   dat vlak is de kaart precies even hoog als haar buren: de band (36px) weegt
+   op tot op twee pixels na tegen het icoon (38px) dat eruit gaat. Anders trekt
+   deze ene kaart de hele rij hoger. */
+.klant-kaart.brand .klant-kaart-icoon{display:none}
 .klant-kaart.brand .kaart-teller{background:rgba(255,255,255,.22);color:#fff}
 .btn-rood{background:#c8102e;border-color:#c8102e;color:#fff}
 .btn-rood:hover{background:#a30d25;border-color:#a30d25;color:#fff}
