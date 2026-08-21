@@ -173,6 +173,11 @@ begin
   delete from document_nummers where bedrijf_id = v_bedrijf;
 
   delete from bedrijf_kennisbank where bedrijf_id = v_bedrijf;
+  -- Chemische agentia komt uit 0098; zelfde voorbehoud als bij het
+  -- brandpreventiedossier hieronder.
+  if to_regclass('public.chemische_producten') is not null then
+    delete from chemische_producten where bedrijf_id = v_bedrijf;
+  end if;
   -- Het brandpreventiedossier komt uit 0088. Staat die migratie nog niet in de
   -- databank, dan slaan we dat onderdeel over in plaats van hier te crashen: de
   -- demo mag niet afhangen van de volgorde waarin jij je migraties uitvoert.
@@ -245,7 +250,7 @@ begin
   insert into bedrijf_modules (bedrijf_id, module_key, actief)
   select v_bedrijf, k, true
   from unnest(array['preinspecties','vuurvergunning','lmra','actiepunten',
-                    'planning','documenten','meldingen','kennisbank']) as k
+                    'planning','documenten','meldingen','kennisbank','chemie']) as k
   on conflict (bedrijf_id, module_key) do update set actief = true;
 
   -- --- vrije pincodes zoeken ----------------------------------------------
@@ -806,6 +811,79 @@ begin
       (v_bedrijf, 'hulpdiensten',           (current_date - 42)::date, 'PrevX', 12, null)
     on conflict (bedrijf_id, onderdeel) do nothing;
   end if;
+end
+$$;
+
+
+-- ---------------------------------------------------------------------------
+-- BLOK 4B -- chemische agentia
+-- ---------------------------------------------------------------------------
+-- Zes producten die je in een metaalbedrijf werkelijk aantreft, gekozen zodat
+-- elk signaal in het scherm iets te tonen heeft:
+--
+--   * een product onder titel 2 (de PU-lijm, via EUH380 -- hormoonontregelaar,
+--     de categorie zonder pictogram);
+--   * een product met H351 "verdacht van kanker", categorie 2, dat er juist
+--     NIET onder valt -- dat verschil van één cijfer is het hele punt;
+--   * een gearchiveerd product dat wel onder titel 2 viel, om te tonen dat het
+--     spoor blijft;
+--   * bladen met en zonder datum.
+--
+-- GEEN ENKEL PRODUCT HEEFT EEN BESTAND. Dat is geen vergetelheid: een verzonnen
+-- adres geeft een 404 midden in je demo, en een pdf in de repo zetten om hem bij
+-- elke reset weer te uploaden is meer omhaal dan het waard is. Laad vóór je
+-- eerste demo bij één product een willekeurige pdf op -- tien seconden werk --
+-- dan toont het scherm ook de knop "Veiligheidsinformatieblad openen", en licht
+-- meteen de oranje teller op bij de roestomvormer, waarvan het blad uit 2019
+-- dateert.
+do $$
+declare
+  v_bedrijf uuid := 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+begin
+  if to_regclass('public.chemische_producten') is null then
+    raise notice 'Tabel chemische_producten bestaat nog niet (migratie 0098 nog niet gedraaid). Producten overgeslagen.';
+    return;
+  end if;
+
+  insert into chemische_producten
+    (bedrijf_id, naam, leverancier, toepassing, locatie, hoeveelheid,
+     h_zinnen, vib_datum, opmerking, actief, toegevoegd_door)
+  values
+    (v_bedrijf, 'Ontvetter X-200', 'Chemco', 'Ontvetten voor het lassen',
+     'Chemiekast magazijn', '4 bussen van 5 l',
+     array['H315','H319','H336'], (current_date - 500)::date, null, true, 'PrevX'),
+
+    (v_bedrijf, 'Antispatspray lasposten', 'Weldtech', 'Voorkomen dat lasspatten hechten',
+     'Lasplaats 1 en 2', '6 spuitbussen',
+     array['H222','H229','H315'], (current_date - 780)::date, null, true, 'PrevX'),
+
+    -- Titel 2 via EUH380: geen pictogram, en juist daarom het product waarop je
+    -- in een demo blijft staan.
+    (v_bedrijf, 'Tweecomponentenlijm PU', 'Bouwchemie', 'Verlijmen van panelen',
+     'Magazijn, rek 4', '12 x 750 ml',
+     array['H317','H334','EUH380'], null,
+     'Enkel gebruiken met afzuiging.', true, 'PrevX'),
+
+    -- H351 is categorie 2 ("verdacht van"): valt onder titel 1, NIET onder
+    -- titel 2. Het blad is van 2019 en voedt de oranje teller zodra er een
+    -- bestand aan hangt.
+    (v_bedrijf, 'Roestomvormer', 'Metaalchemie', 'Voorbehandeling van staal',
+     'Chemiekast magazijn', '2 bidons van 10 l',
+     array['H314','H351'], (current_date - 2100)::date,
+     'Blad dateert van voor de laatste receptwijziging; nieuwe versie opvragen.', true, 'PrevX'),
+
+    (v_bedrijf, 'Koelsmeermiddel', 'Cooltech', 'Verspanen op de draaibank',
+     'Machinepark', 'Vat van 200 l',
+     array['H315','H317'], (current_date - 220)::date, null, true, 'PrevX'),
+
+    -- Gearchiveerd, niet gewist: dat dit ooit in huis was, is zelf informatie --
+    -- zeker bij een stof onder titel 2.
+    (v_bedrijf, 'Chroomhoudende primer', 'Coatings NV', 'Grondlaag op staal (vervangen in 2025)',
+     'Uit dienst', '-',
+     array['H350i','H317'], (current_date - 1600)::date,
+     'Vervangen door een chroomvrije primer. Rest afgevoerd via erkende ophaler.', false, 'PrevX');
+
+  raise notice 'Zes chemische producten toegevoegd. Laad bij een van hen een pdf op om ook de VIB-knop te tonen.';
 end
 $$;
 
