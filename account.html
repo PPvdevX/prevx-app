@@ -4352,6 +4352,101 @@ function laadUitgevoerdeLmras(){
     });
 }
 
+// ---------------------------------------------------------------------------
+// Eén LMRA opengeklapt
+// ---------------------------------------------------------------------------
+// De lijst toonde wie, wat, waar en hoe lang -- en verder niets. Net het deel
+// dat deze module van een afvinklijst onderscheidt, bleef onzichtbaar: wat
+// iemand zelf vaststelde, de foto die hij moest maken, en bij een stilgelegd
+// werk de reden. Die staan alle drie in de databank sinds 0082; ze werden
+// alleen nergens getoond.
+//
+// De volgorde hieronder is niet toevallig. Een stilgelegd werk staat bovenaan,
+// voor alle andere gegevens: dat is het enige wat om een beslissing vraagt.
+function openLmra(id){
+  document.getElementById('detailOverlay').classList.add('active');
+  document.getElementById('detailPrintKnop').style.display='none';
+  document.getElementById('detailBody').innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400)"><div class="spinner-sm"></div>Laden...</div>';
+
+  Promise.all([
+    sb.from('lmras').select('*,gebruikers(naam)').eq('id',id).single(),
+    sb.from('lmra_risico_antwoorden').select('in_orde,opmerking,lmra_risicos(naam,categorie)').eq('lmra_id',id)
+  ]).then(function(res){
+    var l=res[0].data; if(!l)return;
+    var antw=res[1].data||[];
+
+    document.getElementById('detailTitel').textContent=l.taak;
+    document.getElementById('detailSub').textContent=(l.gebruikers?l.gebruikers.naam:'-')+' · '+l.locatie+' · '+
+      formatDatum(l.gestart_op.slice(0,10))+' '+l.gestart_op.slice(11,16);
+
+    var duurSec=(l.afgerond_op&&l.gestart_op)?Math.round((new Date(l.afgerond_op)-new Date(l.gestart_op))/1000):null;
+    var duur=duurSec==null?'-':(duurSec<60?duurSec+' s':Math.floor(duurSec/60)+' m '+(duurSec%60)+' s');
+    var snel=l.soort==='volledig'&&duurSec!=null&&duurSec<20;
+    var nietInOrde=antw.filter(function(a){return !a.in_orde;});
+
+    var h='';
+
+    // Stilgelegd werk eerst, want dat is het enige dat om een beslissing vraagt.
+    if(l.status==='gestopt'){
+      h+='<div style="background:var(--red-bg);border-left:4px solid var(--red);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px">'+
+         '<div style="font-family:\'Montserrat\',sans-serif;font-weight:700;color:var(--red-tekst);margin-bottom:8px">Werk stilgelegd</div>'+
+         '<p style="font-size:14px;line-height:1.7;margin:0">'+nbEsc(l.stop_reden||'Geen reden opgegeven.')+'</p>';
+      if(l.hervat_op){
+        h+='<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)">'+
+           '<div style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);margin-bottom:5px">Hervat op '+
+           formatDatum(l.hervat_op.slice(0,10))+' '+l.hervat_op.slice(11,16)+'</div>'+
+           '<p style="font-size:14px;line-height:1.7;margin:0">'+nbEsc(l.hervat_reden||'')+'</p></div>';
+      }else{
+        h+='<p style="font-size:13px;color:var(--gray-500);margin:12px 0 0">Nog niet hervat.</p>';
+      }
+      h+='</div>';
+    }
+
+    h+='<div class="detail-meta">'+
+       '<div class="detail-meta-item"><div class="detail-meta-label">Soort</div><div class="detail-meta-value">'+(l.soort==='bevestiging'?'Bevestiging':'Volledig')+'</div></div>'+
+       '<div class="detail-meta-item"><div class="detail-meta-label">Duur</div><div class="detail-meta-value"'+(snel?' style="color:var(--orange)"':'')+'>'+duur+(snel?' &#9888;':'')+'</div></div>'+
+       '<div class="detail-meta-item"><div class="detail-meta-label">Plek</div><div class="detail-meta-value">'+nbEsc(l.locatie)+'</div></div>'+
+       '<div class="detail-meta-item"><div class="detail-meta-label">Risico\'s niet in orde</div><div class="detail-meta-value"'+(nietInOrde.length?' style="color:var(--red-tekst)"':'')+'>'+nietInOrde.length+' van '+antw.length+'</div></div>'+
+       '</div>';
+
+    if(snel){
+      h+='<p style="font-size:13px;color:var(--orange);background:var(--orange-bg);border-radius:var(--radius);padding:11px 14px;margin-bottom:18px">'+
+         'Deze volledige LMRA duurde minder dan twintig seconden. Dat is een vaststelling, geen beschuldiging &mdash; maar het is de moeite om er eens naar te vragen.</p>';
+    }
+
+    // Wat iemand zelf zag. Dit is het deel dat een LMRA van een afvinklijst
+    // onderscheidt, dus het staat vooraan en niet onderaan bij de details.
+    h+='<div class="sectie-blok"><div class="sectie-blok-header">Eigen vaststelling</div>'+
+       '<div style="padding:14px 16px;font-size:14px;line-height:1.7;color:var(--gray-700)">'+
+       (l.eigen_vaststelling?nbEsc(l.eigen_vaststelling):'<span style="color:var(--gray-400)">Niets ingevuld &mdash; bij een bevestiging hoeft dat niet.</span>')+
+       '</div></div>';
+
+    if(l.foto_url){
+      h+='<div class="sectie-blok"><div class="sectie-blok-header">Foto van de werkplek</div>'+
+         '<div style="padding:14px 16px"><img data-prive-src="'+l.foto_url+'" alt="Foto van de werkplek" '+
+         'style="max-width:100%;border-radius:var(--radius);cursor:pointer" onclick="openLightbox(this.src)"></div></div>';
+    }
+
+    if(antw.length){
+      h+='<div class="sectie-blok"><div class="sectie-blok-header">Nagekeken risico\'s</div>';
+      // Wat niet in orde was eerst: daar gaat het om, en de opmerking erbij is
+      // verplicht (CHECK in 0082), dus die staat er altijd.
+      antw.sort(function(a,b){return (a.in_orde?1:0)-(b.in_orde?1:0);});
+      antw.forEach(function(a){
+        var naam=a.lmra_risicos?a.lmra_risicos.naam:'-';
+        h+='<div class="punt-rij"><span class="punt-badge '+(a.in_orde?'ok':'nok')+'">'+(a.in_orde?'OK':'NEE')+'</span>'+
+           '<div class="punt-tekst">'+nbEsc(naam);
+        if(a.opmerking)h+='<div class="punt-opm">&#128172; '+nbEsc(a.opmerking)+'</div>';
+        h+='</div></div>';
+      });
+      h+='</div>';
+    }
+
+    document.getElementById('detailBody').innerHTML=h;
+    verversPriveMedia(document.getElementById('detailBody'));
+  });
+}
+
 function renderLmras(data){
   document.getElementById('lmraCount').textContent=data.length+" LMRA's";
   var tbody=document.getElementById('lmraTabel');
@@ -4367,6 +4462,8 @@ function renderLmras(data){
     // verbergen maar markeren: het is een vaststelling, geen beschuldiging.
     var snel=l.soort==='volledig'&&l.afgerond_op&&(new Date(l.afgerond_op)-new Date(l.gestart_op))<20000;
     var tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.onclick=function(){openLmra(l.id);};
     tr.innerHTML='<td>'+formatDatum(l.gestart_op.slice(0,10))+' '+l.gestart_op.slice(11,16)+'</td>'+
       '<td>'+(l.gebruikers?l.gebruikers.naam:'-')+'</td>'+
       '<td>'+l.taak+(l.soort==='bevestiging'?'<div style="font-size:11px;color:var(--gray-500)">bevestiging</div>':'')+'</td>'+
