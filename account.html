@@ -2052,6 +2052,8 @@ var KLANT_KAARTEN=[
 ];
 
 var ADVISEUR_EMAIL='peter@prevx.be';
+// Staat naast het e-mailadres omdat een klant die belt meestal niet eerst mailt.
+var ADVISEUR_TEL='+32 491 34 29 75';
 
 var KAART_ICONEN={
   actiepunten:'<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -2175,7 +2177,7 @@ function laadKlantContacten(){
 
       // PrevX staat er altijd bij: de klant hoeft niet te weten uit welk veld
       // van welke tabel wij komen.
-      var h=rij('Externe preventieadviseur','PrevX','<a href="mailto:'+ADVISEUR_EMAIL+'">'+ADVISEUR_EMAIL+'</a>');
+      var h=rij('Externe preventieadviseur','PrevX',contact(ADVISEUR_EMAIL,ADVISEUR_TEL));
       // Zonder deze controle staat er "null (Niveau 3)" wanneer enkel het niveau
       // ingevuld is.
       var intern=b.interne_preventieadviseur
@@ -2270,7 +2272,8 @@ function bouwOokBeschikbaar(kaarten){
   var p=document.createElement('p');
   p.className='kaart-ook';
   p.innerHTML='Ook beschikbaar: '+lijst+'. '+
-    '<a href="mailto:'+ADVISEUR_EMAIL+'?subject='+encodeURIComponent('Vraag over mijn formule')+'">Vraag ernaar bij uw adviseur</a>';
+    '<a href="mailto:'+ADVISEUR_EMAIL+'?subject='+encodeURIComponent('Vraag over mijn formule')+'">Vraag ernaar bij uw adviseur</a>'+
+    ' of bel <a href="tel:'+ADVISEUR_TEL.replace(/[^0-9+]/g,'')+'">'+ADVISEUR_TEL+'</a>.';
   return p;
 }
 
