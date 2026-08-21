@@ -292,6 +292,16 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .kaart-groep{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:26px}
 /* Klein en rustig: de kaarten dragen de aandacht al, de kop hoeft alleen te
    zeggen waar je bent. */
+/* Geen kaarten maar regels: dit is niets om op te klikken, het is iets om te
+   lezen wanneer er net iets gebeurd is. */
+.contact-blok{margin:0 32px 40px;background:var(--surface);border:1px solid var(--gray-300);border-radius:var(--radius-lg);padding:18px 22px}
+.contact-kop{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-500);margin-bottom:12px}
+.contact-rij{display:flex;flex-wrap:wrap;gap:4px 14px;padding:8px 0;border-top:1px solid var(--gray-100);font-size:13px}
+.contact-rij:first-of-type{border-top:none}
+.contact-rol{min-width:190px;color:var(--gray-500)}
+.contact-naam{font-weight:600;color:var(--navy-text)}
+.contact-blok a{color:var(--accent-tekst);text-decoration:none}
+.contact-blok a:hover{text-decoration:underline}
 .kaart-leeg{font-size:13px;color:var(--gray-400);margin:0 0 18px;padding-left:2px}
 .kaart-ook{font-size:13px;color:var(--gray-500);line-height:1.6;margin:4px 0 0;padding-top:16px;border-top:1px solid var(--gray-200);max-width:640px}
 .kaart-ook a{color:var(--accent-tekst);font-weight:600;text-decoration:none}
@@ -678,6 +688,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       <div class="sw-inbegrepen" id="klantSwInbegrepen"></div>
     </div>
     <div class="kaart-grid" id="klantKaarten"></div>
+    <div class="contact-blok" id="klantContacten" style="display:none"></div>
   </div>
 
     <div id="tab-overzicht">
@@ -2132,8 +2143,52 @@ function laadKlantHome(){
 
   laadSamenwerking(['klant']);
   laadVolgendBezoek();
+  laadKlantContacten();
   tekenKlantKaarten();
   laadKaartTellers();
+}
+
+// Wie bel je als er iets gebeurt? Die gegevens stonden al in de bedrijfsfiche,
+// maar enkel aan onze kant -- de klant zag ze nergens. Precies op het moment dat
+// het ertoe doet, is dat het slechtste moment om te moeten zoeken.
+function laadKlantContacten(){
+  sb.from('bedrijven')
+    .select('interne_preventieadviseur,niveau_preventieadviseur,mail_preventieadviseur,tel_preventieadviseur,edpbw,dossierbeheerder_edpbw,mail_dossierbeheerder,tel_dossierbeheerder,arbeidsongevallenverzekeraar')
+    .eq('id',huidigeBedrijfId).maybeSingle().then(function(r){
+      var b=r.data||{};
+      var vak=document.getElementById('klantContacten');
+      if(!vak)return;
+
+      function veilig(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML;}
+      function contact(mail,tel){
+        var uit=[];
+        if(mail)uit.push('<a href="mailto:'+encodeURIComponent(mail)+'">'+veilig(mail)+'</a>');
+        if(tel)uit.push('<a href="tel:'+String(tel).replace(/[^0-9+]/g,'')+'">'+veilig(tel)+'</a>');
+        return uit.join(' &middot; ');
+      }
+      function rij(rol,naam,rest){
+        if(!naam&&!rest)return '';
+        return '<div class="contact-rij"><span class="contact-rol">'+rol+'</span>'+
+          '<span class="contact-naam">'+veilig(naam||'')+'</span>'+
+          (rest?'<span>'+rest+'</span>':'')+'</div>';
+      }
+
+      // PrevX staat er altijd bij: de klant hoeft niet te weten uit welk veld
+      // van welke tabel wij komen.
+      var h=rij('Externe preventieadviseur','PrevX','<a href="mailto:'+ADVISEUR_EMAIL+'">'+ADVISEUR_EMAIL+'</a>');
+      // Zonder deze controle staat er "null (Niveau 3)" wanneer enkel het niveau
+      // ingevuld is.
+      var intern=b.interne_preventieadviseur
+        ? b.interne_preventieadviseur+(b.niveau_preventieadviseur?' ('+b.niveau_preventieadviseur+')':'')
+        : '';
+      h+=rij('Interne preventieadviseur',intern,contact(b.mail_preventieadviseur,b.tel_preventieadviseur));
+      h+=rij('Externe dienst (EDPBW)',b.edpbw,'');
+      h+=rij('Dossierbeheerder EDPBW',b.dossierbeheerder_edpbw,contact(b.mail_dossierbeheerder,b.tel_dossierbeheerder));
+      h+=rij('Arbeidsongevallenverzekeraar',b.arbeidsongevallenverzekeraar,'');
+
+      vak.innerHTML='<div class="contact-kop">Wie te bereiken</div>'+h;
+      vak.style.display='';
+    });
 }
 
 function laadVolgendBezoek(){
