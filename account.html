@@ -6520,6 +6520,25 @@ function nbVoegIn(soort){
   if(NB_BLOKKEN[soort])nbVoegInTekst(NB_BLOKKEN[soort]);
 }
 
+// De blokknoppen vullen elk blok met een voorbeeldtekst. Handig om te zien waar
+// je moet typen, maar het is ook precies wat er meegaat als je het vergeet te
+// vervangen -- en dan staat er "Schrijf hier je tekst." in de mailbox van
+// driehonderd mensen. Deze controle draait voor het verzenden.
+//
+// Alt-tekst wordt bewust NIET gecontroleerd: een lege beschrijving is jammer,
+// maar het is geen zin die een lezer te zien krijgt.
+var NB_PLAATSHOUDERS=['>Titel<','Schrijf hier je tekst.','>Lees meer<','href="https://prevx.be"'];
+
+function nbGevondenPlaatshouders(html){
+  var tekst=String(html||'');
+  var gevonden=[];
+  if(tekst.indexOf('>Titel<')>=0)gevonden.push('de titel heet nog "Titel"');
+  if(tekst.indexOf('Schrijf hier je tekst.')>=0)gevonden.push('er staat nog "Schrijf hier je tekst."');
+  if(tekst.indexOf('>Lees meer<')>=0)gevonden.push('een knop heet nog "Lees meer"');
+  if(tekst.indexOf('href="https://prevx.be"')>=0)gevonden.push('een knop wijst nog naar de homepage');
+  return gevonden;
+}
+
 function nbKiesAfbeelding(){
   var k=document.getElementById('nbBestand');
   if(k){k.value='';k.click();}
@@ -6631,7 +6650,13 @@ function testCampagne(id){
     showToast('Testmail versturen...');
     nbRoepVerzendFunctie({campagne_id:id,test_naar:adres}).then(function(r){
       if(!r)return;
-      showToast(r.ok?('Testmail verstuurd naar '+adres):('Fout: '+(r.body.error||'mislukt')));
+      if(!r.ok){showToast('Fout: '+(r.body.error||'mislukt'));return;}
+      // Bij een test tegenhouden zou onzin zijn -- je test juist om dit te zien.
+      // Wel meteen zeggen wat er nog staat, want in de mail zelf leest het als
+      // gewone tekst en kijk je eroverheen.
+      var rest=nbGevondenPlaatshouders(document.getElementById('nbHtml')?document.getElementById('nbHtml').value:'');
+      if(rest.length)showToast('Testmail verstuurd. Let op: '+rest[0]+'.');
+      else showToast('Testmail verstuurd naar '+adres);
     });
   });
 }
@@ -6649,6 +6674,19 @@ function klaarzetCampagne(id){
 // seconden en meldt wat er rest. Zonder deze lus zou je bij een grote lijst
 // zelf meermaals op Verzenden moeten duwen zonder te weten hoe vaak.
 function verzendCampagne(id){
+  // Leest de databank en niet het scherm: verzenden doet dat ook, dus een
+  // controle op een niet-bewaard veld zou het verkeerde nakijken.
+  sb.from('nieuwsbrief_campagnes').select('html').eq('id',id).single().then(function(r){
+    var rest=nbGevondenPlaatshouders(r.data?r.data.html:'');
+    if(rest.length){
+      if(!confirm('Let op, er staat nog voorbeeldtekst in:\n\n- '+rest.join('\n- ')+
+        '\n\nDit gaat mee naar iedereen in de wachtrij en is daarna niet meer terug te halen.\n\nToch verzenden?'))return;
+    }
+    nbVerzendEcht(id);
+  });
+}
+
+function nbVerzendEcht(id){
   if(!confirm('Verzenden naar iedereen in de wachtrij. Dit kan niet teruggedraaid worden.\n\nDoorgaan?'))return;
   showToast('Verzenden gestart...');
   var ronde=function(){
