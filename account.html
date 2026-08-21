@@ -989,8 +989,8 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
               <button class="btn-add-sm" onclick="nieuwPakket()">+ Nieuw pakket</button>
             </span>
           </div>
-          <table><thead><tr><th>Naam</th><th>Status</th><th></th></tr></thead>
-          <tbody id="pakkettenTabel"><tr class="loading-row"><td colspan="3"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+          <table><thead><tr><th>Naam</th><th>Bezoekdagen</th><th>Modules in dit pakket</th><th>Status</th><th></th></tr></thead>
+          <tbody id="pakkettenTabel"><tr class="loading-row"><td colspan="5"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -3148,7 +3148,9 @@ function laadCodelijsten(){
   laadKeuringTypes(renderKeuringTypesTabel);
   laadSectorCodes(renderSectorCodesTabel);
   laadParitaireComites(renderParitaireComitesTabel);
-  laadPakketten(renderPakkettenTabel);
+  // Eerst de modulecatalogus en de matrix, anders tekent de pakkettentabel haar
+  // aanvinklijst leeg en lijkt elk pakket "niets aangevinkt" te hebben.
+  laadModulesEnMatrix(function(){ laadPakketten(renderPakkettenTabel); });
 }
 
 // Zet één keer de pijl en de klikafhandeling op elke inklapbare kaart. De
@@ -3496,17 +3498,83 @@ function laadPakketten(callback){
   });
 }
 
+// De modulecatalogus en de matrix pakket-module. Beide staan in de databank
+// (migratie 0094 zette de vijf dossiermodules bij de drie app-modules in
+// dezelfde tabel), zodat dit scherm geen lijst met namen hoeft te herhalen die
+// dan alsnog uiteenloopt met wat de RPC toepast.
+var alleModules=[];
+var pakketModules={};
+
+function laadModulesEnMatrix(callback){
+  Promise.all([
+    sb.from('modules').select('key,naam,volgorde').eq('actief',true).order('volgorde'),
+    sb.from('pakket_modules').select('pakket_id,module_key')
+  ]).then(function(r){
+    alleModules=r[0].data||[];
+    pakketModules={};
+    (r[1].data||[]).forEach(function(m){
+      if(!pakketModules[m.pakket_id])pakketModules[m.pakket_id]={};
+      pakketModules[m.pakket_id][m.module_key]=true;
+    });
+    if(callback)callback();
+  });
+}
+
 function renderPakkettenTabel(){
   document.getElementById('pakkettenCount').textContent=allePakketten.length+' pakketten';
   var tbody=document.getElementById('pakkettenTabel');
-  if(!allePakketten.length){tbody.innerHTML='<tr class="empty-row"><td colspan="3">Nog geen pakketten.</td></tr>';return;}
+  if(!allePakketten.length){tbody.innerHTML='<tr class="empty-row"><td colspan="5">Nog geen pakketten.</td></tr>';return;}
   tbody.innerHTML='';
   allePakketten.forEach(function(p){
+    var gekozen=pakketModules[p.id]||{};
+    var aantal=Object.keys(gekozen).length;
+    var vinkjes=alleModules.map(function(m){
+      return '<label style="display:inline-flex;align-items:center;gap:5px;margin:0 10px 4px 0;font-size:12px;white-space:nowrap">'+
+        '<input type="checkbox"'+(gekozen[m.key]?' checked':'')+
+        ' onchange="zetPakketModule(\''+p.id+'\',\''+m.key+'\',this.checked)"> '+m.naam+'</label>';
+    }).join('');
+    // Een pakket zonder vinkjes zet bij toepassing álles uit. Dat hoort te
+    // schreeuwen in de lijst, niet pas op te vallen bij een klant.
+    var waarschuwing=aantal?'':'<div style="font-size:12px;color:var(--red-tekst);margin-top:4px">Niets aangevinkt &mdash; toepassen zet alle modules uit bij de klant.</div>';
     var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+p.naam+'</td>'+
-      '<td><span class="badge '+(p.actief?'rijklaar':'niet_rijklaar')+'">'+(p.actief?'Actief':'Gearchiveerd')+'</span></td>'+
-      '<td><button class="btn-add-sm" onclick="togglePakketActief(\''+p.id+'\','+(!p.actief)+')">'+(p.actief?'Archiveer':'Herstel')+'</button></td>';
+    tr.innerHTML='<td style="vertical-align:top"><div style="font-weight:500">'+p.naam+'</div>'+
+        '<input value="'+(p.inbegrepen||'').replace(/"/g,'&quot;')+'" placeholder="Wat zit erin (ziet de klant)" onchange="zetPakketVeld(\''+p.id+'\',\'inbegrepen\',this.value)" style="margin-top:5px;width:230px;border:1px solid var(--gray-300);border-radius:6px;padding:4px 7px;font-family:\'Poppins\',sans-serif;font-size:12px"></td>'+
+      '<td style="vertical-align:top"><input type="number" step="0.5" min="0" value="'+(p.bezoekdagen==null?'':p.bezoekdagen)+'" placeholder="-" onchange="zetPakketVeld(\''+p.id+'\',\'bezoekdagen\',this.value)" style="width:70px;border:1px solid var(--gray-300);border-radius:6px;padding:4px 7px;font-size:13px"></td>'+
+      '<td style="vertical-align:top">'+vinkjes+waarschuwing+'</td>'+
+      '<td style="vertical-align:top"><span class="badge '+(p.actief?'rijklaar':'niet_rijklaar')+'">'+(p.actief?'Actief':'Gearchiveerd')+'</span></td>'+
+      '<td style="vertical-align:top"><button class="btn-add-sm" onclick="togglePakketActief(\''+p.id+'\','+(!p.actief)+')">'+(p.actief?'Archiveer':'Herstel')+'</button></td>';
     tbody.appendChild(tr);
+  });
+}
+
+function zetPakketModule(pakketId,moduleKey,aan){
+  var q=aan
+    ? sb.from('pakket_modules').insert({pakket_id:pakketId,module_key:moduleKey})
+    : sb.from('pakket_modules').delete().eq('pakket_id',pakketId).eq('module_key',moduleKey);
+  q.then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);laadModulesEnMatrix(renderPakkettenTabel);return;}
+    if(!pakketModules[pakketId])pakketModules[pakketId]={};
+    if(aan)pakketModules[pakketId][moduleKey]=true; else delete pakketModules[pakketId][moduleKey];
+    renderPakkettenTabel();
+  });
+}
+
+// Wijzigt enkel het pakket, niet de klanten die het al hebben. Wie een formule
+// aanpast en dat bij bestaande klanten wil doorvoeren, kiest het pakket daar
+// opnieuw -- dan ziet hij ook wat er verandert.
+function zetPakketVeld(pakketId,veld,waarde){
+  var patch={};
+  if(veld==='bezoekdagen'){
+    var d=String(waarde).trim()===''?null:parseFloat(String(waarde).replace(',','.'));
+    if(d!==null&&(isNaN(d)||d<0)){showToast('Geef een getal, bv. 4 of 6.5');laadPakketten(renderPakkettenTabel);return;}
+    patch.bezoekdagen=d;
+  }else{
+    patch[veld]=waarde.trim()||null;
+  }
+  sb.from('pakketten').update(patch).eq('id',pakketId).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    allePakketten.forEach(function(p){if(p.id===pakketId)p[veld]=patch[veld];});
+    showToast('Opgeslagen');
   });
 }
 
@@ -3739,17 +3807,42 @@ function wijzigBedrijfsgegeven(veld,input){
   });
 }
 
-// Een pakket bepaalt welke modules de klant krijgt (migratie 0059). Bewust een
-// voorstel en geen dwang: dit zet ze goed bij het kiezen van de formule, daarna
-// kan je per klant nog afwijken via de Klanten-tab.
-// Pre-inspecties en vuurvergunning blijven ongemoeid -- dat zijn losse producten,
-// geen onderdeel van een formule.
+// Een pakket bepaalt welke modules de klant krijgt en hoeveel bezoekdagen er
+// voorzien zijn (migraties 0059 en 0094). Sinds 0094 stuurt het pakket álle
+// modules aan, ook pre-inspecties, vuurvergunning en LMRA -- vandaar dat er
+// eerst getoond wordt wat er zou veranderen. Een formulewissel die stilzwijgend
+// een module uitzet waar de klant voor betaalt, merk je pas als hij belt.
 function pasPakketModulesToe(pakketNaam){
   if(!isSuperbeheerder||!huidigeBedrijfId)return;
-  sb.rpc('rpc_pakket_toepassen',{p_bedrijf_id:huidigeBedrijfId,p_pakket_naam:pakketNaam}).then(function(r){
-    if(r.error){showToast('Modules niet aangepast: '+r.error.message);return;}
-    showToast('Modules aangepast aan ' + pakketNaam);
-    laadModuleToegang();
+  sb.rpc('rpc_pakket_voorstel',{p_bedrijf_id:huidigeBedrijfId,p_pakket_naam:pakketNaam}).then(function(r){
+    if(r.error){showToast('Kon het pakket niet nakijken: '+r.error.message);return;}
+    var v=r.data||{};
+    var aan=v.aan||[], uit=v.uit||[];
+    var regels=[];
+    if(aan.length)regels.push('Gaat AAN: '+aan.join(', '));
+    if(uit.length)regels.push('Gaat UIT: '+uit.join(', '));
+    if(!aan.length&&!uit.length)regels.push('Aan de modules verandert niets.');
+
+    // Leeg veld invullen gebeurt zonder vragen; een bestaande, afwijkende
+    // afspraak overschrijven niet -- daar kan bewust van de formule afgeweken
+    // zijn.
+    var overschrijven=false;
+    if(v.bezoekdagen_vraag){
+      overschrijven=confirm('Bezoekdagen '+v.jaar+': er staat nu '+v.bezoekdagen_nu+
+        ', het pakket voorziet '+v.bezoekdagen_pakket+'.\n\nOK = overnemen uit het pakket.\nAnnuleren = laten staan zoals het is.');
+    }else if(v.bezoekdagen_pakket!=null&&v.bezoekdagen_nu==null){
+      regels.push('Bezoekdagen '+v.jaar+' worden op '+v.bezoekdagen_pakket+' gezet.');
+    }
+
+    if(!confirm(pakketNaam+' toepassen op deze klant?\n\n'+regels.join('\n')))return;
+
+    sb.rpc('rpc_pakket_toepassen',{p_bedrijf_id:huidigeBedrijfId,p_pakket_naam:pakketNaam,
+                                   p_bezoekdagen_overschrijven:overschrijven}).then(function(r2){
+      if(r2.error){showToast('Niet toegepast: '+r2.error.message);return;}
+      showToast('Pakket toegepast: '+pakketNaam);
+      laadModuleToegang();
+      laadSamenwerking(['beheer']);
+    });
   });
 }
 
