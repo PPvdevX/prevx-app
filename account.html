@@ -349,9 +349,17 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
    inhoud af. Nu staat hij in de blauwe balk, in het oranje: het valt op en
    vraagt aandacht, zonder de dreiging van rood die mensen zou kunnen
    afhouden van melden. */
-.knop-melding{display:inline-flex;align-items:center;gap:7px;background:var(--orange);color:#fff;border:none;border-radius:20px;padding:7px 15px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+/* Zit in het samenwerkingsvak, rechts onderaan naast de inbegrepen-regel.
+   Rood: melden is een veiligheidshandeling en daar is rood de conventie. Het is
+   dezelfde --red als elders in het portaal -- een tweede rood in het palet zou
+   betekenen dat rood niet langer een vaste betekenis heeft.
+   Groen, waar hij mee begon, betekent hier 'rijklaar' en zei dus het
+   tegenovergestelde van waar de knop voor dient. */
+.sw-voet{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:4px}
+.sw-voet .sw-inbegrepen{flex:1 1 240px;min-width:0}
+.knop-melding{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;background:var(--red);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 .knop-melding:hover{filter:brightness(1.08)}
-@media (max-width:640px){.knop-melding span,.knop-melding{font-size:12px;padding:6px 12px}}
+@media (max-width:640px){.knop-melding{width:100%;justify-content:center;padding:11px 16px}}
 @media (max-width:640px){
   .klant-topbar,.klant-hero,.kaart-grid,.kruimel{padding-left:16px;padding-right:16px}
   .sw-hoofd{gap:12px}
@@ -597,7 +605,6 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
     </div>
     <div class="klant-topbar-rechts">
       <span id="klantTopbarGebruiker"></span>
-      <button class="knop-melding" onclick="meldingMaken()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
       <button onclick="doLogout()">Afmelden</button>
     </div>
   </div>
@@ -615,6 +622,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       <div class="klant-hero-meta" id="klantHeroSub"></div>
     </div>
     <div class="sw-kaart" id="klantSamenwerking" style="display:none;margin:18px 32px 0">
+      <div id="klantSwCijfers">
       <div class="sw-hoofd">
         <div class="sw-hoofd-links">
           <div class="sw-label">Uw samenwerking</div>
@@ -631,7 +639,11 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
         </div>
       </div>
       <div class="sw-balk"><div class="sw-balk-vol" id="klantSwBalk" style="width:0%"></div></div>
-      <div class="sw-inbegrepen" id="klantSwInbegrepen"></div>
+      </div>
+      <div class="sw-voet">
+        <div class="sw-inbegrepen" id="klantSwInbegrepen"></div>
+        <button class="knop-melding" onclick="meldingMaken()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
+      </div>
     </div>
     <div class="kaart-grid" id="klantKaarten"></div>
   </div>
@@ -2943,7 +2955,16 @@ function laadSamenwerking(doelen){
       if(!kaart)return;
       // Bij de klant niets tonen zolang er geen afspraak vastligt: een blok met
       // "0 van 0" zegt niets en roept alleen vragen op.
-      if(pre==='klantSw'&&!afspraak){kaart.style.display='none';return;}
+      // Zonder vastgelegde afspraak tonen we geen cijfers -- "0 van 0" zegt niets
+      // en roept alleen vragen op. Maar het vak zelf blijft staan, want de
+      // meldknop hangt eraan. Die weghalen bij een klant die nog geen afspraak
+      // heeft, zou precies de nieuwste klant het melden onmogelijk maken.
+      if(pre==='klantSw'){
+        var cijfers=document.getElementById('klantSwCijfers');
+        if(cijfers)cijfers.style.display=afspraak?'':'none';
+        kaart.style.display='';
+        if(!afspraak){document.getElementById('klantSwInbegrepen').textContent='';return;}
+      }
       kaart.style.display='';
       document.getElementById(pre+'Opgenomen').textContent=Math.round(opgenomen*10)/10;
       document.getElementById(pre+'Contract').textContent=Math.round(contract*10)/10;
