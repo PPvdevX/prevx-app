@@ -848,6 +848,63 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       </div>
     </div>
 
+    <div id="tab-chemie" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Chemische agentia</div>
+        <div class="page-subtitle">De producten die hier staan, en wat erin zit</div>
+      </div>
+      <div class="content-area">
+        <div id="chemieSignalen" class="kpi-rij" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px"></div>
+
+        <div id="chemieNieuwFormulier" class="table-card" style="margin-bottom:20px;max-width:620px;display:none">
+          <div class="table-header"><span class="table-title">Nieuw product</span></div>
+          <div style="padding:16px 20px">
+            <div class="form-group"><label class="form-label">Naam op het etiket</label>
+              <input type="text" class="form-input" id="chNaam" placeholder="bv. Ontvetter X-200"></div>
+            <div class="form-group"><label class="form-label">Leverancier</label>
+              <input type="text" class="form-input" id="chLeverancier"></div>
+            <div class="form-group"><label class="form-label">Waarvoor wordt het gebruikt?</label>
+              <input type="text" class="form-input" id="chToepassing" placeholder="bv. ontvetten voor het lassen"></div>
+            <div class="form-group"><label class="form-label">Waar staat het?</label>
+              <input type="text" class="form-input" id="chLocatie" placeholder="bv. magazijn, chemiekast 2"></div>
+            <div class="form-group"><label class="form-label">Hoeveelheid</label>
+              <input type="text" class="form-input" id="chHoeveelheid" placeholder="bv. 4 bussen van 5 l"></div>
+            <div class="form-group"><label class="form-label">Gevarenaanduidingen (H-zinnen)</label>
+              <input type="text" class="form-input" id="chHZinnen" placeholder="bv. H315, H319, H350">
+              <div style="font-size:12px;color:var(--gray-500);margin-top:5px;line-height:1.5">
+                Staan op het etiket en in rubriek 2 van het veiligheidsinformatieblad. Gescheiden door komma&rsquo;s.
+                Hieruit bepaalt het systeem of het product onder titel 2 van boek VI valt &mdash; het pictogram volstaat daar niet voor.
+              </div>
+            </div>
+            <div class="form-group"><label class="form-label">Datum van het veiligheidsinformatieblad</label>
+              <input type="date" class="form-input" id="chVibDatum">
+              <div style="font-size:12px;color:var(--gray-500);margin-top:5px">Staat in rubriek 16. Niet de dag waarop u het oplaadt.</div>
+            </div>
+            <div class="form-group"><label class="form-label">Opmerking</label>
+              <input type="text" class="form-input" id="chOpmerking"></div>
+            <button class="btn-login" onclick="nieuwChemischProduct()">Toevoegen</button>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Producten</span>
+            <span style="display:flex;align-items:center;gap:10px">
+              <span class="table-count" id="chemieCount">0</span>
+              <button class="btn-add-sm" id="chemieNieuwKnop" style="display:none" onclick="toonChemieFormulier()">+ Product</button>
+            </span>
+          </div>
+          <table><thead><tr><th>Product</th><th>Leverancier</th><th>Waar</th><th>Gevaren</th><th>VIB</th><th></th></tr></thead>
+          <tbody id="chemieTabel"><tr class="loading-row"><td colspan="6"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+
+        <p style="font-size:13px;color:var(--gray-500);margin-top:14px;max-width:720px">
+          Deze lijst is geen risicoanalyse. Ze houdt bij waarop die analyse steunt: wat er staat, waar,
+          en welk blad erbij hoort. Ontbreekt dat blad, dan kan de wettelijke toets niet gebeuren &mdash;
+          vandaar dat het bovenaan in het rood staat en niet onderaan als opmerking.
+        </p>
+      </div>
+    </div>
+
     <div id="tab-kennisbank" style="display:none">
       <div class="page-header">
         <div class="page-title">Kennisbank</div>
@@ -1429,6 +1486,7 @@ var MENU_ICOON={
   documenten:'<path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 16.5h6"/>',
   planning:'<rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 9.5h18M8 3v4M16 3v4"/><circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/>',
   kennisbank:'<path d="M4 5.5A2 2 0 0 1 6 4h5v16H6a2 2 0 0 0-2 1.5z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v16h5a2 2 0 0 1 2 1.5z"/>',
+  chemie:'<path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/>',
   inspecties:'<rect x="6" y="4" width="12" height="17" rx="1.5"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/>',
   voertuigen:'<rect x="2" y="7" width="12" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>',
   checklist:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
@@ -1478,6 +1536,11 @@ var MENU=[
   // Eigen groep met optIn, niet als item onder Dossier: LMRA is een module die
   // een klant afneemt, geen vast onderdeel van elk dossier. Zonder optIn zou hij
   // bij iedereen verschijnen -- ook bij klanten die er niet voor betalen.
+  // Eigen groep met optIn, zoals LMRA en vuurvergunning: een module die een
+  // klant erbij neemt, niet een vast onderdeel van elk dossier.
+  {groep:'Chemische agentia',icoon:'chemie',module:'chemie',optIn:true,items:[
+    {key:'chemie',naam:'Producten',laad:function(){laadChemie();}}
+  ]},
   {groep:'LMRA',icoon:'lmra',module:'lmra',optIn:true,items:[
     {key:'lmra',naam:"Uitgevoerde LMRA's",laad:function(){laadLmra();}},
     {key:'lmrarisicos',naam:'Risico\'s',laad:function(){laadLmraRisicoKeuze();}}
@@ -1876,6 +1939,8 @@ var KLANT_KAARTEN=[
    sub:'De elf onderdelen van het dossier, klaar om aan de hulpdiensten te geven.'},
   {key:'voertuigen',naam:'Assets',icoon:'assets',
    sub:'Uw machines, voertuigen en installaties.'},
+  {key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
+   sub:'Welke producten er staan, waar, en het veiligheidsinformatieblad erbij.'},
   {key:'kennisbank',naam:'Kennisbank',module:'kennisbank',icoon:'kennisbank',
    sub:'Checklists en toolboxfiches voor uw sector.'},
   {key:'inspecties',naam:'Pre-inspecties',module:'preinspecties',icoon:'inspecties',
@@ -1900,6 +1965,7 @@ var KAART_ICONEN={
   planning:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
   assets:'<path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M9 17v-4h6v4"/>',
   kennisbank:'<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 7h7M9 11h7"/>',
+  chemie:'<path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/>',
   inspecties:'<rect x="6" y="4" width="12" height="17" rx="1.5"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/>',
   vuurvergunning:'<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6.5-4.5-10C13 8 12 9 10.5 9.5 9 7 8 5 8 5c-2 3-3 5.5-3 10a7 7 0 0 0 7 7z"/>',
   // Schild met een vlam erin: het dossier gaat over beschermen tegen brand,
@@ -1930,6 +1996,10 @@ function werkKruimelBij(naam){
 function klantKaartZichtbaar(k){
   if(k.formule)return true;
   if(!k.module)return true;
+  // Zelfde regel als menuGroepZichtbaar: een module die je erbij neemt, staat
+  // uit tot een rij zegt van wel. Zonder dit zou de kaart verschijnen bij elke
+  // klant die nog geen rij in bedrijf_modules heeft.
+  if(moduleIsOptIn(k.module))return actieveModules[k.module]===true;
   return actieveModules[k.module]!==false;
 }
 
@@ -6051,7 +6121,13 @@ function renderCampagnesTabel(){
       '<td><span class="badge '+(NB_STATUS_KLASSE[c.status]||'onvolledig')+'">'+c.status+'</span></td>'+
       '<td>'+(c.verzonden_op?formatDatum(c.verzonden_op.slice(0,10)):'-')+'</td>'+
       '<td>'+formatDatum(c.aangemaakt_op.slice(0,10))+'</td>'+
-      '<td><button class="btn-add-sm" onclick="event.stopPropagation();openCampagne(\'' + c.id + '\')">Openen</button></td></tr>';
+      '<td style="white-space:nowrap"><button class="btn-add-sm" onclick="event.stopPropagation();openCampagne(\'' + c.id + '\')">Openen</button>'+
+      // Geen wisknop bij een verzonden campagne. Het verzendlogboek gaat mee en
+      // dat is het bewijs dat er post vertrokken is, en naar wie. Zoiets hoor je
+      // niet per ongeluk weg te klikken vanuit een lijst.
+      (c.status==='verzonden' ? '' :
+        ' <button class="btn-add-sm" style="color:#dc2626" onclick="event.stopPropagation();verwijderCampagne(\'' + c.id + '\')">Verwijderen</button>')+
+      '</td></tr>';
   }).join('');
 }
 
@@ -6096,8 +6172,25 @@ function openCampagne(id){
        '<input class="form-input" id="nbOnderwerp" value="'+nbEsc(c.onderwerp)+'"'+(uit?' disabled':'')+'></div>';
     h+='<div style="margin-bottom:14px"><label class="form-label">Voorbeeldtekst (het regeltje naast het onderwerp in de inbox)</label>'+
        '<input class="form-input" id="nbVoorbeeld" value="'+nbEsc(c.voorbeeldtekst)+'"'+(uit?' disabled':'')+'></div>';
-    h+='<div style="margin-bottom:14px"><label class="form-label">HTML &mdash; gebruik {{uitschrijflink}} als je de link ook in je tekst wil</label>'+
-       '<textarea class="form-input" id="nbHtml" rows="12" style="font-family:monospace;font-size:12px"'+(uit?' disabled':'')+'>'+nbEsc(c.html)+'</textarea></div>';
+    h+='<div style="margin-bottom:14px"><label class="form-label">Inhoud &mdash; gebruik {{uitschrijflink}} als je de link ook in je tekst wil</label>';
+    if(!uit){
+      // Bouwstenen in plaats van een lege HTML-doos. Elk blokje is al
+      // e-mailveilig opgemaakt: tabellen en inline CSS, want Outlook negeert
+      // stylesheets en padding op divs. Wie zelf HTML wil typen kan dat nog
+      // altijd -- dit veld blijft gewoon tekst.
+      h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
+         '<button class="btn-add-sm" onclick="nbVoegIn(\'titel\')">Titel</button>'+
+         '<button class="btn-add-sm" onclick="nbVoegIn(\'alinea\')">Alinea</button>'+
+         '<button class="btn-add-sm" onclick="nbVoegIn(\'knop\')">Knop</button>'+
+         '<button class="btn-add-sm" onclick="nbVoegIn(\'streep\')">Streep</button>'+
+         '<button class="btn-add-sm" onclick="nbKiesAfbeelding()">Afbeelding&hellip;</button>'+
+         '<button class="btn-add-sm" style="margin-left:auto" onclick="nbToonVoorbeeld()">Voorbeeld</button>'+
+         '</div><input type="file" id="nbBestand" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="nbUploadAfbeelding(this)">';
+    }
+    h+='<textarea class="form-input" id="nbHtml" rows="12" style="font-family:monospace;font-size:12px"'+(uit?' disabled':'')+'>'+nbEsc(c.html)+'</textarea></div>';
+    h+='<div id="nbVoorbeeld" style="display:none;margin-bottom:18px">'+
+       '<label class="form-label">Voorbeeld &mdash; benadering; de testmail blijft de echte proef</label>'+
+       '<iframe id="nbVoorbeeldFrame" style="width:100%;height:420px;border:1px solid var(--gray-200);border-radius:var(--radius);background:#fff"></iframe></div>';
     h+='<div style="margin-bottom:18px"><label class="form-label">Platte tekst &mdash; hoort erbij, scheelt in de spamscore</label>'+
        '<textarea class="form-input" id="nbTekst" rows="6" style="font-size:13px"'+(uit?' disabled':'')+'>'+nbEsc(c.tekst)+'</textarea></div>';
 
@@ -6114,6 +6207,110 @@ function openCampagne(id){
     }
     document.getElementById('detailBody').innerHTML=h;
   });
+}
+
+// ---------------------------------------------------------------------------
+// Bouwstenen
+// ---------------------------------------------------------------------------
+// Alles hier is opgemaakt zoals e-mail het wil: tabellen, inline CSS, en bij
+// afbeeldingen ook een width-attribuut naast de CSS -- Outlook luistert naar
+// het attribuut en niet altijd naar de stijl.
+var NB_BLOKKEN={
+  titel:'<h2 style="margin:0 0 12px;font-family:sans-serif;font-size:20px;line-height:1.3;color:#003366">Titel</h2>',
+  alinea:'<p style="margin:0 0 14px">Schrijf hier je tekst.</p>',
+  streep:'<hr style="border:0;border-top:1px solid #e2e8f0;margin:22px 0">',
+  knop:'<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0"><tr>'+
+       '<td bgcolor="#003366" style="border-radius:8px">'+
+       '<a href="https://prevx.be" style="display:inline-block;padding:11px 22px;font-family:sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none">Lees meer</a>'+
+       '</td></tr></table>'
+};
+
+// Invoegen op de plek van de cursor, niet onderaan: anders moet je elk blokje
+// daarna zelf naar boven slepen.
+function nbVoegInTekst(fragment){
+  var veld=document.getElementById('nbHtml');
+  if(!veld)return;
+  var start=veld.selectionStart, eind=veld.selectionEnd;
+  var voor=veld.value.slice(0,start), na=veld.value.slice(eind);
+  var tussen=(voor && !/\n$/.test(voor))?'\n':'';
+  veld.value=voor+tussen+fragment+'\n'+na;
+  var nieuwePositie=(voor+tussen+fragment).length;
+  veld.focus();
+  veld.setSelectionRange(nieuwePositie,nieuwePositie);
+}
+
+function nbVoegIn(soort){
+  if(NB_BLOKKEN[soort])nbVoegInTekst(NB_BLOKKEN[soort]);
+}
+
+function nbKiesAfbeelding(){
+  var k=document.getElementById('nbBestand');
+  if(k){k.value='';k.click();}
+}
+
+// ---------------------------------------------------------------------------
+// Afbeelding uploaden
+// ---------------------------------------------------------------------------
+// Gaat naar de publieke bucket nieuwsbrief-media (migratie 0100). Publiek is
+// hier geen slordigheid: een mailprogramma haalt afbeeldingen anoniem op, soms
+// weken later, dus een ondertekende link met vervaltermijn zou tegen die tijd
+// een kapot kadertje opleveren.
+function nbUploadAfbeelding(invoer){
+  var bestand=invoer.files&&invoer.files[0];
+  if(!bestand)return;
+
+  // Twee megabyte is al royaal voor een nieuwsbrief. Grotere afbeeldingen maken
+  // de mail traag en worden door sommige clients niet eens getoond.
+  if(bestand.size>2*1024*1024){
+    showToast('Deze afbeelding is groter dan 2 MB. Verklein ze eerst.');
+    return;
+  }
+
+  // Naam opschonen en uniek maken: spaties en accenten in een URL geven gedoe,
+  // en twee bestanden met dezelfde naam zouden elkaar overschrijven -- ook in
+  // een nieuwsbrief die al verstuurd is.
+  var schoon=bestand.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-').replace(/^-+|-+$/g,'');
+  var pad=Date.now()+'-'+schoon;
+
+  showToast('Afbeelding uploaden...');
+  sb.storage.from('nieuwsbrief-media').upload(pad,bestand,{contentType:bestand.type,upsert:false}).then(function(r){
+    if(r.error){
+      console.error('Upload mislukt:',r.error);
+      showToast('Upload mislukt: '+r.error.message+' (staat migratie 0100 al uitgevoerd?)');
+      return;
+    }
+    var url=sb.storage.from('nieuwsbrief-media').getPublicUrl(pad).data.publicUrl;
+    nbVoegInTekst('<img src="'+url+'" width="536" style="width:100%;max-width:536px;height:auto;display:block;border:0" alt="">');
+    showToast('Afbeelding toegevoegd');
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Voorbeeld
+// ---------------------------------------------------------------------------
+// Let op: dit is een BENADERING. De omkadering hieronder is een kopie van wat
+// de verzendfunctie bouwt, en die twee kunnen uit elkaar lopen. Wat je hier
+// ziet klopt qua breedte en typografie, maar het echte oordeel komt van de
+// testmail -- alleen daar zie je wat Outlook ervan maakt.
+function nbToonVoorbeeld(){
+  var vak=document.getElementById('nbVoorbeeld');
+  var frame=document.getElementById('nbVoorbeeldFrame');
+  var veld=document.getElementById('nbHtml');
+  if(!vak||!frame||!veld)return;
+
+  if(vak.style.display!=='none'){vak.style.display='none';return;}
+
+  var romp=veld.value.split('{{uitschrijflink}}').join('#');
+  frame.srcdoc='<!doctype html><html><body style="margin:0">'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9">'+
+    '<tr><td align="center" style="padding:24px 12px">'+
+    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:12px">'+
+    '<tr><td style="padding:28px 32px;font-family:sans-serif;font-size:15px;line-height:1.7;color:#334155">'+romp+'</td></tr></table>'+
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;border-top:1px solid #e2e8f0">'+
+    '<tr><td align="center" style="padding:18px 24px;font-family:sans-serif;font-size:12px;line-height:1.6;color:#94a3b8">'+
+    'Je krijgt deze mail omdat je je inschreef op de nieuwsbrief van PrevX.<br><a href="#" style="color:#64748b">Uitschrijven</a></td></tr></table>'+
+    '</td></tr></table></body></html>';
+  vak.style.display='';
 }
 
 function bewaarCampagne(id){
