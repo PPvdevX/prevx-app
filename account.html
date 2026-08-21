@@ -1588,6 +1588,95 @@ function icoonOptiesHtml(huidig){
   }).join('');
 }
 
+// ---------------------------------------------------------------------------
+// Invulschermen
+// ---------------------------------------------------------------------------
+// Vervangt de ketens van prompt-vensters die overal in dit bestand stonden. Die
+// braken op een manier die je niet ziet aankomen: wisselt de browser van
+// venster, dan klikt hij een openstaande dialoog zelf weg, en dan liep de rest
+// van de functie door met lege antwoorden. Bij een codelijst is dat rommel; bij
+// een melding of een gebruikersaccount is het erger.
+//
+// Eén hulpje in plaats van elf losse formulieren: zo zien ze er allemaal
+// hetzelfde uit, en zit de afhandeling van datums, verplichte velden en
+// annuleren op één plaats.
+//
+// Datumvelden zijn <input type="date">. De browser toont die in de notatie van
+// het toestel -- bij ons dd/mm/jjjj -- terwijl de waarde altijd JJJJ-MM-DD
+// blijft. Er valt dus niets meer te typen en niets meer verkeerd te lezen.
+//
+// cfg = {
+//   titel, sub, uitleg, knop,
+//   velden: [{id, label, type, waarde, hint, verplicht, opties, patroon, patroonFout}],
+//   bijWijziging: function(id, waarde, zet),
+//   opVerzenden: function(waarden)
+// }
+// type: tekst (standaard), tekstvak, datum, tijd, getal, keuze
+function toonInvulScherm(cfg){
+  document.getElementById('detailOverlay').classList.add('active');
+  document.getElementById('detailPrintKnop').style.display='none';
+  document.getElementById('detailTitel').textContent=cfg.titel||'Invullen';
+  document.getElementById('detailSub').textContent=cfg.sub||'';
+
+  window.__invulCfg=cfg;
+
+  var h='';
+  if(cfg.uitleg)h+='<p style="font-size:13px;color:var(--gray-500);line-height:1.7;margin-bottom:16px">'+cfg.uitleg+'</p>';
+
+  cfg.velden.forEach(function(v){
+    var id='inv_'+v.id;
+    var waarde=v.waarde==null?'':String(v.waarde);
+    h+='<div style="margin-bottom:14px"><label class="form-label">'+nbEsc(v.label)+(v.verplicht?'':' <span style="text-transform:none;font-weight:400">(optioneel)</span>')+'</label>';
+    if(v.type==='tekstvak'){
+      h+='<textarea class="form-input" id="'+id+'" rows="4">'+nbEsc(waarde)+'</textarea>';
+    }else if(v.type==='keuze'){
+      h+='<select class="form-input" id="'+id+'">';
+      (v.opties||[]).forEach(function(o){
+        h+='<option value="'+nbEsc(o.waarde)+'"'+(String(o.waarde)===waarde?' selected':'')+'>'+nbEsc(o.label)+'</option>';
+      });
+      h+='</select>';
+    }else{
+      var soort=v.type==='datum'?'date':(v.type==='tijd'?'time':(v.type==='getal'?'number':'text'));
+      var extra=v.type==='getal'?' step="any" min="0"':'';
+      h+='<input class="form-input" type="'+soort+'" id="'+id+'" value="'+nbEsc(waarde)+'"'+extra+
+         (cfg.bijWijziging?' oninput="invulVeldGewijzigd(\''+v.id+'\')"':'')+'>';
+    }
+    if(v.hint)h+='<p style="font-size:12px;color:var(--gray-500);margin-top:5px">'+nbEsc(v.hint)+'</p>';
+    h+='</div>';
+  });
+
+  h+='<div style="display:flex;gap:8px;margin-top:18px">'+
+     '<button class="btn-add-sm" style="background:var(--navy);color:#fff" onclick="invulVerzenden()">'+nbEsc(cfg.knop||'Bewaren')+'</button>'+
+     '<button class="btn-add-sm" onclick="sluitDetail()">Annuleren</button></div>';
+
+  document.getElementById('detailBody').innerHTML=h;
+  var eerste=document.getElementById('inv_'+cfg.velden[0].id);
+  if(eerste)eerste.focus();
+}
+
+function invulVeldGewijzigd(id){
+  var cfg=window.__invulCfg; if(!cfg||!cfg.bijWijziging)return;
+  var el=document.getElementById('inv_'+id); if(!el)return;
+  cfg.bijWijziging(id, el.value, function(doelId, waarde){
+    var d=document.getElementById('inv_'+doelId);
+    if(d)d.value=waarde;
+  });
+}
+
+function invulVerzenden(){
+  var cfg=window.__invulCfg; if(!cfg)return;
+  var waarden={};
+  for(var i=0;i<cfg.velden.length;i++){
+    var v=cfg.velden[i];
+    var el=document.getElementById('inv_'+v.id);
+    var w=el?String(el.value).trim():'';
+    if(v.verplicht&&!w){showToast(v.label+' is verplicht.');if(el)el.focus();return;}
+    if(w&&v.patroon&&!v.patroon.test(w)){showToast(v.patroonFout||('Ongeldige waarde bij '+v.label+'.'));if(el)el.focus();return;}
+    waarden[v.id]=w||null;
+  }
+  cfg.opVerzenden(waarden);
+}
+
 // ---- Menu ----
 // Eén beschrijving van de navigatie, waaruit de zijbalk, de tabbladenlijst, de
 // modulegating en de superbeheerder-zichtbaarheid allemaal volgen. Voordien
@@ -2452,24 +2541,31 @@ function telEnZet(tabel,kaartKey,filters,enkelvoud,meervoud){
 // insert: een melding mag ook binnenkomen van iemand die verder niets in het
 // dossier mag schrijven.
 function meldingMaken(){
-  // Dezelfde vier types als in de app, anders staat hetzelfde ding op twee
-  // plaatsen onder een andere naam.
-  var keuze=prompt('Wat wilt u melden?\n\n  1 = onveilige situatie\n  2 = bijna-ongeval\n  3 = arbeidsongeval\n  4 = vraag\n\nTyp 1, 2, 3 of 4:','1');
-  if(!keuze)return;
-  var types={'1':'onveilige-situatie','2':'bijna-ongeval','3':'ongeval','4':'vraag'};
-  var type=types[keuze.trim()]||keuze.trim().toLowerCase();
-  if(['onveilige-situatie','bijna-ongeval','ongeval','vraag'].indexOf(type)===-1){
-    showToast('Typ 1, 2, 3 of 4.');return;
-  }
-  // Wie net een ongeval meldt, denkt dat hij klaar is. Dat is hij niet.
-  if(type==='ongeval'&&!confirm('Deze melding gaat naar uw preventieadviseur.\n\nZe vervangt de aangifte bij de verzekeraar niet. Doorgaan?'))return;
-  var omschrijving=prompt('Beschrijf kort wat er gebeurd is:');
-  if(!omschrijving||!omschrijving.trim())return;
-  sb.rpc('rpc_meld_incident',{p_type:type,p_omschrijving:omschrijving.trim()}).then(function(r){
-    if(r.error){showToast('Fout: '+r.error.message);return;}
-    showToast('Melding verstuurd naar uw adviseur.');
+  toonInvulScherm({
+    titel:'Melding maken',
+    sub:'Gaat rechtstreeks naar uw preventieadviseur',
+    velden:[
+      {id:'type',label:'Wat wilt u melden?',type:'keuze',verplicht:true,waarde:'onveilige-situatie',opties:[
+        {waarde:'onveilige-situatie',label:'Onveilige situatie'},
+        {waarde:'bijna-ongeval',label:'Bijna-ongeval'},
+        {waarde:'ongeval',label:'Arbeidsongeval'},
+        {waarde:'vraag',label:'Vraag'}
+      ]},
+      {id:'omschrijving',label:'Beschrijf kort wat er gebeurd is',type:'tekstvak',verplicht:true}
+    ],
+    knop:'Versturen',
+    opVerzenden:function(w){
+      // Wie net een ongeval meldt, denkt dat hij klaar is. Dat is hij niet.
+      if(w.type==='ongeval'&&!confirm('Deze melding gaat naar uw preventieadviseur.\n\nZe vervangt de aangifte bij de verzekeraar niet. Doorgaan?'))return;
+      sb.rpc('rpc_meld_incident',{p_type:w.type,p_omschrijving:w.omschrijving}).then(function(r){
+        if(r.error){showToast('Fout: '+r.error.message);return;}
+        sluitDetail();
+        showToast('Melding verstuurd naar uw adviseur.');
+      });
+    }
   });
 }
+
 
 // Dezelfde regel als in migratie 0087, maar de databank blijft de scheidsrechter:
 // dit toont of verbergt alleen een knop. Beheerder, preventieadviseur en
@@ -2858,23 +2954,37 @@ function nieuweKeuring(){ if(huidigeBedrijfId)openKeuringForm(null); }
 // Op het attest staat een geldigheidsdatum en die valt lang niet altijd samen
 // met de rekensom; het papier is het bewijsstuk, de rekensom een hulpje.
 function keuringUitgevoerd(id,periodiciteit){
-  var uitgevoerd=prompt('Datum van de uitgevoerde keuring (JJJJ-MM-DD):',datumTekst(new Date()));
-  if(!uitgevoerd)return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(uitgevoerd)){showToast('Datum moet JJJJ-MM-DD zijn.');return;}
-  var voorstel='';
-  if(periodiciteit){
-    var d=new Date(uitgevoerd+'T00:00:00');
+  var vandaag=datumTekst(new Date());
+  // De vervaldatum wordt voorgesteld op basis van het interval, en herrekend
+  // zodra je de uitvoeringsdatum aanpast. Het blijft een voorstel: wat er op
+  // het attest staat, wint.
+  function bereken(basis){
+    if(!periodiciteit||!basis)return '';
+    var d=new Date(basis+'T00:00:00');
+    if(isNaN(d.getTime()))return '';
     d.setMonth(d.getMonth()+periodiciteit);
-    voorstel=datumTekst(d);
+    return datumTekst(d);
   }
-  var verval=prompt('Nieuwe vervaldatum (JJJJ-MM-DD) — controleer dit tegen het attest:',voorstel);
-  if(!verval)return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(verval)){showToast('Vervaldatum moet JJJJ-MM-DD zijn.');return;}
-  sb.from('keuringen').update({laatste_keuring:uitgevoerd,vervaldatum:verval}).eq('id',id).then(function(r){
-    if(r.error){showToast('Fout: '+r.error.message);return;}
-    laadKeuringen();
+  toonInvulScherm({
+    titel:'Keuring uitgevoerd',
+    velden:[
+      {id:'uitgevoerd',label:'Datum van de uitgevoerde keuring',type:'datum',verplicht:true,waarde:vandaag},
+      {id:'verval',label:'Nieuwe vervaldatum',type:'datum',verplicht:true,waarde:bereken(vandaag),
+       hint:'Voorstel op basis van het interval — controleer dit tegen het attest.'}
+    ],
+    knop:'Bewaren',
+    bijWijziging:function(veldId,waarde,zet){
+      if(veldId==='uitgevoerd')zet('verval',bereken(waarde));
+    },
+    opVerzenden:function(w){
+      sb.from('keuringen').update({laatste_keuring:w.uitgevoerd,vervaldatum:w.verval}).eq('id',id).then(function(r){
+        if(r.error){showToast('Fout: '+r.error.message);return;}
+        sluitDetail();laadKeuringen();
+      });
+    }
   });
 }
+
 
 // ---------------------------------------------------------------------------
 // Meldingen
@@ -3005,16 +3115,24 @@ function renderActiepunten(data){
 
 function nieuwActiepunt(){
   if(!huidigeBedrijfId)return;
-  var omschrijving=prompt('Omschrijving van het actiepunt:');
-  if(!omschrijving||!omschrijving.trim())return;
-  var verantwoordelijke=prompt('Verantwoordelijke (naam):')||null;
-  var deadline=prompt('Deadline (JJJJ-MM-DD, optioneel):')||null;
-  if(deadline&&!/^\d{4}-\d{2}-\d{2}$/.test(deadline)){showToast('Deadline moet het formaat JJJJ-MM-DD hebben.');return;}
-  sb.from('actiepunten').insert({bedrijf_id:huidigeBedrijfId,omschrijving:omschrijving.trim(),verantwoordelijke:verantwoordelijke,deadline:deadline}).then(function(r){
-    if(r.error){showToast('Fout: '+r.error.message);return;}
-    laadActiepunten();
+  toonInvulScherm({
+    titel:'Nieuw actiepunt',
+    velden:[
+      {id:'omschrijving',label:'Omschrijving',type:'tekstvak',verplicht:true},
+      {id:'verantwoordelijke',label:'Verantwoordelijke'},
+      {id:'deadline',label:'Deadline',type:'datum'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      sb.from('actiepunten').insert({bedrijf_id:huidigeBedrijfId,omschrijving:w.omschrijving,
+        verantwoordelijke:w.verantwoordelijke,deadline:w.deadline}).then(function(r){
+        if(r.error){showToast('Fout: '+r.error.message);return;}
+        sluitDetail();laadActiepunten();
+      });
+    }
   });
 }
+
 
 function uploadActiepuntBewijs(actiepuntId,input){
   var file=input.files[0];
@@ -3229,20 +3347,29 @@ function wijzigSamenwerking(){
   var jaar=new Date().getFullYear();
   sb.from('samenwerking').select('*').eq('bedrijf_id',huidigeBedrijfId).eq('jaar',jaar).maybeSingle().then(function(r){
     var a=r.data;
-    var dagenRuw=prompt('Aantal bezoekdagen in het contract voor '+jaar+':',a?a.bezoekdagen_contract:'');
-    if(dagenRuw===null)return;
-    var dagen=parseFloat(String(dagenRuw).replace(',','.'));
-    if(isNaN(dagen)||dagen<0){showToast('Geef een getal, bv. 6 of 6.5');return;}
-    var inbegrepen=prompt('Wat zit er in de formule? (komt zo bij de klant te staan)',a?(a.inbegrepen||''):'');
-    if(inbegrepen===null)return;
-    var rij={bedrijf_id:huidigeBedrijfId,jaar:jaar,bezoekdagen_contract:dagen,inbegrepen:inbegrepen.trim()||null};
-    var q=a?sb.from('samenwerking').update(rij).eq('id',a.id):sb.from('samenwerking').insert(rij);
-    q.then(function(res){
-      if(res.error){showToast('Fout: '+res.error.message);return;}
-      laadSamenwerking(['beheer']);
+    toonInvulScherm({
+      titel:'Samenwerking '+jaar,
+      velden:[
+        {id:'dagen',label:'Bezoekdagen in het contract',type:'getal',verplicht:true,
+         waarde:a?a.bezoekdagen_contract:'',hint:'Halve dagen mogen: bv. 6 of 6,5'},
+        {id:'inbegrepen',label:'Wat zit er in de formule?',type:'tekstvak',
+         waarde:a?(a.inbegrepen||''):'',hint:'Deze tekst komt zo bij de klant te staan.'}
+      ],
+      knop:'Bewaren',
+      opVerzenden:function(w){
+        var dagen=parseFloat(String(w.dagen).replace(',','.'));
+        if(isNaN(dagen)||dagen<0){showToast('Geef een getal, bv. 6 of 6,5');return;}
+        var rij={bedrijf_id:huidigeBedrijfId,jaar:jaar,bezoekdagen_contract:dagen,inbegrepen:w.inbegrepen};
+        var q=a?sb.from('samenwerking').update(rij).eq('id',a.id):sb.from('samenwerking').insert(rij);
+        q.then(function(res){
+          if(res.error){showToast('Fout: '+res.error.message);return;}
+          sluitDetail();laadSamenwerking(['beheer']);
+        });
+      }
     });
   });
 }
+
 
 function zetBezoekdagen(planningId,waarde){
   var d=parseFloat(String(waarde).replace(',','.'));
@@ -3302,19 +3429,27 @@ function renderPlanning(data,documenten){
 
 function nieuweActiviteit(){
   if(!huidigeBedrijfId)return;
-  var type=prompt('Type (bezoek, rondgang of comite):','bezoek');
-  if(!type)return;
-  type=type.trim().toLowerCase();
-  if(['bezoek','rondgang','comite'].indexOf(type)===-1){showToast('Ongeldig type. Gebruik: bezoek, rondgang of comite.');return;}
-  var datum=prompt('Datum (JJJJ-MM-DD):');
-  if(!datum||!/^\d{4}-\d{2}-\d{2}$/.test(datum)){showToast('Datum moet het formaat JJJJ-MM-DD hebben.');return;}
-  var tijdstip=prompt('Tijdstip (UU:MM, optioneel):')||null;
-  if(tijdstip&&!/^\d{2}:\d{2}$/.test(tijdstip)){showToast('Tijdstip moet het formaat UU:MM hebben.');return;}
-  sb.from('planning').insert({bedrijf_id:huidigeBedrijfId,type:type,datum:datum,tijdstip:tijdstip}).then(function(r){
-    if(r.error){showToast('Fout: '+r.error.message);return;}
-    laadPlanning();
+  toonInvulScherm({
+    titel:'Nieuwe activiteit',
+    velden:[
+      {id:'type',label:'Type',type:'keuze',verplicht:true,waarde:'bezoek',opties:[
+        {waarde:'bezoek',label:'Bezoek'},
+        {waarde:'rondgang',label:'Rondgang'},
+        {waarde:'comite',label:'Comité'}
+      ]},
+      {id:'datum',label:'Datum',type:'datum',verplicht:true},
+      {id:'tijdstip',label:'Tijdstip',type:'tijd'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      sb.from('planning').insert({bedrijf_id:huidigeBedrijfId,type:w.type,datum:w.datum,tijdstip:w.tijdstip}).then(function(r){
+        if(r.error){showToast('Fout: '+r.error.message);return;}
+        sluitDetail();laadPlanning();
+      });
+    }
   });
 }
+
 
 function markeerActiviteitAfgerond(planningId){
   sb.from('planning').update({status:'afgerond'}).eq('id',planningId).then(function(r){
@@ -3439,25 +3574,32 @@ function toggleGevaarzinActief(code,actief){
 }
 
 function nieuweGevaarzin(){
-  var code=prompt('Code van de gevarenaanduiding (bv. H315 of EUH208):');
-  if(!code||!code.trim())return;
-  code=code.trim().toUpperCase();
-  if(!/^(H|EUH)\d+[A-Z]*$/.test(code)){showToast('Een code ziet eruit als H315, H360FD of EUH208.');return;}
-  var tekst=prompt('De officiele tekst bij '+code+'.\n\nNeem ze letterlijk over van het etiket of uit de CLP-verordening -- deze zin komt bij de klant in beeld.');
-  if(!tekst||!tekst.trim())return;
-  // De titel2-vlag zetten we hier bewust NIET: welke codes onder titel 2 vallen,
-  // ligt vast in valt_onder_titel2 (0098). Een vinkje hier zou de indruk wekken
-  // dat je dat oordeel kan bijsturen, en dat kan je niet.
-  sb.from('gevaarzinnen').insert({code:code,tekst:tekst.trim(),volgorde:100}).then(function(r){
-    if(r.error){
-      if(r.error.code==='23505')showToast('Deze code staat er al.');
-      else showToast('Fout: '+r.error.message);
-      return;
+  toonInvulScherm({
+    titel:'Nieuwe gevarenaanduiding',
+    velden:[
+      {id:'code',label:'Code',verplicht:true,hint:'bv. H315, H360FD of EUH208',
+       patroon:/^(H|EUH)\d+[A-Za-z]*$/,patroonFout:'Een code ziet eruit als H315, H360FD of EUH208.'},
+      {id:'tekst',label:'Officiële tekst',type:'tekstvak',verplicht:true,
+       hint:'Neem ze letterlijk over van het etiket of uit de CLP-verordening — deze zin komt bij de klant in beeld.'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      // De titel2-vlag zetten we hier bewust NIET: welke codes onder titel 2
+      // vallen, ligt vast in valt_onder_titel2. Een vinkje hier zou de indruk
+      // wekken dat je dat oordeel kan bijsturen, en dat kan je niet.
+      sb.from('gevaarzinnen').insert({code:w.code.toUpperCase(),tekst:w.tekst,volgorde:100}).then(function(r){
+        if(r.error){
+          if(r.error.code==='23505')showToast('Deze code staat er al.');
+          else showToast('Fout: '+r.error.message);
+          return;
+        }
+        sluitDetail();showToast('Aanduiding toegevoegd');
+        laadGevaarzinnen(renderGevaarzinnenTabel);
+      });
     }
-    showToast('Aanduiding toegevoegd');
-    laadGevaarzinnen(renderGevaarzinnenTabel);
   });
 }
+
 
 // ---------------------------------------------------------------------------
 // Vragen
@@ -3989,21 +4131,29 @@ function renderLmraRisicosTabel(){
 }
 
 function nieuwLmraRisico(){
-  var naam=prompt('Naam van het risico (bv. "Vallen van hoogte"):');
-  if(!naam||!naam.trim())return;
-  var categorie=prompt('Categorie (optioneel, bv. "Val en struikel"):')||null;
-  var toelichting=prompt('Korte toelichting (optioneel) — dit leest de arbeider in de app:')||null;
-  sb.from('lmra_risicos').insert({naam:naam.trim(),categorie:categorie,toelichting:toelichting,
-    volgorde:alleLmraRisicos.length*10}).then(function(r){
-      if(r.error){
-        if(r.error.code==='23505')showToast('Dit risico bestaat al.');
-        else showToast('Fout: '+r.error.message);
-        return;
-      }
-      showToast('Risico toegevoegd');
-      laadLmraRisicos(renderLmraRisicosTabel);
-    });
+  toonInvulScherm({
+    titel:'Nieuw LMRA-risico',
+    velden:[
+      {id:'naam',label:'Naam van het risico',verplicht:true,hint:'bv. Vallen van hoogte'},
+      {id:'categorie',label:'Categorie',hint:'bv. Val en struikel'},
+      {id:'toelichting',label:'Korte toelichting',type:'tekstvak',hint:'Dit leest de arbeider in de app.'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      sb.from('lmra_risicos').insert({naam:w.naam,categorie:w.categorie,toelichting:w.toelichting,
+        volgorde:alleLmraRisicos.length*10}).then(function(r){
+        if(r.error){
+          if(r.error.code==='23505')showToast('Dit risico bestaat al.');
+          else showToast('Fout: '+r.error.message);
+          return;
+        }
+        sluitDetail();showToast('Risico toegevoegd');
+        laadLmraRisicos(renderLmraRisicosTabel);
+      });
+    }
+  });
 }
+
 
 // Archiveren, nooit verwijderen: een risico dat al aan uitgevoerde LMRA's hangt
 // moet leesbaar blijven nadat het uit de keuzelijst gehaald is.
@@ -4137,26 +4287,34 @@ function renderKeuringTypesTabel(){
 }
 
 function nieuwKeuringType(){
-  var naam=prompt('Naam van het keuringstype:');
-  if(!naam||!naam.trim())return;
-  var domein=prompt('Domein — typ "veiligheid" of "milieu":','veiligheid');
-  if(!domein)return;
-  domein=domein.trim().toLowerCase();
-  if(domein!=='veiligheid'&&domein!=='milieu'){showToast('Domein moet "veiligheid" of "milieu" zijn.');return;}
-  var basis=prompt('Wettelijke basis (bv. AREI, VLAREM II, KB Arbeidsmiddelen):')||null;
-  var perRuw=prompt('Standaardinterval in maanden (optioneel, bv. 12):');
-  var per=perRuw&&/^\d+$/.test(perRuw.trim())?parseInt(perRuw,10):null;
-  sb.from('keuring_types').insert({naam:naam.trim(),domein:domein,wettelijke_basis:basis,
-    standaard_periodiciteit_maanden:per,volgorde:alleKeuringTypes.length*10}).then(function(r){
-      if(r.error){
-        if(r.error.code==='23505')showToast('Dit type bestaat al.');
-        else showToast('Fout: '+r.error.message);
-        return;
-      }
-      showToast('Keuringstype toegevoegd');
-      laadKeuringTypes(renderKeuringTypesTabel);
-    });
+  toonInvulScherm({
+    titel:'Nieuw keuringstype',
+    velden:[
+      {id:'naam',label:'Naam',verplicht:true},
+      {id:'domein',label:'Domein',type:'keuze',verplicht:true,waarde:'veiligheid',opties:[
+        {waarde:'veiligheid',label:'Veiligheid'},
+        {waarde:'milieu',label:'Milieu'}
+      ]},
+      {id:'basis',label:'Wettelijke basis',hint:'bv. AREI, VLAREM II, KB Arbeidsmiddelen'},
+      {id:'periodiciteit',label:'Standaardinterval in maanden',type:'getal',hint:'bv. 12'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      var per=w.periodiciteit&&/^\d+$/.test(w.periodiciteit)?parseInt(w.periodiciteit,10):null;
+      sb.from('keuring_types').insert({naam:w.naam,domein:w.domein,wettelijke_basis:w.basis,
+        standaard_periodiciteit_maanden:per,volgorde:alleKeuringTypes.length*10}).then(function(r){
+        if(r.error){
+          if(r.error.code==='23505')showToast('Dit type bestaat al.');
+          else showToast('Fout: '+r.error.message);
+          return;
+        }
+        sluitDetail();showToast('Keuringstype toegevoegd');
+        laadKeuringTypes(renderKeuringTypesTabel);
+      });
+    }
+  });
 }
+
 
 function bpdKnopHtml(t){
   var aan=!!t.in_brandpreventiedossier;
@@ -4217,20 +4375,27 @@ function toggleSectorCodeActief(id,actief){
 }
 
 function nieuweSectorCode(){
-  var code=prompt('Code (bv. 41):');
-  if(!code||!code.trim())return;
-  var label=prompt('Omschrijving (bv. Bouw van gebouwen):');
-  if(!label||!label.trim())return;
-  sb.from('sector_codes').insert({code:code.trim(),label:label.trim(),volgorde:alleSectorCodes.length*10}).then(function(r){
-    if(r.error){
-      if(r.error.code==='23505')showToast('Deze code bestaat al.');
-      else showToast('Fout: '+r.error.message);
-      return;
+  toonInvulScherm({
+    titel:'Nieuwe sectorcode',
+    velden:[
+      {id:'code',label:'Code',verplicht:true,hint:'bv. 41'},
+      {id:'label',label:'Omschrijving',verplicht:true,hint:'bv. Bouw van gebouwen'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      sb.from('sector_codes').insert({code:w.code,label:w.label,volgorde:alleSectorCodes.length*10}).then(function(r){
+        if(r.error){
+          if(r.error.code==='23505')showToast('Deze code bestaat al.');
+          else showToast('Fout: '+r.error.message);
+          return;
+        }
+        sluitDetail();showToast('Sectorcode toegevoegd');
+        laadSectorCodes(renderSectorCodesTabel);
+      });
     }
-    showToast('Sectorcode toegevoegd');
-    laadSectorCodes(renderSectorCodesTabel);
   });
 }
+
 
 function laadParitaireComites(callback){
   sb.from('paritaire_comites').select('*').order('volgorde').then(function(r){
@@ -4263,20 +4428,27 @@ function toggleParitairComiteActief(id,actief){
 }
 
 function nieuwParitairComite(){
-  var code=prompt('Nummer (bv. 124):');
-  if(!code||!code.trim())return;
-  var label=prompt('Omschrijving (bv. Bouwbedrijf):');
-  if(!label||!label.trim())return;
-  sb.from('paritaire_comites').insert({code:code.trim(),label:label.trim(),volgorde:alleParitaireComites.length*10}).then(function(r){
-    if(r.error){
-      if(r.error.code==='23505')showToast('Dit comité bestaat al.');
-      else showToast('Fout: '+r.error.message);
-      return;
+  toonInvulScherm({
+    titel:'Nieuw paritair comité',
+    velden:[
+      {id:'code',label:'Nummer',verplicht:true,hint:'bv. 124'},
+      {id:'label',label:'Omschrijving',verplicht:true,hint:'bv. Bouwbedrijf'}
+    ],
+    knop:'Toevoegen',
+    opVerzenden:function(w){
+      sb.from('paritaire_comites').insert({code:w.code,label:w.label,volgorde:alleParitaireComites.length*10}).then(function(r){
+        if(r.error){
+          if(r.error.code==='23505')showToast('Dit comité bestaat al.');
+          else showToast('Fout: '+r.error.message);
+          return;
+        }
+        sluitDetail();showToast('Paritair comité toegevoegd');
+        laadParitaireComites(renderParitaireComitesTabel);
+      });
     }
-    showToast('Paritair comité toegevoegd');
-    laadParitaireComites(renderParitaireComitesTabel);
   });
 }
+
 
 function laadPakketten(callback){
   sb.from('pakketten').select('*').order('volgorde').then(function(r){
@@ -5258,26 +5430,28 @@ function opslaanHuisstijl(){
 
 function nieuweGebruiker(){
   if(!huidigeBedrijfId)return;
-  var naam=prompt('Naam van de nieuwe gebruiker:');
-  if(!naam||!naam.trim())return;
-  var ingave=prompt('Niveau van '+naam.trim()+':\n\n'+niveauKeuzeTekst()+'\n\nTyp 1, 2, 3 of 4:','4');
-  if(!ingave)return;
-  var rol=rolUitInvoer(ingave);
-  if(!rol){
-    showToast('Onbekend niveau. Typ 1, 2, 3 of 4.');
-    return;
-  }
-  var pincode=prompt('Pincode (4 cijfers, voor inloggen in de preventie-app):');
-  if(!pincode||!/^\d{4}$/.test(pincode.trim())){
-    showToast('Pincode moet exact 4 cijfers zijn.');
-    return;
-  }
-  sb.from('gebruikers').insert({bedrijf_id:huidigeBedrijfId,naam:naam.trim(),rol:rol,pincode:pincode.trim(),actief:true}).then(function(r){
-    if(r.error){showToast('Fout: '+r.error.message);return;}
-    if(rol==='beheerder'||rol==='preventieadviseur')showToast('Gebruiker aangemaakt. Voor toegang tot Mijn PrevX moet u hem nog uitnodigen, in de kolom Mijn PrevX.');
-    laadGebruikers();
+  toonInvulScherm({
+    titel:'Nieuwe gebruiker',
+    velden:[
+      {id:'naam',label:'Naam',verplicht:true},
+      {id:'rol',label:'Niveau',type:'keuze',verplicht:true,
+       waarde:ROL_NIVEAUS[ROL_NIVEAUS.length-1].rol,
+       opties:ROL_NIVEAUS.map(function(n){return {waarde:n.rol,label:rolLabel(n.rol)+' — '+n.omschrijving};})},
+      {id:'pincode',label:'Pincode',verplicht:true,hint:'Vier cijfers, om in te loggen in de preventie-app',
+       patroon:/^\d{4}$/,patroonFout:'Pincode moet exact 4 cijfers zijn.'}
+    ],
+    knop:'Aanmaken',
+    opVerzenden:function(w){
+      sb.from('gebruikers').insert({bedrijf_id:huidigeBedrijfId,naam:w.naam,rol:w.rol,pincode:w.pincode,actief:true}).then(function(r){
+        if(r.error){showToast('Fout: '+r.error.message);return;}
+        sluitDetail();
+        if(w.rol==='beheerder'||w.rol==='preventieadviseur')showToast('Gebruiker aangemaakt. Voor toegang tot Mijn PrevX moet u hem nog uitnodigen, in de kolom Mijn PrevX.');
+        laadGebruikers();
+      });
+    }
   });
 }
+
 
 // De pincode wordt server-side gegenereerd (migratie 0051). Vroeger raadde de
 // browser een code en vroeg hij "bestaat die al?" -- die vraag was een orakel
@@ -6950,43 +7124,45 @@ function nbUploadAfbeelding(invoer){
     return;
   }
 
-  // Naam opschonen en uniek maken: spaties en accenten in een URL geven gedoe,
-  // en twee bestanden met dezelfde naam zouden elkaar overschrijven -- ook in
-  // een nieuwsbrief die al verstuurd is.
-  var schoon=bestand.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-').replace(/^-+|-+$/g,'');
-  var pad=Date.now()+'-'+schoon;
+  // Eerst vragen, dan pas uploaden. Andersom zou een geannuleerde invoeging een
+  // bestand in de opslag achterlaten waar niets meer naar verwijst.
+  toonInvulScherm({
+    titel:'Afbeelding invoegen',
+    sub:bestand.name,
+    velden:[
+      {id:'alt',label:'Korte beschrijving',verplicht:true,
+       hint:'Outlook blokkeert standaard afbeeldingen van een afzender die de lezer nog niet vertrouwt. Deze tekst is wat de meeste lezers de eerste keer zien.'},
+      {id:'breedte',label:'Breedte in pixels',type:'getal',waarde:'536',
+       hint:'536 = volle breedte (foto), 260 = half, 160 = klein, bijvoorbeeld een logo'}
+    ],
+    knop:'Uploaden en invoegen',
+    opVerzenden:function(w){
+      var breedte=parseInt(w.breedte,10);
+      if(!breedte||breedte<20)breedte=536;
+      if(breedte>536)breedte=536;
 
-  showToast('Afbeelding uploaden...');
-  sb.storage.from('nieuwsbrief-media').upload(pad,bestand,{contentType:bestand.type,upsert:false}).then(function(r){
-    if(r.error){
-      console.error('Upload mislukt:',r.error);
-      showToast('Upload mislukt: '+r.error.message+' (staat migratie 0100 al uitgevoerd?)');
-      return;
+      // Naam opschonen en uniek maken: spaties en accenten in een URL geven
+      // gedoe, en twee bestanden met dezelfde naam zouden elkaar overschrijven
+      // -- ook in een nieuwsbrief die al verstuurd is.
+      var schoon=bestand.name.toLowerCase().replace(/[^a-z0-9.]+/g,'-').replace(/^-+|-+$/g,'');
+      var pad=Date.now()+'-'+schoon;
+
+      showToast('Afbeelding uploaden...');
+      sb.storage.from('nieuwsbrief-media').upload(pad,bestand,{contentType:bestand.type,upsert:false}).then(function(r){
+        if(r.error){
+          console.error('Upload mislukt:',r.error);
+          showToast('Upload mislukt: '+r.error.message+' (staat migratie 0100 al uitgevoerd?)');
+          return;
+        }
+        var url=sb.storage.from('nieuwsbrief-media').getPublicUrl(pad).data.publicUrl;
+        // Zowel het width-attribuut als de stijl: Outlook luistert naar het
+        // attribuut, moderne clients naar de stijl.
+        var altTekst=String(w.alt).replace(/"/g,'&quot;');
+        sluitDetail();
+        nbVoegInTekst('<img src="'+url+'" width="'+breedte+'" style="width:100%;max-width:'+breedte+'px;height:auto;display:block;border:0" alt="'+altTekst+'">');
+        showToast('Afbeelding toegevoegd ('+breedte+'px)');
+      });
     }
-    var url=sb.storage.from('nieuwsbrief-media').getPublicUrl(pad).data.publicUrl;
-
-    // Outlook blokkeert standaard afbeeldingen van een afzender die de lezer nog
-    // niet vertrouwt. Zonder alt-tekst staat er dan een leeg kadertje waar je
-    // logo hoorde te staan. Deze beschrijving is dus geen bijzaak voor
-    // schermlezers alleen -- ze is wat de meeste lezers de eerste keer zien.
-    var omschrijving=prompt('Korte beschrijving van de afbeelding.\n\nOutlook toont deze tekst zolang de lezer de afbeeldingen niet inlaadt.','');
-    var altTekst=(omschrijving||'').replace(/"/g,'&quot;');
-
-    // 536 is de volledige breedte binnen de witte kaart (600 min tweemaal 32
-    // marge). Dat is de goede maat voor een foto en veel te groot voor een
-    // logo -- vandaar de vraag, met de volle breedte als voorstel zodat je
-    // gewoon enter kan duwen.
-    var ingave=prompt('Breedte in pixels.\n\n536 = volle breedte (foto)\n260 = halve breedte\n160 = klein, bijvoorbeeld een logo','536');
-    if(ingave===null)return;
-    var breedte=parseInt(ingave,10);
-    if(!breedte||breedte<20)breedte=536;
-    if(breedte>536)breedte=536;
-
-    // Zowel het width-attribuut als de stijl: Outlook luistert naar het
-    // attribuut, moderne clients naar de stijl. max-width in plaats van een
-    // vaste breedte, zodat een brede afbeelding op een telefoon meekrimpt.
-    nbVoegInTekst('<img src="'+url+'" width="'+breedte+'" style="width:100%;max-width:'+breedte+'px;height:auto;display:block;border:0" alt="'+altTekst+'">');
-    showToast(altTekst?'Afbeelding toegevoegd ('+breedte+'px)':'Toegevoegd op '+breedte+'px, maar zonder beschrijving');
   });
 }
 
