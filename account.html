@@ -1077,7 +1077,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       <div class="content-area">
         <div class="table-card" style="margin-bottom:20px">
           <div class="table-header"><span class="table-title">Assettypes</span>
-            <button class="btn-add-sm" onclick="nieuwVoertuigType()">+ Nieuw type</button>
+            <button class="btn-add-sm" id="voertuigTypeNieuwKnop" style="display:none" onclick="nieuwVoertuigType()">+ Nieuw type</button>
           </div>
           <div id="voertuigTypesLijst" style="padding:14px 20px;font-size:13px;color:var(--gray-500)">Laden...</div>
         </div>
@@ -4031,11 +4031,18 @@ function laadVoertuigen(){
 
 function renderVoertuigTypesLijst(){
   var el=document.getElementById('voertuigTypesLijst');
-  if(!alleVoertuigTypes.length){el.textContent='Nog geen assettypes. Voeg er een toe.';return;}
+  // Assettypes sturen de checklist aan: PrevX beheert ze, de klant leest mee.
+  // De policies zeggen sinds 0092 hetzelfde; dit voorkomt enkel een knop die
+  // gegarandeerd faalt.
+  var nieuwKnop=document.getElementById('voertuigTypeNieuwKnop');
+  if(nieuwKnop)nieuwKnop.style.display=isSuperbeheerder?'':'none';
+  if(!alleVoertuigTypes.length){el.textContent=isSuperbeheerder?'Nog geen assettypes. Voeg er een toe.':'Nog geen assettypes. Vraag ernaar bij uw adviseur.';return;}
   el.innerHTML=alleVoertuigTypes.map(function(t){
     return '<span class="badge" style="background:var(--gray-100);color:var(--gray-700);margin:0 6px 6px 0;display:inline-flex;align-items:center;gap:6px">'+
       (t.icon||'')+' '+t.naam+
-      '<button onclick="verwijderVoertuigType(\''+t.id+'\',\''+t.naam.replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:13px;line-height:1;padding:0" title="Verwijder type">&#215;</button>'+
+      // Een type wissen is een structurele ingreep -- de checklist hangt eraan
+      // vast -- en hoort daarom bij PrevX, net als het wissen van een asset zelf.
+      (isSuperbeheerder?'<button onclick="verwijderVoertuigType(\''+t.id+'\',\''+t.naam.replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:13px;line-height:1;padding:0" title="Verwijder type">&#215;</button>':'')+
       '</span>';
   }).join('');
 }
