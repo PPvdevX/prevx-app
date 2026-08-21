@@ -3830,8 +3830,11 @@ function chemieGevaarBadges(codes){
     // Een code waarvan we de tekst niet kennen, tonen we als code. Weglaten zou
     // erger zijn: dan lijkt een product ongevaarlijk omdat wij een zin missen.
     var titel=g?g.tekst:'Tekst nog niet in de codelijst';
-    var stijl=(g&&g.titel2)?'background:var(--red-bg);color:var(--red-tekst)':'background:var(--gray-100);color:var(--gray-700)';
-    return '<span class="badge" style="'+stijl+';margin:0 4px 4px 0" title="'+String(titel).replace(/"/g,'&quot;')+'">'+c+'</span>';
+    // Allemaal dezelfde kleur: welke code het product onder titel 2 brengt, zegt
+    // de badge onder de productnaam al. Twee keer dezelfde boodschap in dezelfde
+    // kleur is wat een tabel druk maakt.
+    return '<span class="badge" style="background:var(--gray-100);color:var(--gray-700);margin:0 4px 4px 0" title="'+
+      String(titel).replace(/"/g,'&quot;')+'">'+c+'</span>';
   }).join('');
 }
 
@@ -3860,10 +3863,15 @@ function renderChemie(){
       '<div style="font-size:11px;opacity:.85;margin-top:3px;line-height:1.4">'+uitleg+'</div></div>';
   }
 
+  // Eén kleurregel op dit scherm: rood betekent dat er iets ontbreekt en dat
+  // iemand iets moet doen; oranje dat er iets veroudert; grijs dat het een
+  // vaststelling is. Titel 2 is die laatste soort -- dat blijft ook staan
+  // wanneer alles perfect in orde is, en een signaal dat nooit uitgaat leert je
+  // oog om het rood ernaast ook te negeren.
   document.getElementById('chemieSignalen').innerHTML=
     kaart(zonderVib,'zonder veiligheidsinformatieblad',zonderVib?'rood':'grijs',
           'Zonder blad kan de wettelijke toets niet gebeuren.')+
-    kaart(titel2,'onder titel 2 van boek VI',titel2?'rood':'grijs',
+    kaart(titel2,'onder titel 2 van boek VI','grijs',
           'Kankerverwekkend, mutageen, reprotoxisch of hormoonontregelend.')+
     kaart(oud,'blad ouder dan 5 jaar of zonder datum',oud?'oranje':'grijs',
           'Leveranciers herzien hun bladen; niemand krijgt daar bericht van.');
@@ -3901,7 +3909,7 @@ function renderChemie(){
 
     tr.innerHTML='<td><div style="font-weight:500">'+p.naam+'</div>'+
         (p.toepassing?'<div style="font-size:12px;color:var(--gray-500)">'+p.toepassing+'</div>':'')+
-        (p.onder_titel2?'<span class="badge niet_rijklaar" style="margin-top:4px;display:inline-block">titel 2</span>':'')+'</td>'+
+        (p.onder_titel2?'<span class="badge" style="margin-top:4px;display:inline-block;background:transparent;border:1px solid var(--navy2);color:var(--navy-text)" title="Kankerverwekkend, mutageen, reprotoxisch of hormoonontregelend - strenger regime">titel 2 van boek VI</span>':'')+'</td>'+
       '<td>'+(p.leverancier||'-')+'</td>'+
       '<td>'+(p.locatie||'-')+(p.hoeveelheid?'<div style="font-size:12px;color:var(--gray-500)">'+p.hoeveelheid+'</div>':'')+'</td>'+
       '<td style="max-width:220px">'+chemieGevaarBadges(p.h_zinnen)+'</td>'+
