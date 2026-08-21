@@ -940,7 +940,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
                 Gaat het over een persoon of over iets vertrouwelijks, bel dan liever.
               </div>
             </div>
-            <button class="btn-login" onclick="nieuweVraag()">Vraag versturen</button>
+            <button class="btn-login" onclick="verstuurVraag()">Vraag versturen</button>
           </div>
         </div>
 
@@ -3663,7 +3663,11 @@ function toonVraagFormulier(){
   if(el.style.display==='')document.getElementById('vraagTekst').focus();
 }
 
-function nieuweVraag(){
+// Heet bewust niet nieuweVraag: die naam was al in gebruik door de vragenlijst
+// van de vuurvergunning. Twee functies met dezelfde naam in hetzelfde bestand
+// betekent dat de laatste de eerste overschrijft -- en dan opent de knop van de
+// klant het invulvenster van de vergunningsvragen.
+function verstuurVraag(){
   var tekst=document.getElementById('vraagTekst').value.trim();
   if(!tekst){showToast('Schrijf eerst uw vraag.');return;}
   sb.from('vragen').insert({
