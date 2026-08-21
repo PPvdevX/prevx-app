@@ -292,6 +292,9 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .kaart-groep{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:26px}
 /* Klein en rustig: de kaarten dragen de aandacht al, de kop hoeft alleen te
    zeggen waar je bent. */
+.kaart-ook{font-size:13px;color:var(--gray-500);line-height:1.6;margin:4px 0 0;padding-top:16px;border-top:1px solid var(--gray-200);max-width:640px}
+.kaart-ook a{color:var(--accent-tekst);font-weight:600;text-decoration:none}
+.kaart-ook a:hover{text-decoration:underline}
 .kaart-groep-kop{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-500);margin:0 0 10px}
 .klant-kaart{background:var(--surface);border:1px solid var(--gray-300);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;position:relative}
 .klant-kaart:hover{border-color:var(--navy)}
@@ -2155,7 +2158,6 @@ var KAART_GROEPEN=[
   {key:'dossier',  naam:'Uw dossier'},
   {key:'vloer',    naam:'Wat uw mensen gebruiken'}
 ];
-var KAART_GROEP_SLOT='Nog niet in uw formule';
 
 function tekenKlantKaarten(){
   var houder=document.getElementById('klantKaarten');
@@ -2171,9 +2173,23 @@ function tekenKlantKaarten(){
     if(kaarten.length)houder.appendChild(bouwKaartGroep(groep.naam,kaarten));
   });
 
-  // Wat de klant niet afneemt, staat onderaan bij elkaar in plaats van
-  // verspreid tussen wat hij wel heeft.
-  if(opSlot.length)houder.appendChild(bouwKaartGroep(KAART_GROEP_SLOT,opSlot));
+  // Wat de klant niet afneemt, staat in één regel onderaan -- geen rij kaarten
+  // met vier keer dezelfde oproep eronder. Een etalage werkt doordat ze
+  // terloops is; vier slotjes naast elkaar lezen als een prijslijst, en dat is
+  // niet wat iemand op zijn eigen dashboard komt zoeken.
+  if(opSlot.length)houder.appendChild(bouwOokBeschikbaar(opSlot));
+}
+
+function bouwOokBeschikbaar(kaarten){
+  var namen=kaarten.map(function(k){return onthtml(k.naam);});
+  var lijst=namen.length>1
+    ? namen.slice(0,-1).join(', ')+' en '+namen[namen.length-1]
+    : namen[0];
+  var p=document.createElement('p');
+  p.className='kaart-ook';
+  p.innerHTML='Ook beschikbaar: '+lijst+'. '+
+    '<a href="mailto:'+ADVISEUR_EMAIL+'?subject='+encodeURIComponent('Vraag over mijn formule')+'">Vraag ernaar bij uw adviseur</a>';
+  return p;
 }
 
 function bouwKaartGroep(naam,kaarten){
