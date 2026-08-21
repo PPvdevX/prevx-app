@@ -1121,7 +1121,10 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
         <div class="table-card">
           <div class="table-header">
             <span class="table-title">Abonnees</span>
-            <span class="table-count" id="abonneesCount">0</span>
+            <span style="display:flex;align-items:center;gap:10px">
+              <span class="table-count" id="abonneesCount">0</span>
+              <button class="btn-add-sm" onclick="nieuweAbonnee()">+ Abonnee toevoegen</button>
+            </span>
           </div>
           <table><thead><tr><th>E-mail</th><th>Naam</th><th>Status</th><th>Toestemming</th><th>Bron</th><th></th></tr></thead>
           <tbody id="abonneesTabel"><tr class="loading-row"><td colspan="6"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
@@ -7093,6 +7096,80 @@ function verwijderCampagne(id){
   sb.from('nieuwsbrief_campagnes').delete().eq('id',id).then(function(r){
     if(r.error){showToast('Fout: '+r.error.message);return;}
     sluitDetail();showToast('Campagne verwijderd');laadCampagnes();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Iemand met de hand toevoegen
+// ---------------------------------------------------------------------------
+// Twee wegen, en het verschil zit niet in het gemak maar in de toestemming.
+//
+//   Uitnodigen  -- de gewone weg. De persoon krijgt dezelfde bevestigingsmail
+//                  als bij een inschrijving op de website en beslist zelf. Het
+//                  toestemmingsbewijs komt dan van hem.
+//   Meteen      -- voor wie het je uitdrukkelijk gevraagd heeft, mondeling of
+//   aanmelden      op papier. Dan verklaar JIJ dat er toestemming is, en dat
+//                  leggen we ook zo vast: wie het deed en wanneer.
+//
+// Die tweede weg is geen sluiproute maar wel een verantwoordelijkheid. Klopt de
+// verklaring niet, dan staat er straks een toestemmingsdatum in je databank die
+// niets bewijst -- en dat is erger dan geen datum, want je gaat erop vertrouwen.
+function nieuweAbonnee(){
+  var email=prompt('E-mailadres van de nieuwe abonnee:');
+  if(!email||!email.trim())return;
+  email=email.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showToast('Dat lijkt geen geldig e-mailadres.');return;}
+
+  var naam=prompt('Naam (mag leeg):')||null;
+  var bedrijf=prompt('Bedrijf (mag leeg):')||null;
+
+  var meteen=confirm('Hoe wil je deze persoon toevoegen?\n\n'+
+    'OK = Meteen aanmelden.\n'+
+    'Kies dit alleen als hij of zij er uitdrukkelijk om gevraagd heeft. Jij verklaart dan dat er toestemming is, en dat wordt zo vastgelegd.\n\n'+
+    'Annuleren = Uitnodigen.\n'+
+    'De persoon krijgt een bevestigingsmail en beslist zelf. Veiliger, en het bewijs komt dan van hem.');
+
+  if(meteen)nbAbonneeMeteen(email,naam,bedrijf);
+  else nbAbonneeUitnodigen(email,naam,bedrijf);
+}
+
+function nbAbonneeUitnodigen(email,naam,bedrijf){
+  showToast('Uitnodiging versturen...');
+  // Loopt via dezelfde publieke functie als het aanmeldformulier, zodat er maar
+  // een weg is waarlangs een bevestigingsmail ontstaat.
+  fetch(SUPABASE_URL+'/functions/v1/nieuwsbrief',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:email,naam:naam,bedrijfsnaam:bedrijf,bron:'handmatig'})
+  }).then(function(res){return res.json();}).then(function(b){
+    if(b&&b.ok){showToast('Uitnodiging verstuurd naar '+email);laadAbonnees();}
+    else showToast('Fout: '+((b&&b.error)||'uitnodigen mislukt'));
+  }).catch(function(e){
+    console.error('Uitnodigen mislukt:',e);
+    showToast('De aanmeldfunctie is niet bereikbaar.');
+  });
+}
+
+function nbAbonneeMeteen(email,naam,bedrijf){
+  sb.auth.getUser().then(function(u){
+    var door=(u.data&&u.data.user)?u.data.user.email:'onbekend';
+    // Het bewijs is hier een verklaring, geen klik. Dat zetten we er letterlijk
+    // bij, zodat later niemand denkt dat deze persoon zelf bevestigd heeft.
+    var bewijs='handmatig toegevoegd door '+door;
+    sb.from('nieuwsbrief_abonnees').insert({
+      email:email,naam:naam,bedrijfsnaam:bedrijf,bron:'handmatig',
+      status:'aangemeld',
+      toestemming_op:new Date().toISOString(),
+      toestemming_bewijs:bewijs,
+      bevestig_token:null,bevestig_verloopt_op:null
+    }).then(function(r){
+      if(r.error){
+        if(r.error.code==='23505')showToast('Dit adres staat al in de lijst.');
+        else showToast('Fout: '+r.error.message);
+        return;
+      }
+      showToast(email+' toegevoegd als aangemeld');
+      laadAbonnees();
+    });
   });
 }
 
