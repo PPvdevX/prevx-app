@@ -782,7 +782,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       </div>
       <div class="content-area">
         <div style="margin-bottom:14px">
-          <button class="btn-add-sm btn-rood" onclick="bundelBrandpreventie()">Bundel voor de hulpdiensten</button>
+          <button class="btn-add-sm btn-rood" onclick="bundelBrandpreventiePdf()">Bundel tot PDF</button><button class="btn-add-sm" onclick="bundelBrandpreventie()">Enkel het overzicht</button>
         </div>
         <div class="table-card">
           <div class="table-header"><span class="table-title">Onderdelen</span>
@@ -2790,6 +2790,52 @@ function bpdNagekeken(key){
 
 // De bundelknop. Geen PDF-bibliotheek erbij: de browser kan zelf naar PDF
 // afdrukken, en een tweede bibliotheek naast SheetJS is gewicht zonder winst.
+// De echte bundel: alle PDF's en afbeeldingen uit het dossier achter elkaar in
+// één document, met een voorblad dat opsomt wat erin zit. Het samenvoegen
+// gebeurt in een edge function -- een browser kan geen PDF's aan elkaar
+// plakken, en de bestanden staan in een privébucket die de server rechtstreeks
+// mag lezen.
+//
+// De oude knop blijft bestaan als "Enkel het overzicht". Die is sneller en soms
+// is een inhoudsopgave precies wat je nodig hebt.
+function bundelBrandpreventiePdf(){
+  if(!huidigeBedrijfId){showToast('Geen dossier geopend');return;}
+  showToast('Bundel samenstellen, even geduld...');
+
+  sb.auth.getSession().then(function(sr){
+    var token=sr.data&&sr.data.session?sr.data.session.access_token:null;
+    if(!token){showToast('Sessie verlopen, log opnieuw in.');return;}
+
+    return fetch(SUPABASE_URL+'/functions/v1/bundel-brandpreventiedossier',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({bedrijf_id:huidigeBedrijfId})
+    }).then(function(res){
+      if(!res.ok){
+        return res.json().then(function(b){showToast('Fout: '+((b&&b.error)||'bundelen mislukt'));});
+      }
+      var gebonden=res.headers.get('X-Gebonden')||'?';
+      var over=parseInt(res.headers.get('X-Overgeslagen')||'0',10);
+      return res.blob().then(function(blob){
+        // Zelf downloaden in plaats van een nieuw venster: een PDF van tientallen
+        // megabyte in een tabblad openen laat de browser eerst alles inladen
+        // voor er iets te zien is.
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url; a.download='brandpreventiedossier.pdf';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){URL.revokeObjectURL(url);},60000);
+        showToast(over
+          ? gebonden+' document(en) gebonden, '+over+' apart af te drukken — zie het voorblad'
+          : gebonden+' document(en) gebonden');
+      });
+    });
+  }).catch(function(e){
+    console.error('Bundelen mislukt:',e);
+    showToast('De bundelfunctie is niet bereikbaar.');
+  });
+}
+
 function bundelBrandpreventie(){
   if(!bpdGegevens){showToast('Nog aan het laden');return;}
   var naam=(huidigBedrijfData&&huidigBedrijfData.naam)||'';
