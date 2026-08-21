@@ -368,12 +368,14 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
    portaal geen vaste betekenis meer heeft. */
 .sw-hoofd-rechts{display:flex;align-items:stretch;gap:16px}
 .sw-streep{width:3px;border-radius:2px;background:var(--gray-200);flex:0 0 auto}
-.knop-melding{flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:var(--red);color:#fff;border:none;border-radius:var(--radius);padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
+/* Zonder pictogram: een rode knop met "Melding maken" erop zegt het al, en het
+   waarschuwingsdriehoekje herhaalde enkel wat de kleur ook zegt. */
+.knop-melding{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border:none;border-radius:var(--radius);padding:10px 20px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
 .knop-melding:hover{filter:brightness(1.08)}
 @media (max-width:640px){
   .sw-hoofd-rechts{width:100%;flex-wrap:wrap}
   .sw-streep{display:none!important}
-  .knop-melding{width:100%;flex-direction:row;padding:12px 16px}
+  .knop-melding{width:100%;padding:12px 16px}
 }
 @media (max-width:640px){
   .klant-topbar,.klant-hero,.kaart-grid,.kruimel{padding-left:16px;padding-right:16px}
@@ -654,7 +656,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
             <div class="klant-bezoek-sub" id="klantBezoekSub"></div>
           </div>
           <span class="sw-streep" id="klantSwStreep" style="display:none"></span>
-          <button class="knop-melding" onclick="meldingMaken()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
+          <button class="knop-melding" onclick="meldingMaken()">Melding maken</button>
         </div>
       </div>
       <div class="sw-balk"><div class="sw-balk-vol" id="klantSwBalk" style="width:0%"></div></div>
@@ -2071,24 +2073,29 @@ function werkKruimelBij(naam){
   kruimel.style.display='';
 }
 
+// Elke kaart blijft staan; wat de klant niet afneemt, komt op slot te staan in
+// de laatste groep. Een module die je gewoon weglaat, bestaat voor hem niet --
+// en dan moet jij hem in een gesprek uitleggen wat hij mist.
 function klantKaartZichtbaar(k){
-  if(k.formule)return true;
-  if(!k.module)return true;
-  // Zelfde regel als menuGroepZichtbaar: een module die je erbij neemt, staat
-  // uit tot een rij zegt van wel. Zonder dit zou de kaart verschijnen bij elke
-  // klant die nog geen rij in bedrijf_modules heeft.
-  if(moduleIsOptIn(k.module))return actieveModules[k.module]===true;
-  return actieveModules[k.module]!==false;
+  return true;
 }
 
-// Een kaart met een formule blijft op slot tot de module aanstaat en er ook
-// echt een scherm achter zit. Die tweede voorwaarde is geen overdaad: staat de
-// module aan voor er iets gebouwd is, dan klikt de klant zich naar een lege
-// pagina, en dat is erger dan een slotje.
+// Op slot wanneer de module niet aanstaat. Voor een module die je erbij neemt
+// (optIn) betekent dat: uit tot een rij zegt van wel; voor de rest: aan tot een
+// rij zegt van niet. Zelfde regel als de zijbalk, zodat een kaart nooit iets
+// belooft wat het menu niet geeft.
 function kaartVergrendeld(k){
-  if(!k.formule)return false;
-  return actieveModules[k.module]!==true || !document.getElementById('tab-'+k.key);
+  if(!k.module)return false;
+  var aan=moduleIsOptIn(k.module)
+    ? actieveModules[k.module]===true
+    : actieveModules[k.module]!==false;
+  if(!aan)return true;
+  // Module staat aan maar er is nog geen scherm gebouwd (vorming): ook slot,
+  // anders klikt de klant zich naar een lege pagina.
+  return !document.getElementById('tab-'+k.key);
 }
+
+
 
 function laadKlantHome(){
   if(!huidigeBedrijfId)return;
@@ -2131,10 +2138,49 @@ function laadVolgendBezoek(){
 
 function onthtml(t){var d=document.createElement('div');d.innerHTML=t;return d.textContent;}
 
+// De groepen liggen vast en bewegen niet mee met wat toevallig actief is: een
+// kaart die je gisteren linksboven vond, staat daar vandaag weer.
+var KAART_GROEPEN=[
+  {key:'opvolging',naam:'Vraagt opvolging'},
+  {key:'dossier',  naam:'Uw dossier'},
+  {key:'vloer',    naam:'Wat uw mensen gebruiken'}
+];
+var KAART_GROEP_SLOT='Nog niet in uw formule';
+
 function tekenKlantKaarten(){
-  var grid=document.getElementById('klantKaarten');
-  grid.innerHTML='';
-  KLANT_KAARTEN.filter(klantKaartZichtbaar).forEach(function(k){
+  var houder=document.getElementById('klantKaarten');
+  houder.innerHTML='';
+
+  var opSlot=[];
+  KAART_GROEPEN.forEach(function(groep){
+    var kaarten=KLANT_KAARTEN.filter(function(k){
+      if(k.groep!==groep.key||!klantKaartZichtbaar(k))return false;
+      if(kaartVergrendeld(k)){opSlot.push(k);return false;}
+      return true;
+    });
+    if(kaarten.length)houder.appendChild(bouwKaartGroep(groep.naam,kaarten));
+  });
+
+  // Wat de klant niet afneemt, staat onderaan bij elkaar in plaats van
+  // verspreid tussen wat hij wel heeft.
+  if(opSlot.length)houder.appendChild(bouwKaartGroep(KAART_GROEP_SLOT,opSlot));
+}
+
+function bouwKaartGroep(naam,kaarten){
+  var blok=document.createDocumentFragment();
+  var kop=document.createElement('div');
+  kop.className='kaart-groep-kop';
+  kop.textContent=naam;
+  blok.appendChild(kop);
+  var grid=document.createElement('div');
+  grid.className='kaart-groep';
+  kaarten.forEach(function(k){grid.appendChild(bouwKlantKaart(k));});
+  blok.appendChild(grid);
+  return blok;
+}
+
+function bouwKlantKaart(k){
+  return (function(){
     var opSlot=kaartVergrendeld(k);
     var el=document.createElement('div');
     // Een vergrendelde kaart houdt haar grijze behandeling: het slot moet
@@ -2152,8 +2198,8 @@ function tekenKlantKaarten(){
       // bereiken. Zonder deze link toont de kaart een slot zonder sleutel.
       (opSlot?'<a class="kaart-vraag" href="mailto:'+ADVISEUR_EMAIL+'?subject='+encodeURIComponent('Vraag over '+onthtml(k.naam))+'">Vraag ernaar bij uw adviseur</a>':'');
     if(!opSlot)el.onclick=function(){toonTab(k.key);};
-    grid.appendChild(el);
-  });
+    return el;
+  })();
 }
 
 function zetTeller(key,tellers){
