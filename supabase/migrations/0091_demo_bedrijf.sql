@@ -11,6 +11,11 @@
 -- geklikt heeft, een testvergunning, een halve inspectie) en voor de volgende
 -- demo wil je een propere start. Draai dit script dan gewoon opnieuw.
 --
+-- Twee dingen overleven zo'n reset met opzet: de huisstijl van het bedrijf (de
+-- rij in bedrijven wordt bijgewerkt, niet gewist) en de veiligheidsinformatie-
+-- bladen die je bij een chemisch product hebt opgeladen -- dat bestand ligt al
+-- in de opslag, en het opnieuw moeten opladen zou werk zijn zonder reden.
+--
 -- Het raakt NOOIT een ander bedrijf aan: elke delete en elke insert is gescoopt
 -- op één vast bedrijf-id (dddddddd-...). Dat id ligt vast zodat een tweede
 -- uitvoering hetzelfde dossier hergebruikt in plaats van een tweede
@@ -175,11 +180,9 @@ begin
   delete from document_nummers where bedrijf_id = v_bedrijf;
 
   delete from bedrijf_kennisbank where bedrijf_id = v_bedrijf;
-  -- Chemische agentia komt uit 0098; zelfde voorbehoud als bij het
-  -- brandpreventiedossier hieronder.
-  if to_regclass('public.chemische_producten') is not null then
-    delete from chemische_producten where bedrijf_id = v_bedrijf;
-  end if;
+  -- Chemische agentia wordt hier NIET opgekuist. Die producten ruimt blok 4B
+  -- zelf op, omdat het de verwijzingen naar opgeladen veiligheidsinformatiebladen
+  -- eerst opzij moet zetten. Zie de uitleg daar.
   if to_regclass('public.vragen') is not null then
     delete from vragen where bedrijf_id = v_bedrijf;
   end if;
@@ -877,21 +880,45 @@ $$;
 --     spoor blijft;
 --   * bladen met en zonder datum.
 --
--- GEEN ENKEL PRODUCT HEEFT EEN BESTAND. Dat is geen vergetelheid: een verzonnen
--- adres geeft een 404 midden in je demo, en een pdf in de repo zetten om hem bij
--- elke reset weer te uploaden is meer omhaal dan het waard is. Laad vóór je
--- eerste demo bij één product een willekeurige pdf op -- tien seconden werk --
--- dan toont het scherm ook de knop "Veiligheidsinformatieblad openen", en licht
--- meteen de oranje teller op bij de roestomvormer, waarvan het blad uit 2019
--- dateert.
+-- GEEN ENKEL PRODUCT HEEFT BIJ HET ZAAIEN EEN BESTAND. Dat is geen vergetelheid:
+-- een verzonnen adres geeft een 404 midden in je demo, en een pdf in de repo
+-- zetten om hem bij elke reset weer te uploaden is meer omhaal dan het waard is.
+-- Laad vóór je eerste demo bij één product een pdf op -- tien seconden werk --
+-- dan toont het scherm ook de knop "Veiligheidsinformatieblad openen".
+--
+-- Wat je oplaadt, blijft staan. Dit blok kuist zijn eigen producten op (het
+-- opkuisblok bovenaan laat ze met opzet met rust) en onthoudt daarbij per
+-- productnaam waar het opgeladen blad staat. Na het opnieuw zaaien hangt die
+-- verwijzing er weer aan. Het bestand zelf staat in de opslag en wordt hier
+-- toch nooit aangeraakt; enkel de verwijzing weggooien zou betekenen dat je na
+-- elke reset opnieuw moet opladen voor een pdf die er al ligt.
+--
+-- Op naam koppelen, niet op id: de id's zijn nieuw na het opnieuw zaaien, de
+-- namen staan hieronder vast. Hernoem je een product in de lijst, dan raakt het
+-- zijn blad kwijt -- dat is het eerlijke gedrag, want dan is het een ander
+-- product geworden.
 do $$
 declare
   v_bedrijf uuid := 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  v_bladen  jsonb;
 begin
   if to_regclass('public.chemische_producten') is null then
     raise notice 'Tabel chemische_producten bestaat nog niet (migratie 0098 nog niet gedraaid). Producten overgeslagen.';
     return;
   end if;
+
+  -- distinct on: stond er per ongeluk twee keer dezelfde productnaam, dan zou
+  -- jsonb_object_agg struikelen over de dubbele sleutel en je hele reset
+  -- afbreken. Het jongste blad wint.
+  select coalesce(jsonb_object_agg(naam, vib_url), '{}'::jsonb)
+    into v_bladen
+    from (select distinct on (naam) naam, vib_url
+            from chemische_producten
+           where bedrijf_id = v_bedrijf
+             and vib_url is not null
+           order by naam, vib_datum desc nulls last) b;
+
+  delete from chemische_producten where bedrijf_id = v_bedrijf;
 
   insert into chemische_producten
     (bedrijf_id, naam, leverancier, toepassing, locatie, hoeveelheid,
@@ -931,7 +958,13 @@ begin
      array['H350i','H317'], (current_date - 1600)::date,
      'Vervangen door een chroomvrije primer. Rest afgevoerd via erkende ophaler.', false, 'PrevX');
 
-  raise notice 'Zes chemische producten toegevoegd. Laad bij een van hen een pdf op om ook de VIB-knop te tonen.';
+  update chemische_producten
+     set vib_url = v_bladen ->> naam
+   where bedrijf_id = v_bedrijf
+     and v_bladen ->> naam is not null;
+
+  raise notice 'Zes chemische producten toegevoegd, % opgeladen blad(en) behouden.',
+    (select count(*) from jsonb_object_keys(v_bladen));
 end
 $$;
 
