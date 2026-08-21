@@ -5980,6 +5980,14 @@ function nbRoepVerzendFunctie(body){
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body:JSON.stringify(body)
     }).then(function(res){return res.json().then(function(b){return {ok:res.ok,body:b};});});
+  }).catch(function(e){
+    // Zonder deze vangst blijft het scherm stil hangen op "Bezig...": een
+    // mislukte fetch (netwerk weg, CORS, functie plat) verwerpt de belofte en
+    // dan komt er nooit een melding. Dat is de vervelendste soort fout -- je
+    // ziet niet dat er iets misging, alleen dat er niets gebeurt.
+    console.error('Aanroep verzend-nieuwsbrief mislukt:', e);
+    showToast('De verzendfunctie is niet bereikbaar. Kijk of ze uitgerold is.');
+    return null;
   });
 }
 

@@ -57,6 +57,28 @@ const TIJDBUDGET_MS = 100_000;
 const wacht = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------------------------------------------------------------------------
+// CORS
+// ---------------------------------------------------------------------------
+// Het portaal draait op prevx.be en deze functie op supabase.co, dus elke
+// aanroep is cross-origin. De browser stuurt daarom eerst een OPTIONS-verzoek,
+// en dat moet beantwoord worden met deze headers -- anders blokkeert hij het
+// echte verzoek en ziet de aanroeper enkel "Failed to fetch", zonder dat er
+// ooit een regel van deze functie draait.
+//
+// De poort laat OPTIONS wel door ondanks Verify JWT; een preflight draagt geen
+// Authorization-header en hoeft die ook niet te dragen.
+const TOEGELATEN_HERKOMST = ['https://prevx.be', 'https://www.prevx.be'];
+
+function corsHeaders(req) {
+  const herkomst = req.headers.get('origin') || '';
+  return {
+    'Access-Control-Allow-Origin': TOEGELATEN_HERKOMST.includes(herkomst) ? herkomst : TOEGELATEN_HERKOMST[0],
+    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+}
+
+// ---------------------------------------------------------------------------
 // De voettekst die onder elke nieuwsbrief komt
 // ---------------------------------------------------------------------------
 // Bewust hier en niet in de campagnetekst: een nieuwsbrief zonder werkende
@@ -116,11 +138,27 @@ Deno.serve(async (req) => {
     return await verwerk(req);
   } catch (e) {
     console.error('verzend-nieuwsbrief crashte:', e && e.stack ? e.stack : e);
-    return new Response(JSON.stringify({ error: String((e && e.message) || e) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String((e && e.message) || e) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(req) }
+    });
   }
 });
 
 async function verwerk(req) {
+  // antwoord() staat binnen verwerk zodat het req kent en overal de
+  // CORS-headers meegeeft. Zonder die headers ziet de browser elk antwoord --
+  // ook een keurige 403 -- als een netwerkfout.
+  function antwoord(data, status) {
+    return new Response(JSON.stringify(data), {
+      status: status || 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(req) }
+    });
+  }
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
+  }
   if (req.method !== 'POST') {
     return antwoord({ error: 'Gebruik POST' }, 405);
   }
@@ -341,12 +379,5 @@ async function verwerk(req) {
     boodschap: klaar
       ? 'De campagne is volledig verzonden.'
       : `Tijdslimiet bereikt. Roep opnieuw aan om de resterende ${resterend} af te werken.`
-  });
-}
-
-function antwoord(data, status) {
-  return new Response(JSON.stringify(data), {
-    status: status || 200,
-    headers: { 'Content-Type': 'application/json' }
   });
 }
