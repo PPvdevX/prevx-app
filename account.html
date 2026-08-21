@@ -276,9 +276,15 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .klant-hero-meta span{font-size:13px;color:var(--gray-500)}
 .klant-hero-meta b{font-weight:600;color:var(--gray-700)}
 .klant-hero-sub{font-size:13px;color:var(--gray-500)}
-.klant-bezoek{background:var(--surface);border:1px solid var(--gray-300);border-radius:var(--radius-lg);padding:16px 20px;margin:18px 32px 0}
-.klant-bezoek-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);margin-bottom:6px}
-.klant-bezoek-datum{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:700;color:var(--navy-text)}
+/* Zit sinds de verhuizing binnen .sw-kaart, rechts naast de cijfers. Geen eigen
+   kader of marge meer: twee kaders in elkaar leest als twee losse dingen,
+   terwijl het over dezelfde samenwerking gaat. Een streepje links volstaat. */
+.sw-hoofd{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.sw-hoofd-links{min-width:0}
+.klant-bezoek{border-left:3px solid var(--gray-200);padding-left:14px}
+.klant-bezoek-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);margin-bottom:4px}
+.klant-bezoek-datum{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:700;color:var(--navy-text)}
+.klant-bezoek-sub{font-size:12px;color:var(--gray-500);margin-top:2px}
 .kaart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;padding:18px 32px 32px}
 .klant-kaart{background:var(--surface);border:1px solid var(--gray-300);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;position:relative}
 .klant-kaart:hover{border-color:var(--navy)}
@@ -337,12 +343,18 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 .kruimel button{display:inline-flex;align-items:center;gap:8px;padding:0;border:none;background:none;color:var(--gray-500);font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;line-height:1}
 .kruimel button:hover{color:var(--navy-text)}
 .kruimel button svg{flex-shrink:0}
-.fab-melding{position:fixed;right:26px;bottom:26px;z-index:60;display:none;align-items:center;gap:8px;background:var(--green);color:#fff;border:none;border-radius:26px;padding:13px 20px;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg)}
-/* De knop staat buiten #screen-dashboard, dus .klantmodus .fab-melding
-   bereikt hem niet -- zetKlantModus() schakelt hem rechtstreeks. */
+/* Stond rechtsonder als zwevende knop, in het groen. Twee dingen daaraan
+   klopten niet. Groen betekent in dit portaal "rijklaar" -- in orde -- en dat
+   is het tegenovergestelde van waarvoor deze knop dient. En zwevend dekte hij
+   inhoud af. Nu staat hij in de blauwe balk, in het oranje: het valt op en
+   vraagt aandacht, zonder de dreiging van rood die mensen zou kunnen
+   afhouden van melden. */
+.knop-melding{display:inline-flex;align-items:center;gap:7px;background:var(--orange);color:#fff;border:none;border-radius:20px;padding:7px 15px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.knop-melding:hover{filter:brightness(1.08)}
+@media (max-width:640px){.knop-melding span,.knop-melding{font-size:12px;padding:6px 12px}}
 @media (max-width:640px){
   .klant-topbar,.klant-hero,.kaart-grid,.kruimel{padding-left:16px;padding-right:16px}
-  .klant-bezoek{margin-left:16px;margin-right:16px}
+  .sw-hoofd{gap:12px}
 }
 
 @media (prefers-color-scheme: dark){
@@ -585,6 +597,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
     </div>
     <div class="klant-topbar-rechts">
       <span id="klantTopbarGebruiker"></span>
+      <button class="knop-melding" onclick="meldingMaken()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
       <button onclick="doLogout()">Afmelden</button>
     </div>
   </div>
@@ -602,15 +615,23 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       <div class="klant-hero-meta" id="klantHeroSub"></div>
     </div>
     <div class="sw-kaart" id="klantSamenwerking" style="display:none;margin:18px 32px 0">
-      <div class="sw-label">Uw samenwerking</div>
-      <div class="sw-cijfer"><span id="klantSwOpgenomen">0</span> van <span id="klantSwContract">0</span><small>bezoekdagen opgenomen in <span id="klantSwJaar"></span></small></div>
+      <div class="sw-hoofd">
+        <div class="sw-hoofd-links">
+          <div class="sw-label">Uw samenwerking</div>
+          <div class="sw-cijfer"><span id="klantSwOpgenomen">0</span> van <span id="klantSwContract">0</span><small>bezoekdagen opgenomen in <span id="klantSwJaar"></span></small></div>
+        </div>
+        <!-- Het volgende bezoek stond hieronder als losse kaart, alleen op een
+             lege rij. Het hoort hier: het gaat over dezelfde samenwerking als de
+             balk ernaast, en het is naslag dat een klant komt opzoeken -- dus
+             het moet blijven staan, niet wegvagen. -->
+        <div class="klant-bezoek" id="klantBezoek" style="display:none">
+          <div class="klant-bezoek-label">Volgend bezoek</div>
+          <div class="klant-bezoek-datum" id="klantBezoekDatum"></div>
+          <div class="klant-bezoek-sub" id="klantBezoekSub"></div>
+        </div>
+      </div>
       <div class="sw-balk"><div class="sw-balk-vol" id="klantSwBalk" style="width:0%"></div></div>
       <div class="sw-inbegrepen" id="klantSwInbegrepen"></div>
-    </div>
-    <div class="klant-bezoek" id="klantBezoek" style="display:none">
-      <div class="klant-bezoek-label">Volgend bezoek</div>
-      <div class="klant-bezoek-datum" id="klantBezoekDatum"></div>
-      <div class="klant-hero-sub" id="klantBezoekSub"></div>
     </div>
     <div class="kaart-grid" id="klantKaarten"></div>
   </div>
@@ -1413,7 +1434,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
   <img id="lightboxImg" src="" alt="">
 </div>
 
-<button class="fab-melding" onclick="meldingMaken()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> Melding maken</button>
+
 
 <div class="toast" id="toast"></div>
 
@@ -1997,9 +2018,9 @@ function zetKlantModus(aan){
   klantModus=aan;
   var scherm=document.getElementById('screen-dashboard');
   scherm.classList.toggle('klantmodus',aan);
+  // De meldknop zit sinds de verhuizing in klantTopbar zelf, dus die verschijnt
+  // en verdwijnt mee. Hij hoeft niet meer apart geschakeld te worden.
   document.getElementById('klantTopbar').style.display=aan?'':'none';
-  var fab=document.querySelector('.fab-melding');
-  if(fab)fab.style.display=aan?'flex':'none';
   if(!aan)document.getElementById('klantKruimel').style.display='none';
 }
 
