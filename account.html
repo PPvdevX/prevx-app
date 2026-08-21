@@ -924,6 +924,38 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       </div>
     </div>
 
+    <div id="tab-vragen" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Vragen</div>
+        <div class="page-subtitle">Wat u vraagt, en wat wij antwoordden</div>
+      </div>
+      <div class="content-area">
+        <div id="vraagStellen" class="table-card" style="margin-bottom:20px;max-width:620px;display:none">
+          <div class="table-header"><span class="table-title">Een vraag stellen</span></div>
+          <div style="padding:16px 20px">
+            <div class="form-group">
+              <textarea class="form-input" id="vraagTekst" rows="4" placeholder="Bijvoorbeeld: moeten onze uitzendkrachten een werkpostfiche krijgen voor ze op de zaag mogen?"></textarea>
+              <div style="font-size:12px;color:var(--gray-500);margin-top:6px;line-height:1.5">
+                Uw vraag en ons antwoord komen in uw dossier te staan en zijn zichtbaar voor uw collega&rsquo;s met toegang.
+                Gaat het over een persoon of over iets vertrouwelijks, bel dan liever.
+              </div>
+            </div>
+            <button class="btn-login" onclick="nieuweVraag()">Vraag versturen</button>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Vragen</span>
+            <span style="display:flex;align-items:center;gap:10px">
+              <span class="table-count" id="vragenCount">0</span>
+              <button class="btn-add-sm" id="vraagNieuwKnop" style="display:none" onclick="toonVraagFormulier()">+ Vraag</button>
+            </span>
+          </div>
+          <div id="vragenLijst" style="padding:6px 20px 18px"><div class="loading-row"><div class="spinner-sm"></div>Laden...</div></div>
+        </div>
+      </div>
+    </div>
+
     <div id="tab-chemie" style="display:none">
       <div class="page-header">
         <div class="page-title">Chemische agentia</div>
@@ -1615,7 +1647,10 @@ var MENU=[
     // Hangt aan de module documenten omdat negen van de elf onderdelen daar
     // liggen; zonder die module is het scherm een lijst van elf keer 'ontbreekt'.
     {key:'brandpreventie',naam:'Brandpreventiedossier',module:'documenten',laad:function(){laadBrandpreventie();}},
-    {key:'kennisbank',naam:'Kennisbank',module:'kennisbank',laad:function(){laadKennisbank();}}
+    {key:'kennisbank',naam:'Kennisbank',module:'kennisbank',laad:function(){laadKennisbank();}},
+    // Geen module-vlag: vragen stellen hoort bij elke formule. Wie een dossier
+    // heeft, mag iets vragen.
+    {key:'vragen',naam:'Vragen',laad:function(){laadVragen();}}
   ]},
   {groep:'Pre-inspectie',icoon:'inspecties',module:'preinspecties',items:[
     {key:'inspecties',naam:'Inspecties',laad:function(){laadInspecties();}},
@@ -2016,6 +2051,8 @@ var KLANT_KAARTEN=[
   // erger dan geen meldknop: de melder denkt dat er iets mee gebeurt.
   {groep:'dossier',key:'meldingen',naam:'Meldingen',module:'actiepunten',icoon:'meldingen',
    sub:'Wat uw mensen melden vanaf de vloer, en wat ermee gebeurd is.'},
+  {groep:'dossier',key:'vragen',naam:'Vragen',icoon:'vragen',
+   sub:'Iets vragen wat niet dringend is, en het antwoord terugvinden.'},
   {groep:'veiligheid',key:'keuringen',naam:'Keuringen',module:'planning',icoon:'keuringen',
    sub:'Wat wanneer vervalt, en wat er al verlopen is.'},
   {groep:'dossier',key:'documenten',naam:'Documenten',module:'documenten',icoon:'documenten',
@@ -2063,6 +2100,7 @@ var KAART_ICONEN={
   assets:'<path d="M3 17h18M5 17V9l7-4 7 4v8"/><path d="M9 17v-4h6v4"/>',
   kennisbank:'<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 7h7M9 11h7"/>',
   meldingen:'<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
+  vragen:'<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/><path d="M9.5 9a2.5 2.5 0 1 1 3 2.4V13"/><path d="M12.5 16h.01"/>',
   chemie:'<path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/>',
   inspecties:'<rect x="6" y="4" width="12" height="17" rx="1.5"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/>',
   vuurvergunning:'<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6.5-4.5-10C13 8 12 9 10.5 9.5 9 7 8 5 8 5c-2 3-3 5.5-3 10a7 7 0 0 0 7 7z"/>',
@@ -2340,6 +2378,15 @@ function laadKaartTellers(){
       t.push({tekst:rijen.length+' open',kleur:'grijs'});
       zetTeller('actiepunten',t);
     });
+
+  sb.from('vragen').select('status').eq('bedrijf_id',huidigeBedrijfId).then(function(r){
+    var rijen=r.data||[]; if(!rijen.length)return;
+    var open=rijen.filter(function(v){return v.status==='open';}).length;
+    var t=[];
+    if(open)t.push({tekst:open+' wacht op antwoord',kleur:'oranje'});
+    t.push({tekst:rijen.length+' in totaal',kleur:'grijs'});
+    zetTeller('vragen',t);
+  });
 
   sb.from('meldingen').select('status').eq('bedrijf_id',huidigeBedrijfId).then(function(r){
     var rijen=r.data||[]; if(!rijen.length)return;
@@ -3406,6 +3453,99 @@ function nieuweGevaarzin(){
     }
     showToast('Aanduiding toegevoegd');
     laadGevaarzinnen(renderGevaarzinnenTabel);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Vragen
+// ---------------------------------------------------------------------------
+// Voor een vraag waarop niet meteen een antwoord bestaat. Bellen blijft de weg
+// voor wat dringend of vertrouwelijk is -- daarom staat het telefoonnummer in
+// het contactblok en staat er bij het formulier waarom je soms beter belt.
+//
+// Antwoorden doet PrevX; de policies uit 0100 laten een klant zijn eigen vraag
+// niet bijwerken. Alles blijft binnen het bedrijf: de leespolicy is gescoopt op
+// bedrijf_id, dus een vraag van de ene klant is voor een andere onzichtbaar.
+var alleVragen=[];
+
+function laadVragen(){
+  if(!huidigeBedrijfId)return;
+  // Iedereen bij de klant mag vragen stellen; PrevX beantwoordt ze.
+  document.getElementById('vraagNieuwKnop').style.display=isSuperbeheerder?'none':'';
+  sb.from('vragen').select('*').eq('bedrijf_id',huidigeBedrijfId)
+    .order('status').order('gesteld_op',{ascending:false}).then(function(r){
+      if(r.error){showToast('Fout: '+r.error.message);return;}
+      alleVragen=r.data||[];
+      renderVragen();
+    });
+}
+
+function renderVragen(){
+  var open=alleVragen.filter(function(v){return v.status==='open';}).length;
+  // Het teken zelf, geen HTML-code: dit veld wordt met textContent gevuld en
+  // toont een entiteit anders letterlijk.
+  document.getElementById('vragenCount').textContent=
+    alleVragen.length+' vragen'+(open?' · '+open+' open':'');
+  var vak=document.getElementById('vragenLijst');
+  if(!alleVragen.length){
+    vak.innerHTML='<p style="color:var(--gray-500);font-size:13px;margin:10px 0">Nog geen vragen gesteld.</p>';
+    return;
+  }
+  function tekst(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML;}
+  vak.innerHTML=alleVragen.map(function(v){
+    var kop='<div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">'+
+      '<span class="badge '+(v.status==='open'?'onvolledig':'rijklaar')+'">'+(v.status==='open'?'Open':'Beantwoord')+'</span>'+
+      '<span style="font-size:12px;color:var(--gray-500)">'+tekst(v.gesteld_door)+' &middot; '+formatDatum(v.gesteld_op.slice(0,10))+'</span></div>';
+    var vraag='<div style="font-weight:500;margin:6px 0 0;white-space:pre-wrap">'+tekst(v.vraag)+'</div>';
+    var antwoord='';
+    if(v.antwoord){
+      antwoord='<div style="margin-top:10px;padding:10px 14px;background:var(--gray-50);border-left:3px solid var(--navy);border-radius:0 6px 6px 0">'+
+        '<div style="white-space:pre-wrap">'+tekst(v.antwoord)+'</div>'+
+        '<div style="font-size:12px;color:var(--gray-500);margin-top:6px">'+
+        tekst(v.beantwoord_door||'PrevX')+(v.beantwoord_op?' &middot; '+formatDatum(v.beantwoord_op.slice(0,10)):'')+'</div></div>';
+    }else if(isSuperbeheerder){
+      antwoord='<button class="btn-add-sm" style="margin-top:10px" onclick="beantwoordVraag(\''+v.id+'\')">Antwoorden</button>';
+    }else{
+      antwoord='<div style="font-size:12px;color:var(--gray-500);margin-top:8px">Nog geen antwoord. U krijgt het hier te zien.</div>';
+    }
+    return '<div style="padding:14px 0;border-top:1px solid var(--gray-100)">'+kop+vraag+antwoord+'</div>';
+  }).join('');
+}
+
+function toonVraagFormulier(){
+  var el=document.getElementById('vraagStellen');
+  el.style.display=el.style.display==='none'?'':'none';
+  if(el.style.display==='')document.getElementById('vraagTekst').focus();
+}
+
+function nieuweVraag(){
+  var tekst=document.getElementById('vraagTekst').value.trim();
+  if(!tekst){showToast('Schrijf eerst uw vraag.');return;}
+  sb.from('vragen').insert({
+    bedrijf_id:huidigeBedrijfId,
+    gebruiker_id:(eigenGebruiker&&eigenGebruiker.id)||null,
+    gesteld_door:(eigenGebruiker&&eigenGebruiker.naam)||'Onbekend',
+    vraag:tekst
+  }).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    document.getElementById('vraagTekst').value='';
+    document.getElementById('vraagStellen').style.display='none';
+    showToast('Uw vraag is verstuurd. U krijgt het antwoord hier te zien.');
+    laadVragen();
+  });
+}
+
+// Alleen de tekst opslaan: status, datum en naam zet de trigger uit 0100. Zo
+// kan geen enkel scherm die drie uit elkaar laten lopen.
+function beantwoordVraag(id){
+  var v=alleVragen.filter(function(x){return x.id===id;})[0];
+  if(!v)return;
+  var antwoord=prompt('Antwoord op:\n\n'+v.vraag+'\n\nDe klant ziet dit meteen in zijn dossier.');
+  if(antwoord===null||!antwoord.trim())return;
+  sb.from('vragen').update({antwoord:antwoord.trim()}).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Antwoord opgeslagen');
+    laadVragen();
   });
 }
 
