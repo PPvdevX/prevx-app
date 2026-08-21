@@ -6732,6 +6732,7 @@ function renderSignalen(rubberStampArr,piek,buitenWerkurenArr,korteArr){
 // geen vergetelheid maar de opzet.
 
 var alleCampagnes=[];
+var nbAbonneesInGeheugen=[];
 
 // Eigen ontsnapper met nb-voorvoegsel: campagnetekst en abonneenamen komen van
 // buiten en gaan hieronder als HTML de tabel in.
@@ -7100,48 +7101,73 @@ function verwijderCampagne(id){
 }
 
 // ---------------------------------------------------------------------------
-// Iemand met de hand toevoegen
+// Een abonnee toevoegen of aanpassen
 // ---------------------------------------------------------------------------
-// Twee wegen, en het verschil zit niet in het gemak maar in de toestemming.
+// Dit liep eerst via drie prompt-vensters na elkaar. Dat brak op een manier die
+// je niet ziet aankomen: wisselt de browser van venster, dan klikt hij zo'n
+// dialoog zelf weg, en dan liep de rest van de functie gewoon door met lege
+// antwoorden -- inclusief het versturen van een uitnodigingsmail. Een
+// weggeklikt venster hoort geen post te veroorzaken.
 //
-//   Uitnodigen  -- de gewone weg. De persoon krijgt dezelfde bevestigingsmail
-//                  als bij een inschrijving op de website en beslist zelf. Het
-//                  toestemmingsbewijs komt dan van hem.
-//   Meteen      -- voor wie het je uitdrukkelijk gevraagd heeft, mondeling of
-//   aanmelden      op papier. Dan verklaar JIJ dat er toestemming is, en dat
-//                  leggen we ook zo vast: wie het deed en wanneer.
-//
-// Die tweede weg is geen sluiproute maar wel een verantwoordelijkheid. Klopt de
-// verklaring niet, dan staat er straks een toestemmingsdatum in je databank die
-// niets bewijst -- en dat is erger dan geen datum, want je gaat erop vertrouwen.
-function nieuweAbonnee(){
-  var email=prompt('E-mailadres van de nieuwe abonnee:');
-  if(!email||!email.trim())return;
-  email=email.trim().toLowerCase();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showToast('Dat lijkt geen geldig e-mailadres.');return;}
+// Nu een echt formulier in het schuifpaneel. Er gebeurt niets tot je op een
+// knop duwt, en je kan tussendoor rustig ergens anders gaan kijken.
+function nieuweAbonnee(){ toonAbonnee(null); }
 
-  var naam=prompt('Naam (mag leeg):')||null;
-  var bedrijf=prompt('Bedrijf (mag leeg):')||null;
+function toonAbonnee(a){
+  document.getElementById('detailOverlay').classList.add('active');
+  document.getElementById('detailPrintKnop').style.display='none';
+  document.getElementById('detailTitel').textContent=a?a.email:'Nieuwe abonnee';
+  document.getElementById('detailSub').textContent=a?('Status: '+(NB_ABONNEE_LABEL[a.status]||a.status)):'Nog niet toegevoegd';
 
-  var meteen=confirm('Hoe wil je deze persoon toevoegen?\n\n'+
-    'OK = Meteen aanmelden.\n'+
-    'Kies dit alleen als hij of zij er uitdrukkelijk om gevraagd heeft. Jij verklaart dan dat er toestemming is, en dat wordt zo vastgelegd.\n\n'+
-    'Annuleren = Uitnodigen.\n'+
-    'De persoon krijgt een bevestigingsmail en beslist zelf. Veiliger, en het bewijs komt dan van hem.');
+  var h='';
+  h+='<div style="margin-bottom:14px"><label class="form-label">E-mailadres</label>'+
+     '<input class="form-input" id="abEmail" value="'+nbEsc(a?a.email:'')+'"'+(a?' disabled':'')+'></div>';
+  if(a)h+='<p style="font-size:12px;color:var(--gray-500);margin:-8px 0 14px">Een adres kan niet gewijzigd worden. Klopt het niet, wis deze rij en voeg het juiste adres toe &mdash; anders zou de toestemming van de ene persoon bij de andere terechtkomen.</p>';
+  h+='<div style="margin-bottom:14px"><label class="form-label">Naam</label>'+
+     '<input class="form-input" id="abNaam" value="'+nbEsc(a?a.naam:'')+'"></div>';
+  h+='<div style="margin-bottom:18px"><label class="form-label">Bedrijf</label>'+
+     '<input class="form-input" id="abBedrijf" value="'+nbEsc(a?a.bedrijfsnaam:'')+'"></div>';
 
-  if(meteen)nbAbonneeMeteen(email,naam,bedrijf);
-  else nbAbonneeUitnodigen(email,naam,bedrijf);
+  if(a){
+    h+='<div class="detail-meta"><div class="detail-meta-item"><div class="detail-meta-label">Bron</div><div class="detail-meta-value">'+nbEsc(a.bron||'-')+'</div></div>'+
+       '<div class="detail-meta-item"><div class="detail-meta-label">Toestemming</div><div class="detail-meta-value">'+(a.toestemming_op?formatDatum(a.toestemming_op.slice(0,10)):'-')+'</div></div>'+
+       '<div class="detail-meta-item"><div class="detail-meta-label">Bewijs</div><div class="detail-meta-value" style="font-size:12px">'+nbEsc(a.toestemming_bewijs||'-')+'</div></div></div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">'+
+       '<button class="btn-add-sm" onclick="bewaarAbonnee(\''+a.id+'\')">Bewaren</button>'+
+       (a.status!=='afgemeld'?'<button class="btn-add-sm" onclick="schrijfAbonneeUit(\''+a.id+'\')">Uitschrijven</button>':'')+
+       '<button class="btn-add-sm" style="color:#dc2626" onclick="wisAbonnee(\''+a.id+'\')">Wissen</button></div>';
+  }else{
+    // De twee wegen staan als aparte knoppen naast elkaar, met hun gevolg
+    // eronder. Dat is beter dan een ja/nee-venster waarin je moet onthouden
+    // welke knop welke betekenis had.
+    h+='<div style="display:flex;flex-wrap:wrap;gap:8px">'+
+       '<button class="btn-add-sm" onclick="abonneeUitnodigen()">Uitnodigen</button>'+
+       '<button class="btn-add-sm" onclick="abonneeMeteen()">Meteen aanmelden</button></div>';
+    h+='<p style="font-size:12px;color:var(--gray-500);line-height:1.7;margin-top:14px">'+
+       '<strong>Uitnodigen</strong> stuurt dezelfde bevestigingsmail als een inschrijving op de website. De persoon beslist zelf, en het bewijs komt van hem. Dit is de gewone weg.<br><br>'+
+       '<strong>Meteen aanmelden</strong> is er voor wie het je uitdrukkelijk gevraagd heeft, mondeling of op papier. Dan verklaar jij dat er toestemming is, en dat wordt ook zo vastgelegd. Klopt die verklaring niet, dan staat er straks een toestemmingsdatum in je databank die niets bewijst &mdash; en dat is erger dan geen datum, want je gaat erop vertrouwen.</p>';
+  }
+  document.getElementById('detailBody').innerHTML=h;
 }
 
-function nbAbonneeUitnodigen(email,naam,bedrijf){
+function abLeesVeld(id){var e=document.getElementById(id);return e?e.value.trim():'';}
+
+function abGeldigAdres(){
+  var email=abLeesVeld('abEmail').toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showToast('Vul een geldig e-mailadres in.');return null;}
+  return email;
+}
+
+function abonneeUitnodigen(){
+  var email=abGeldigAdres(); if(!email)return;
   showToast('Uitnodiging versturen...');
   // Loopt via dezelfde publieke functie als het aanmeldformulier, zodat er maar
   // een weg is waarlangs een bevestigingsmail ontstaat.
   fetch(SUPABASE_URL+'/functions/v1/nieuwsbrief',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email:email,naam:naam,bedrijfsnaam:bedrijf,bron:'handmatig'})
+    body:JSON.stringify({email:email,naam:abLeesVeld('abNaam')||null,bedrijfsnaam:abLeesVeld('abBedrijf')||null,bron:'handmatig'})
   }).then(function(res){return res.json();}).then(function(b){
-    if(b&&b.ok){showToast('Uitnodiging verstuurd naar '+email);laadAbonnees();}
+    if(b&&b.ok){sluitDetail();showToast('Uitnodiging verstuurd naar '+email);laadAbonnees();}
     else showToast('Fout: '+((b&&b.error)||'uitnodigen mislukt'));
   }).catch(function(e){
     console.error('Uitnodigen mislukt:',e);
@@ -7149,17 +7175,18 @@ function nbAbonneeUitnodigen(email,naam,bedrijf){
   });
 }
 
-function nbAbonneeMeteen(email,naam,bedrijf){
+function abonneeMeteen(){
+  var email=abGeldigAdres(); if(!email)return;
+  if(!confirm('Je verklaart hiermee dat '+email+' toestemming gaf om de nieuwsbrief te ontvangen.\n\nDoorgaan?'))return;
   sb.auth.getUser().then(function(u){
     var door=(u.data&&u.data.user)?u.data.user.email:'onbekend';
-    // Het bewijs is hier een verklaring, geen klik. Dat zetten we er letterlijk
+    // Het bewijs is hier een verklaring en geen klik. Dat zetten we er letterlijk
     // bij, zodat later niemand denkt dat deze persoon zelf bevestigd heeft.
-    var bewijs='handmatig toegevoegd door '+door;
     sb.from('nieuwsbrief_abonnees').insert({
-      email:email,naam:naam,bedrijfsnaam:bedrijf,bron:'handmatig',
-      status:'aangemeld',
+      email:email,naam:abLeesVeld('abNaam')||null,bedrijfsnaam:abLeesVeld('abBedrijf')||null,
+      bron:'handmatig',status:'aangemeld',
       toestemming_op:new Date().toISOString(),
-      toestemming_bewijs:bewijs,
+      toestemming_bewijs:'handmatig toegevoegd door '+door,
       bevestig_token:null,bevestig_verloopt_op:null
     }).then(function(r){
       if(r.error){
@@ -7167,9 +7194,29 @@ function nbAbonneeMeteen(email,naam,bedrijf){
         else showToast('Fout: '+r.error.message);
         return;
       }
-      showToast(email+' toegevoegd als aangemeld');
-      laadAbonnees();
+      sluitDetail();showToast(email+' toegevoegd als aangemeld');laadAbonnees();
     });
+  });
+}
+
+function bewaarAbonnee(id){
+  sb.from('nieuwsbrief_abonnees').update({
+    naam:abLeesVeld('abNaam')||null,
+    bedrijfsnaam:abLeesVeld('abBedrijf')||null
+  }).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Bewaard');laadAbonnees();
+  });
+}
+
+// Met de hand uitschrijven hoort te kunnen: iemand belt en zegt dat het niet
+// meer moet. De status gaat op afgemeld en het toestemmingsbewijs blijft staan
+// -- dat vertelt waarom hij er ooit in stond, en dat blijft gelden.
+function schrijfAbonneeUit(id){
+  if(!confirm('Deze abonnee uitschrijven?'))return;
+  sb.from('nieuwsbrief_abonnees').update({status:'afgemeld',afgemeld_op:new Date().toISOString()}).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    sluitDetail();showToast('Uitgeschreven');laadAbonnees();
   });
 }
 
@@ -7186,13 +7233,14 @@ function renderAbonneesTabel(rijen){
   document.getElementById('abonneesCount').textContent=aangemeld+' aangemeld van '+rijen.length;
   var tbody=document.getElementById('abonneesTabel');
   if(!rijen.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">Nog geen abonnees.</td></tr>';return;}
-  tbody.innerHTML=rijen.map(function(a){
-    return '<tr><td>'+nbEsc(a.email)+'</td>'+
+  nbAbonneesInGeheugen=rijen;
+  tbody.innerHTML=rijen.map(function(a,i){
+    return '<tr style="cursor:pointer" onclick="toonAbonnee(nbAbonneesInGeheugen['+i+'])"><td>'+nbEsc(a.email)+'</td>'+
       '<td>'+nbEsc(a.naam||'-')+'</td>'+
       '<td><span class="badge '+(NB_ABONNEE_KLASSE[a.status]||'onvolledig')+'">'+(NB_ABONNEE_LABEL[a.status]||a.status)+'</span></td>'+
       '<td>'+(a.toestemming_op?formatDatum(a.toestemming_op.slice(0,10)):'-')+'</td>'+
       '<td>'+nbEsc(a.bron||'-')+'</td>'+
-      '<td><button class="btn-add-sm" style="color:#dc2626" onclick="wisAbonnee(\'' + a.id + '\')">Wissen</button></td></tr>';
+      '<td><button class="btn-add-sm" onclick="event.stopPropagation();toonAbonnee(nbAbonneesInGeheugen['+i+'])">Openen</button></td></tr>';
   }).join('');
 }
 
