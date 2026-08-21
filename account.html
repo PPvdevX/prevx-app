@@ -2589,6 +2589,24 @@ function laadKaartTellers(){
     });
 
   var maandStart=datumTekst(new Date(new Date().getFullYear(),new Date().getMonth(),1));
+
+  // De LMRA-kaart was de enige zonder teller, terwijl daar juist het signaal
+  // zit dat om een beslissing vraagt: werk dat iemand heeft stilgelegd en dat
+  // nog niet hervat is. Dat hoort op het dashboard te staan en niet pas twee
+  // schermen diep.
+  //
+  // Bewust 'nog stilgelegd' en niet 'gestopt': een stilgelegd werk dat intussen
+  // hervat is, is een goed verlopen verhaal. Alleen wat nog stilligt vraagt iets.
+  sb.from('lmras').select('status,hervat_op').eq('bedrijf_id',huidigeBedrijfId)
+    .gte('gestart_op',maandStart).then(function(r){
+      var rijen=r.data||[]; if(!rijen.length)return;
+      var stil=rijen.filter(function(l){return l.status==='gestopt'&&!l.hervat_op;}).length;
+      var t=[];
+      if(stil)t.push({tekst:stil+' nog stilgelegd',kleur:'rood'});
+      t.push({tekst:rijen.length+' deze maand',kleur:'grijs'});
+      zetTeller('lmra',t);
+    });
+
   sb.from('inspecties').select('verdict').eq('bedrijf_id',huidigeBedrijfId)
     .gte('datum',maandStart).then(function(r){
       var rijen=r.data||[]; if(!rijen.length)return;
