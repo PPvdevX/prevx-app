@@ -376,8 +376,12 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 /* Gewone knophoogte, verticaal gecentreerd tegen het bezoekblok. Even hoog
    maken als dat blok leek logisch, maar dan leest het als een rood paneel in
    plaats van als iets waar je op duwt. */
-.knop-melding{flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border:none;border-radius:var(--radius);padding:11px 20px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
-.knop-melding:hover{filter:brightness(1.08)}
+.knop-melding{flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;justify-content:center;background:#fff;color:var(--red);border:1.5px solid var(--red);border-radius:var(--radius);padding:10px 20px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer;transition:background .15s,color .15s}
+/* Vult zich pas bij aanwijzen. De betekenis blijft rood, maar de kaart blijft
+   rustig zolang er niets aan de hand is -- en dat is het grootste deel van de
+   tijd. */
+.knop-melding:hover{background:var(--red);color:#fff}
+
 @media (max-width:640px){
   .sw-hoofd-rechts{width:100%;flex-wrap:wrap}
   .sw-streep{display:none!important}
