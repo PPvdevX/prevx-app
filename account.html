@@ -6565,8 +6565,21 @@ function nbUploadAfbeelding(invoer){
     var omschrijving=prompt('Korte beschrijving van de afbeelding.\n\nOutlook toont deze tekst zolang de lezer de afbeeldingen niet inlaadt.','');
     var altTekst=(omschrijving||'').replace(/"/g,'&quot;');
 
-    nbVoegInTekst('<img src="'+url+'" width="536" style="width:100%;max-width:536px;height:auto;display:block;border:0" alt="'+altTekst+'">');
-    showToast(altTekst?'Afbeelding toegevoegd':'Afbeelding toegevoegd, maar zonder beschrijving');
+    // 536 is de volledige breedte binnen de witte kaart (600 min tweemaal 32
+    // marge). Dat is de goede maat voor een foto en veel te groot voor een
+    // logo -- vandaar de vraag, met de volle breedte als voorstel zodat je
+    // gewoon enter kan duwen.
+    var ingave=prompt('Breedte in pixels.\n\n536 = volle breedte (foto)\n260 = halve breedte\n160 = klein, bijvoorbeeld een logo','536');
+    if(ingave===null)return;
+    var breedte=parseInt(ingave,10);
+    if(!breedte||breedte<20)breedte=536;
+    if(breedte>536)breedte=536;
+
+    // Zowel het width-attribuut als de stijl: Outlook luistert naar het
+    // attribuut, moderne clients naar de stijl. max-width in plaats van een
+    // vaste breedte, zodat een brede afbeelding op een telefoon meekrimpt.
+    nbVoegInTekst('<img src="'+url+'" width="'+breedte+'" style="width:100%;max-width:'+breedte+'px;height:auto;display:block;border:0" alt="'+altTekst+'">');
+    showToast(altTekst?'Afbeelding toegevoegd ('+breedte+'px)':'Toegevoegd op '+breedte+'px, maar zonder beschrijving');
   });
 }
 
