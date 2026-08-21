@@ -3879,19 +3879,25 @@ function renderChemie(){
     var tr=document.createElement('tr');
     if(!p.actief)tr.style.opacity='.55';
 
+    // Eén ding per kolom. De rode signalen staan bovenaan in de tellers; in de
+    // tabel gaat rood naast een knop als een knop lezen, en dan lijkt elke rij
+    // iets anders van je te willen.
     var vib=p.vib_url
       ? '<a href="'+p.vib_url+'" target="_blank" rel="noopener">Bekijk</a>'+
-        (p.vib_datum?'<div style="font-size:11px;color:var(--gray-500)">'+formatDatum(p.vib_datum)+'</div>':
-                     '<div style="font-size:11px;color:var(--orange)">datum onbekend</div>')
-      : '<span class="badge niet_rijklaar">ontbreekt</span>';
-    if(mag){
-      vib+='<label class="btn-add-sm" style="display:inline-block;margin-top:6px">'+(p.vib_url?'Vervang':'Opladen')+
-        '<input type="file" accept="application/pdf" style="display:none" onchange="uploadVib(\''+p.id+'\',this)"></label>';
-    }
+        '<div style="font-size:11px;color:'+(p.vib_datum?'var(--gray-500)':'var(--orange)')+'">'+
+          (p.vib_datum?formatDatum(p.vib_datum):'datum onbekend')+'</div>'
+      : '<span style="color:var(--gray-500)">ontbreekt</span>';
 
-    var actie=mag
-      ? '<button class="btn-add-sm" onclick="toggleChemischProductActief(\''+p.id+'\','+(!p.actief)+')">'+(p.actief?'Archiveer':'Herstel')+'</button>'
-      : '-';
+    // Alle knoppen in één kolom, altijd dezelfde volgorde. Zo staat wat je kan
+    // doen telkens op dezelfde plaats, of die rij nu een blad heeft of niet.
+    var actie='-';
+    if(mag){
+      actie='<span style="display:inline-flex;gap:6px;align-items:center;white-space:nowrap">'+
+        '<label class="btn-add-sm" style="display:inline-block;cursor:pointer">'+(p.vib_url?'Vervang blad':'Blad opladen')+
+          '<input type="file" accept="application/pdf" style="display:none" onchange="uploadVib(\''+p.id+'\',this)"></label>'+
+        '<button class="btn-add-sm" onclick="toggleChemischProductActief(\''+p.id+'\','+(!p.actief)+')">'+(p.actief?'Archiveer':'Herstel')+'</button>'+
+      '</span>';
+    }
 
     tr.innerHTML='<td><div style="font-weight:500">'+p.naam+'</div>'+
         (p.toepassing?'<div style="font-size:12px;color:var(--gray-500)">'+p.toepassing+'</div>':'')+
