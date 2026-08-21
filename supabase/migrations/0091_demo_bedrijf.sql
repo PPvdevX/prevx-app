@@ -778,12 +778,18 @@ begin
   on conflict do nothing;
 
   -- --- samenwerking --------------------------------------------------------
+  -- Zes dagen, want de demoklant staat op Partner Standaard, en die formule
+  -- voorziet er sinds 0095 zes. Wijzig je dat aantal in Codelijsten, pas het
+  -- dan hier mee aan -- anders spreekt de balk in het dossier de formule tegen
+  -- die erboven staat, en dat is net het soort detail dat een prospect opmerkt.
+  -- Vorig jaar stond de klant op Light: vier dagen. Dat vertelt en passant het
+  -- verhaal van een klant die opgeschaald heeft.
   insert into samenwerking (bedrijf_id, jaar, bezoekdagen_contract, inbegrepen, opmerking) values
-    (v_bedrijf, extract(year from current_date)::int, 4.0,
-     'Vier bezoekdagen: risicoanalyse, twee rondgangen en de jaarevaluatie. Portaal, documentbeheer en meldingen inbegrepen.',
+    (v_bedrijf, extract(year from current_date)::int, 6.0,
+     'Zes bezoekdagen: risicoanalyse, vier rondgangen en de jaarevaluatie. Portaal, documentbeheer en meldingen inbegrepen.',
      'Demodossier.'),
-    (v_bedrijf, extract(year from current_date)::int - 1, 3.0,
-     'Opstartjaar: risicoanalyse en globaal preventieplan.', null)
+    (v_bedrijf, extract(year from current_date)::int - 1, 4.0,
+     'Opstartjaar op de formule Light: risicoanalyse en globaal preventieplan.', null)
   on conflict (bedrijf_id, jaar) do nothing;
 
   -- --- brandpreventiedossier ----------------------------------------------
