@@ -39,6 +39,11 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const AFZENDER = Deno.env.get('NIEUWSBRIEF_AFZENDER') || 'PrevX <nieuws@prevx.be>';
 const ANTWOORD_AAN = Deno.env.get('NIEUWSBRIEF_ANTWOORD') || '';
 const SITE_URL = Deno.env.get('SITE_URL') || 'https://prevx.be';
+
+// Postadres onderaan de mail. Voor commerciele mail wordt dat in verschillende
+// rechtsgebieden verwacht, en het maakt de voettekst af. Leeg laten kan; dan
+// valt de regel gewoon weg in plaats van dat er een gat staat.
+const AFZENDER_ADRES = Deno.env.get('NIEUWSBRIEF_ADRES') || '';
 const LINK_BASIS = Deno.env.get('NIEUWSBRIEF_LINK_BASIS') || `${SUPABASE_URL}/functions/v1/nieuwsbrief`;
 
 // Resend neemt er 100 per aanroep. Niet hoger zetten: dan weigert de hele
@@ -79,64 +84,104 @@ function corsHeaders(req) {
 }
 
 // ---------------------------------------------------------------------------
-// De voettekst die onder elke nieuwsbrief komt
+// De omkadering van elke nieuwsbrief
 // ---------------------------------------------------------------------------
-// Bewust hier en niet in de campagnetekst: een nieuwsbrief zonder werkende
-// uitschrijflink is geen slordigheid maar een overtreding, en dat mag niet
-// afhangen van of iemand eraan dacht bij het opstellen. Wie de link liever
-// ergens in zijn eigen tekst zet, gebruikt {{uitschrijflink}} -- die wordt
-// hieronder ook vervangen. De voettekst blijft er dan gewoon bij staan.
+// Alles in tabellen met inline CSS. Outlook op Windows rendert met de
+// tekstverwerkermotor van Word: die negeert stylesheets, padding en max-width
+// op een div, en border-radius helemaal. Wat je hier ziet is dus geen
+// ouderwetse HTML uit gemakzucht -- het is de enige opmaak die overal aankomt.
 //
-// Tabellen met inline CSS, geen div met padding: Outlook op Windows negeert
-// padding en max-width op een div, en dan loopt de voettekst over de volle
-// breedte van het scherm.
-//
-// LET OP: controleer of hier nog een postadres bij moet. Voor commerciele mail
-// wordt dat in verschillende rechtsgebieden verwacht, en het staat er nu niet.
-function voettekst(uitschrijfUrl) {
-  return `
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;border-top:1px solid #e2e8f0">
-  <tr><td align="center" style="padding:18px 24px;font-family:sans-serif;font-size:12px;line-height:1.6;color:#94a3b8">
-    Je krijgt deze mail omdat je je inschreef op de nieuwsbrief van PrevX.<br>
-    <a href="${uitschrijfUrl}" style="color:#64748b">Uitschrijven</a>
-    &nbsp;&middot;&nbsp;
-    <a href="${SITE_URL}/contact" style="color:#64748b">Contact</a>
-    &nbsp;&middot;&nbsp;
-    <a href="${SITE_URL}" style="color:#64748b">prevx.be</a>
-  </td></tr>
-</table>`;
+// Lettertypes: Montserrat en Poppins staan vooraan omdat ze op een Mac soms
+// lokaal aanwezig zijn, maar de meeste lezers krijgen de systeemletter erachter.
+// Webfonts inladen heeft geen zin: Outlook doet er niets mee.
+const LETTER = "-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const LETTER_KOP = "'Montserrat',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+function ontsnapTekst(waarde) {
+  return String(waarde == null ? '' : waarde)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// De voorbeeldtekst (preheader) is het regeltje dat Gmail en Outlook naast het
-// onderwerp tonen. Hij hoort ONZICHTBAAR bovenaan de mail te staan, niet in de
-// zichtbare inhoud -- vandaar de verborgen div. mso-hide:all is er speciaal voor
-// Outlook, dat display:none op die plek negeert.
+// De voorbeeldtekst (preheader) is het regeltje dat een mailprogramma naast het
+// onderwerp toont. Hij hoort onzichtbaar bovenaan te staan; mso-hide:all is er
+// speciaal voor Outlook, dat display:none op die plek negeert.
 //
-// De tweede rij met onzichtbare tekens is geen opvulsel om het opvulsel: zonder
-// die tekens zoekt de mailclient na jouw regeltje gewoon verder in de inhoud en
-// plakt daar de eerste woorden van je titel achter. Die tekens duwen dat weg.
+// De tweede rij onzichtbare tekens is nodig omdat een client anders na jouw
+// regeltje gewoon doorleest in de inhoud en de eerste woorden van je titel
+// erachter plakt.
+//
+// LET OP: de klassieke Outlook voor Windows gebruikt dit niet. Die neemt de
+// eerste ZICHTBARE tekst als voorbeeldregel. Gmail, Apple Mail en Outlook op
+// het web en de telefoon doen het wel.
 function preheader(tekst) {
   const schoon = String(tekst || '').trim();
   if (!schoon) return '';
-  const veilig = schoon.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const opvulling = '&#847;&zwnj;&nbsp;'.repeat(60);
-  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${veilig}</div>` +
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${ontsnapTekst(schoon)}</div>` +
          `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${opvulling}</div>`;
 }
 
-function bouwHtml(campagneHtml, uitschrijfUrl, voorbeeldtekst) {
-  const romp = String(campagneHtml || '').split('{{uitschrijflink}}').join(uitschrijfUrl);
-  return `${preheader(voorbeeldtekst)}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9">
-  <tr><td align="center" style="padding:24px 12px">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff;border-radius:12px">
-      <tr><td style="padding:28px 32px;font-family:sans-serif;font-size:15px;line-height:1.7;color:#334155">
-${romp}
-      </td></tr>
-    </table>
-    ${voettekst(uitschrijfUrl)}
+// Bewust hier en niet in de campagnetekst: een nieuwsbrief zonder werkende
+// uitschrijflink is geen slordigheid maar een overtreding, en dat mag niet
+// afhangen van of iemand eraan dacht bij het opstellen.
+function voettekst(uitschrijfUrl) {
+  const adres = AFZENDER_ADRES
+    ? `<br>${ontsnapTekst(AFZENDER_ADRES)}`
+    : '';
+  return `
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%">
+  <tr><td align="center" style="padding:20px 24px 8px;font-family:${LETTER};font-size:12px;line-height:1.7;color:#94a3b8">
+    Je krijgt deze mail omdat je je inschreef op de nieuwsbrief van PrevX.${adres}
+  </td></tr>
+  <tr><td align="center" style="padding:0 24px 24px;font-family:${LETTER};font-size:12px;line-height:1.7;color:#94a3b8">
+    <a href="${uitschrijfUrl}" style="color:#64748b;text-decoration:underline">Uitschrijven</a>
+    &nbsp;&middot;&nbsp;
+    <a href="${SITE_URL}/contact" style="color:#64748b;text-decoration:underline">Contact</a>
+    &nbsp;&middot;&nbsp;
+    <a href="${SITE_URL}" style="color:#64748b;text-decoration:underline">prevx.be</a>
   </td></tr>
 </table>`;
+}
+
+// Een volledig HTML-document en niet enkel een brok tabellen: zo staat de
+// tekenset vast, en zo kunnen we met color-scheme zeggen dat deze mail voor een
+// lichte achtergrond gemaakt is. Zonder dat keren sommige clients in donkere
+// modus de kleuren om en wordt navy op wit ineens grijs op zwart.
+function bouwHtml(campagneHtml, uitschrijfUrl, voorbeeldtekst, onderwerp) {
+  const romp = String(campagneHtml || '').split('{{uitschrijflink}}').join(uitschrijfUrl);
+  return `<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>${ontsnapTekst(onderwerp || 'PrevX')}</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;-webkit-text-size-adjust:100%">
+${preheader(voorbeeldtekst)}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9">
+  <tr><td align="center" style="padding:24px 12px">
+
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff">
+      <tr>
+        <td style="background:#003366;padding:16px 32px" align="left">
+          <img src="${SITE_URL}/Logo-PrevX.png" width="34" height="34" alt="PrevX" style="display:block;border:0;width:34px;height:34px">
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:28px 32px;font-family:${LETTER};font-size:15px;line-height:1.7;color:#334155">
+${romp}
+        </td>
+      </tr>
+    </table>
+
+    ${voettekst(uitschrijfUrl)}
+
+  </td></tr>
+</table>
+</body>
+</html>`;
 }
 
 function bouwTekst(campagneTekst, uitschrijfUrl) {
@@ -225,7 +270,7 @@ async function verwerk(req) {
       from: AFZENDER,
       to: [String(test_naar)],
       subject: `[TEST] ${campagne.onderwerp}`,
-      html: bouwHtml(campagne.html, nepUrl, campagne.voorbeeldtekst),
+      html: bouwHtml(campagne.html, nepUrl, campagne.voorbeeldtekst, campagne.onderwerp),
       text: bouwTekst(campagne.tekst, nepUrl)
     };
     if (ANTWOORD_AAN) bericht.reply_to = ANTWOORD_AAN;
@@ -295,7 +340,7 @@ async function verwerk(req) {
         from: AFZENDER,
         to: [rij.email],
         subject: campagne.onderwerp,
-        html: bouwHtml(campagne.html, uitschrijfUrl, campagne.voorbeeldtekst),
+        html: bouwHtml(campagne.html, uitschrijfUrl, campagne.voorbeeldtekst, campagne.onderwerp),
         text: bouwTekst(campagne.tekst, uitschrijfUrl),
         // Hiermee toont Gmail zijn eigen Uitschrijven-knop naast de afzender.
         // Dat is geen beleefdheid maar reputatiebeheer: wie die knop niet
