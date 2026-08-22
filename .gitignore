@@ -1,9 +1,16 @@
-# Toestand van de Supabase CLI: welk project gekoppeld is, welke versies de
-# server draait. Machinegebonden en wordt automatisch opnieuw aangemaakt bij
-# de eerstvolgende `supabase link`. Hoort niet in versiebeheer -- het zegt iets
-# over deze laptop, niet over het project.
+# Wat hier niet in hoort.
+#
+# supabase/.temp -- de CLI schrijft hier weg welk project gekoppeld is, welke
+# versies draaien en de verbindingsstring van de pooler. Machinegebonden, en het
+# verandert bij elke CLI-update. Bovendien staat er een databankadres in; dat
+# hoort niet in een repo die publiek staat.
 supabase/.temp/
 
-# Lokale instellingen van de editor: welke commando's zonder vragen mogen
-# draaien, welke dev-server er start. Dat verschilt per machine en per persoon.
+# .claude -- instellingen en vergrendelingsbestanden van de editor. Persoonlijk
+# en machinegebonden; een tweede computer wil hier zijn eigen versie.
 .claude/
+
+# Windows en editors
+Thumbs.db
+desktop.ini
+*.swp
