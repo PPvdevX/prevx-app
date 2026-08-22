@@ -4015,10 +4015,12 @@ function gevaarUitleg(code){
 // suggereert dat ze erger is, en dat zegt CLP nergens.
 function pictogramRij(codes,maat){
   if(!codes||!codes.length)return '';
-  // 36 en niet 26: het uitroepteken overleeft die verkleining wel, maar het
-  // silhouet en de twee reageerbuisjes worden dan een rode vlek. De maat wordt
-  // bepaald door het ingewikkeldste teken, niet door het eenvoudigste.
-  var px=maat||36;
+  // 64. Dat lijkt veel voor een tabelcel, en het is precies wat nodig is: de
+  // ruit is voor een groot deel rand, dus het teken zelf krijgt er hooguit de
+  // helft van. Bij 36 pixels blijft daar 16 over, en dan lijkt het silhouet op
+  // het uitroepteken -- twee tekens die niets met elkaar te maken hebben. De
+  // maat wordt bepaald door het ingewikkeldste teken, niet door het eenvoudigste.
+  var px=maat||64;
   var uit=codes.map(function(c){
     var svg=GHS_PICTO[c];
     if(!svg)return '';
@@ -4162,7 +4164,7 @@ function renderChemie(){
       '<td>'+(p.locatie||'-')+(p.hoeveelheid?'<div style="font-size:12px;color:var(--gray-500)">'+p.hoeveelheid+'</div>':'')+'</td>'+
       // Het etiket in een cel: eerst de ruiten, dan wat er mis is, dan wat je
       // moet doen. Dat is de volgorde waarin iemand het leest.
-      '<td style="max-width:240px">'+pictogramRij(p.pictogrammen)+
+      '<td style="max-width:300px">'+pictogramRij(p.pictogrammen)+
         chemieGevaarBadges(p.h_zinnen)+chemieVoorzorgBadges(p.p_zinnen)+'</td>'+
       '<td>'+vib+'</td>'+
       '<td style="white-space:nowrap">'+actie+'</td>';
@@ -4239,7 +4241,7 @@ function tekenPictoKiezer(){
     return '<button type="button" onclick="wisselPictogram(\''+c+'\')" title="'+GHS_NAAM[c]+'" '+
       'style="border:2px solid '+(aan?'var(--navy2)':'transparent')+';background:'+(aan?'var(--gray-100)':'transparent')+';'+
       'border-radius:8px;padding:4px;cursor:pointer;line-height:0;opacity:'+(aan?'1':'.45')+'">'+
-      '<span style="display:inline-block;width:34px;height:34px">'+GHS_PICTO[c]+'</span></button>';
+      '<span style="display:inline-block;width:52px;height:52px">'+GHS_PICTO[c]+'</span></button>';
   }).join('');
 }
 

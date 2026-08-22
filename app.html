@@ -1444,7 +1444,7 @@ function pictogramRij(codes, px) {
   // De maat wordt bepaald door het ingewikkeldste teken, niet door het
   // eenvoudigste: het silhouet en de twee reageerbuisjes worden onder een stuk
   // of dertig pixels een rode vlek.
-  var maat = px || 36;
+  var maat = px || 64;
   var uit = codes.map(function (c) {
     if (!GHS_PICTO[c]) return '';
     return '<span style="display:inline-block;width:' + maat + 'px;height:' + maat + 'px">' + GHS_PICTO[c] + '</span>';
@@ -1495,7 +1495,7 @@ function doeChemieZoek() {
         ? '' : '<span class="badge onvolledig" style="margin-left:6px">geen blad</span>';
       // De ruiten in de lijst, klein. Wie de taal niet vlot leest, ziet zo al
       // aan het rijtje welk product het zwaarste is -- zonder iets te openen.
-      var ruiten = pictogramRij(p.pictogrammen, 30);
+      var ruiten = pictogramRij(p.pictogrammen, 52);
       return '<div class="voertuig-kaart" onclick="toonChemieProduct(\'' + p.id + '\')">' +
         '<div><div class="voertuig-naam">' + p.naam + merk + blad + '</div>' +
         '<div class="vv-regel">' + [p.leverancier, p.locatie].filter(Boolean).join(' &middot; ') + '</div>' +
@@ -1521,7 +1521,7 @@ function toonChemieProduct(id) {
     // Bovenaan, groot. Dit is het enige stuk van dit scherm dat werkt zonder
     // lezen, en op een werkvloer waar niet iedereen even vlot Nederlands leest
     // is dat geen detail.
-    var ruiten = pictogramRij(p.pictogrammen, 64);
+    var ruiten = pictogramRij(p.pictogrammen, 104);
     if (ruiten) h += '<div style="margin:0 0 16px">' + ruiten + '</div>';
 
     if (p.onder_titel2) {
