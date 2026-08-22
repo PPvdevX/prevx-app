@@ -963,6 +963,41 @@ begin
    where bedrijf_id = v_bedrijf
      and v_bladen ->> naam is not null;
 
+  -- Pictogrammen en voorzorgsmaatregelen. Apart gezet en niet in de insert
+  -- hierboven, omdat p_zinnen pas met 0103 bestaat: staat die migratie nog niet
+  -- in de databank, dan slaan we dit over in plaats van hier te crashen.
+  --
+  -- De pictogrammen volgen uit de indeling, ze zijn niet gekozen. Bij de
+  -- roestomvormer staat alleen GHS05 en niet ook GHS07: artikel 26 van CLP laat
+  -- het uitroepteken wegvallen zodra het bijtende teken er staat.
+  update chemische_producten set pictogrammen =
+    case naam
+      when 'Ontvetter X-200'          then array['GHS07']
+      when 'Antispatspray lasposten'  then array['GHS02','GHS07']
+      when 'Tweecomponentenlijm PU'   then array['GHS08','GHS07']
+      when 'Roestomvormer'            then array['GHS05','GHS08']
+      when 'Koelsmeermiddel'          then array['GHS07']
+      when 'Chroomhoudende primer'    then array['GHS08','GHS07']
+      else pictogrammen
+    end
+   where bedrijf_id = v_bedrijf;
+
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'chemische_producten'
+               and column_name = 'p_zinnen') then
+    update chemische_producten set p_zinnen =
+      case naam
+        when 'Ontvetter X-200'         then array['P261','P271','P280','P302+P352','P305+P351+P338']
+        when 'Antispatspray lasposten' then array['P210','P211','P251','P280','P410+P412']
+        when 'Tweecomponentenlijm PU'  then array['P261','P272','P280','P284','P302+P352','P342+P311']
+        when 'Roestomvormer'           then array['P260','P280','P301+P330+P331','P303+P361+P353','P305+P351+P338','P310']
+        when 'Koelsmeermiddel'         then array['P261','P272','P280','P302+P352','P333+P313']
+        when 'Chroomhoudende primer'   then array['P201','P280','P302+P352','P308+P313']
+        else p_zinnen
+      end
+     where bedrijf_id = v_bedrijf;
+  end if;
+
   raise notice 'Zes chemische producten toegevoegd, % opgeladen blad(en) behouden.',
     (select count(*) from jsonb_object_keys(v_bladen));
 end
