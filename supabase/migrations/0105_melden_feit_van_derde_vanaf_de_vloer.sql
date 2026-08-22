@@ -148,6 +148,14 @@ begin
 
   delete from feiten_van_derden where bedrijf_id = v_bedrijf and via_app;
 
+  -- Zaaien mag geen mail versturen. De trigger komt pas met 0106, dus bij de
+  -- eerste uitvoering bestaat hij nog niet -- maar wie dit script later opnieuw
+  -- draait, zou anders de vertrouwenspersoon een bericht sturen over een
+  -- verzonnen voorval.
+  if exists (select 1 from pg_trigger where tgname = 'trg_meld_feit_van_derde') then
+    alter table feiten_van_derden disable trigger trg_meld_feit_van_derde;
+  end if;
+
   insert into feiten_van_derden
     (bedrijf_id, datum_verklaring, datum_feiten, plaats, hoedanigheid_derde,
      soort, beschrijving, naam_met_instemming, opgetekend_door, via_app, aangemaakt_op)
@@ -158,6 +166,10 @@ begin
      'het lichaam van een werkneemster en bleef naast haar lopen tot aan haar '
      'auto. Ze is blijven staan tot hij wegreed en is daarna pas vertrokken.',
      false, 'Gemeld via de app', true, date_trunc('day', now()) - interval '4 days');
+
+  if exists (select 1 from pg_trigger where tgname = 'trg_meld_feit_van_derde') then
+    alter table feiten_van_derden enable trigger trg_meld_feit_van_derde;
+  end if;
 
   raise notice 'Een verklaring vanaf de vloer toegevoegd aan het demoregister.';
 end
