@@ -290,9 +290,26 @@ begin
   values (v_bedrijf, 'Sofie Delaere', 'beheerder', v_pin[1], v_login_email, true, 'klant_beheerder')
   returning id into v_beheerder;
 
+  -- Bart is vertrouwenspersoon en GEEN klant-beheerder. Dat is met opzet de
+  -- interessantste combinatie om te tonen: hij ziet het register van feiten van
+  -- derden wel en de rest van het dossier maar als medewerker. Zo is meteen
+  -- duidelijk dat die vlag naast de dossierrol staat en er niet uit volgt.
+  --
+  -- Het adres is example.com, zoals overal in deze demo: dat domein kan geen
+  -- post ontvangen, dus een verkeerde klik stuurt nooit iets naar iemand die
+  -- bestaat. Wel genoeg om te tonen wie er bericht zou krijgen.
   insert into gebruikers (bedrijf_id, naam, rol, pincode, email, actief, dossier_rol)
-  values (v_bedrijf, 'Bart Vermeulen', 'preventieadviseur', v_pin[2], null, true, 'klant_medewerker')
+  values (v_bedrijf, 'Bart Vermeulen', 'preventieadviseur', v_pin[2],
+          'bart.vermeulen@example.com', true, 'klant_medewerker')
   returning id into v_adviseur;
+
+  -- De kolom komt uit 0104; staat die migratie er nog niet, dan slaan we dit
+  -- over in plaats van hier te crashen. Zelfde voorbehoud als elders.
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'gebruikers'
+               and column_name = 'vertrouwenspersoon') then
+    update gebruikers set vertrouwenspersoon = true where id = v_adviseur;
+  end if;
 
   insert into gebruikers (bedrijf_id, naam, rol, pincode, email, actief, dossier_rol)
   values (v_bedrijf, 'Nele Coppens', 'leidinggevende', v_pin[3], null, true, 'klant_medewerker')
