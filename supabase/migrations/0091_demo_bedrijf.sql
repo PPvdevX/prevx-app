@@ -258,7 +258,8 @@ begin
   insert into bedrijf_modules (bedrijf_id, module_key, actief)
   select v_bedrijf, k, true
   from unnest(array['preinspecties','vuurvergunning','lmra','actiepunten',
-                    'planning','documenten','meldingen','kennisbank','chemie']) as k
+                    'planning','documenten','meldingen','kennisbank','chemie',
+                    'feiten_derden']) as k
   on conflict (bedrijf_id, module_key) do update set actief = true;
 
   -- --- vrije pincodes zoeken ----------------------------------------------

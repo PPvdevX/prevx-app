@@ -4135,7 +4135,10 @@ function renderRegister(){
       (v.aangever&&v.naam_met_instemming
         ? '<div style="font-size:12px;color:var(--gray-500);margin-top:8px">Aangever: '+veiligeTekst(v.aangever)+' (met instemming)</div>'
         : '<div style="font-size:12px;color:var(--gray-500);margin-top:8px">Zonder naam, zoals de wet voorschrijft</div>')+
-      (v.opgetekend_door?'<div style="font-size:12px;color:var(--gray-500)">Opgetekend door '+veiligeTekst(v.opgetekend_door)+'</div>':'')+
+      (v.via_app
+        ? '<div style="font-size:12px;color:var(--gray-500)">Gemeld vanaf de gsm. Wie ze verstuurd heeft, is niet gekend'+
+          (v.naam_met_instemming?'':' &mdash; de melder heeft zijn naam bewust niet meegegeven')+'.</div>'
+        : (v.opgetekend_door?'<div style="font-size:12px;color:var(--gray-500)">Opgetekend door '+veiligeTekst(v.opgetekend_door)+'</div>':''))+
       '<div style="margin-top:12px">'+
         '<label class="form-label" style="font-size:12px">Gevolg</label>'+
         '<textarea class="form-input" rows="2" placeholder="Wat is er met deze melding gedaan?" '+

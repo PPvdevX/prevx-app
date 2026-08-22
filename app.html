@@ -522,6 +522,117 @@ h1,h2,h3,h4 { font-family: 'Montserrat', sans-serif; }
   </div>
 </div>
 
+<div id="screen-feitderde" class="screen">
+  <div class="app-header">
+    <div class="app-header-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" class="app-logo-img" style="height:34px;object-fit:contain;">
+    </div>
+    <!-- Geen naam in de kopbalk. Op een scherm dat anonimiteit belooft is
+         "ingelogd als Younes El Amrani" het eerste wat die belofte tegenspreekt,
+         ook al klopt de belofte technisch wel. -->
+  </div>
+  <div class="module-balk">Feiten door derden</div>
+  <div style="flex:1;overflow-y:auto;padding-bottom:90px">
+    <div class="screen-content">
+
+      <!-- Deze uitleg staat bovenaan en niet onderaan. Wie dit scherm opent,
+           twijfelt of het veilig is; dat is de eerste vraag die beantwoord moet
+           worden, niet de laatste. -->
+      <div class="vv-melding goed" style="margin-bottom:16px">
+        <strong>Uw naam komt hier niet in.</strong><br>
+        Wat u hier schrijft gaat naar de vertrouwenspersoon van uw bedrijf, zonder dat erbij staat
+        wie het geschreven heeft. Uw baas ziet geen naam. Wij ook niet.
+      </div>
+
+      <p class="vv-regel" style="margin:0 0 16px;line-height:1.6">
+        Dit scherm is er voor geweld, pesterijen of ongewenst seksueel gedrag door iemand die niet bij
+        u werkt: een klant, een leverancier, een bezoeker, een stem aan de telefoon. Gaat het over een
+        collega of over uw leidinggevende, meld dat dan niet hier maar rechtstreeks bij uw
+        vertrouwenspersoon &mdash; daar geldt een andere procedure.
+      </p>
+
+      <div class="vv-veld">
+        <label class="vv-label">Wanneer gebeurde het?</label>
+        <input type="date" id="fdaDatum" class="vv-input">
+      </div>
+
+      <div class="vv-veld">
+        <label class="vv-label">Of hoe vaak?</label>
+        <input type="text" id="fdaPeriode" class="vv-input" placeholder="Bv. elke week als hij langskomt">
+      </div>
+
+      <div class="vv-veld">
+        <label class="vv-label">Waar?</label>
+        <input type="text" id="fdaPlaats" class="vv-input" placeholder="Bv. onthaal, laadkade, parking">
+      </div>
+
+      <div class="vv-veld">
+        <label class="vv-label">Wie was het?</label>
+        <input type="text" id="fdaHoedanigheid" class="vv-input" placeholder="Bv. een klant, een chauffeur">
+        <div class="vv-regel" style="margin-top:6px;font-size:12px">
+          Niet zijn naam. Alleen wat hij hier kwam doen.
+        </div>
+      </div>
+
+      <div class="vv-veld">
+        <label class="vv-label">Waarover gaat het?</label>
+        <div id="fdaSoortKiezer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+
+      <div class="vv-veld">
+        <label class="vv-label">Wat is er gebeurd?</label>
+        <textarea id="fdaBeschrijving" class="vv-input" rows="6" placeholder="Vertel het in uw eigen woorden."></textarea>
+      </div>
+
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.55;margin-bottom:6px">
+        <input type="checkbox" id="fdaNaamErbij" style="margin-top:3px;width:18px;height:18px">
+        <span>Mijn naam mag erbij. Dan kan de vertrouwenspersoon mij aanspreken.</span>
+      </label>
+      <div class="vv-regel" style="font-size:12px;line-height:1.55">
+        Laat u dit leeg, dan komt uw naam nergens te staan. U kan uw melding daarna ook zelf niet meer
+        terugvinden in de app &mdash; er is dan niets dat haar aan u koppelt.
+      </div>
+
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn-nav btn-terug" onclick="showScreen('module')">&#8592; Terug</button>
+    <button class="btn-nav btn-verzend" id="btnFdaVerstuur" onclick="verstuurFeitVanDerde()">Versturen</button>
+  </div>
+</div>
+
+<div id="screen-feitderde-klaar" class="screen">
+  <div class="app-header">
+    <div class="app-header-logo">
+      <img src="Logo-PrevX.png" alt="PrevX" class="app-logo-img" style="height:34px;object-fit:contain;">
+    </div>
+  </div>
+  <div class="module-balk">Verstuurd</div>
+  <div style="flex:1;overflow-y:auto;padding-bottom:90px">
+    <div class="screen-content">
+      <div class="vv-melding goed" style="margin-bottom:16px">
+        <strong>Uw melding staat in het register.</strong><br>
+        De vertrouwenspersoon van uw bedrijf leest ze. Er staat niet bij wie ze geschreven heeft.
+      </div>
+      <p class="vv-regel" style="line-height:1.6">
+        U kan deze melding niet meer terugvinden in de app. Dat is geen fout: als u ze zou kunnen
+        terugvinden, zou er iets moeten bijhouden dat ze van u komt.
+      </p>
+      <p class="vv-regel" style="line-height:1.6;margin-top:14px">
+        Loopt het opnieuw of erger, meld het dan gerust nog eens. Twee keer hetzelfde melden is beter
+        dan een keer te weinig &mdash; herhaling is juist wat een register zichtbaar moet maken.
+      </p>
+      <p class="vv-regel" style="line-height:1.6;margin-top:14px">
+        Hebt u nu iemand nodig, wacht dan niet op een antwoord hier. Spreek uw vertrouwenspersoon aan,
+        of bel PrevX op <a href="tel:+32491342975" style="color:var(--navy-text)">+32 491 34 29 75</a>.
+      </p>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn-nav btn-verzend" onclick="showScreen('module')">Klaar</button>
+  </div>
+</div>
+
 <div id="screen-vergunningen" class="screen">
   <div class="app-header">
     <div class="app-header-logo">
@@ -893,19 +1004,23 @@ function doPinLogin() {
 // databank geactiveerd is maar hier nog niet in staat, wordt niet getoond --
 // zo levert het alvast activeren van 'vuurvergunning' geen dode knop op
 // zolang die flow nog niet gebouwd is.
-var GEBOUWDE_MODULES = ['preinspecties', 'vuurvergunning', 'lmra', 'chemie'];
+var GEBOUWDE_MODULES = ['preinspecties', 'vuurvergunning', 'lmra', 'chemie', 'feiten_derden'];
 
 var MODULE_ICONEN = {
   preinspecties: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1.5"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>',
   vuurvergunning: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-4-3-6.5-4.5-10C13 8 12 9 10.5 9.5 9 7 8 5 8 5c-2 3-3 5.5-3 10a7 7 0 0 0 7 7z"/><path d="M12 22a3 3 0 0 0 3-3c0-1.8-1.3-2.8-2-4.5-1 1.5-2 2-2.4 2.8A3 3 0 0 0 12 22z"/></svg>',
   lmra: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7v6c0 5 4 8 10 9 6-1 10-4 10-9V7z"/><path d="M12 9v3M12 16h.01"/></svg>',
-  chemie: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/></svg>'
+  chemie: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h4M11 3v6.5L5.5 19a1.5 1.5 0 0 0 1.3 2.2h10.4a1.5 1.5 0 0 0 1.3-2.2L13 9.5V3"/><path d="M8 15h8"/></svg>',
+  // Een schild met een figuurtje erin: bescherming van een persoon, niet een
+  // uitroepteken of een vuist. Wie hier moet zijn, heeft geen extra dreiging nodig.
+  feiten_derden: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5.2 3.8 9 9 10 5.2-1 9-4.8 9-10V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.4 16.4a3.8 3.8 0 0 1 7.2 0"/></svg>'
 };
 var MODULE_SUBTITELS = {
   preinspecties: 'Asset controleren vóór gebruik',
   vuurvergunning: 'Vergunning voor brandgevaarlijk werk',
   lmra: 'Kijk je werkplek na voor je begint',
-  chemie: 'Wat zit er in dit product?'
+  chemie: 'Wat zit er in dit product?',
+  feiten_derden: 'Meld iets zonder uw naam'
 };
 
 var beschikbareModules = [];
@@ -1590,11 +1705,97 @@ function toonChemieProduct(id) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Melden van feiten door derden -- codex boek I titel 3, artikel I.3-3
+// ---------------------------------------------------------------------------
+// Dit scherm stuurt weg en haalt niets op. Er is geen lijst met "mijn
+// meldingen", en dat is de bedoeling: zo'n lijst zou een koppeling tussen de
+// melding en de melder vragen, en dan is de belofte op het scherm niet waar.
+// Wat er weggaat is de tekst en, alleen als de melder daarom vraagt, zijn naam.
+
+var FD_SOORTEN = [
+  { key: 'geweld', naam: 'Geweld' },
+  { key: 'pesterijen', naam: 'Pesterijen' },
+  { key: 'ongewenst_seksueel_gedrag', naam: 'Ongewenst seksueel gedrag' }
+];
+
+var fdGekozenSoorten = [];
+
+function openFeitVanDerde() {
+  showScreen('feitderde');
+  document.getElementById('fdaDatum').value = '';
+  document.getElementById('fdaPeriode').value = '';
+  document.getElementById('fdaPlaats').value = '';
+  document.getElementById('fdaHoedanigheid').value = '';
+  document.getElementById('fdaBeschrijving').value = '';
+  document.getElementById('fdaNaamErbij').checked = false;
+  fdGekozenSoorten = [];
+  tekenFdSoortKiezer();
+}
+
+function tekenFdSoortKiezer() {
+  var el = document.getElementById('fdaSoortKiezer');
+  if (!el) return;
+  el.innerHTML = FD_SOORTEN.map(function (s) {
+    var aan = fdGekozenSoorten.indexOf(s.key) > -1;
+    return '<button type="button" onclick="wisselFdSoort(\'' + s.key + '\')" ' +
+      'style="border:2px solid ' + (aan ? 'var(--navy2)' : 'var(--gray-300)') + ';' +
+      'background:' + (aan ? 'var(--gray-100)' : 'transparent') + ';' +
+      'color:' + (aan ? 'var(--navy-text)' : 'var(--gray-600)') + ';' +
+      'border-radius:var(--radius);padding:10px 14px;font-size:14px;font-weight:600">' + s.naam + '</button>';
+  }).join('');
+}
+
+function wisselFdSoort(key) {
+  var i = fdGekozenSoorten.indexOf(key);
+  if (i > -1) fdGekozenSoorten.splice(i, 1); else fdGekozenSoorten.push(key);
+  tekenFdSoortKiezer();
+}
+
+function verstuurFeitVanDerde() {
+  var beschrijving = document.getElementById('fdaBeschrijving').value.trim();
+  if (!beschrijving) {
+    showToast('Schrijf kort op wat er gebeurd is. Zonder dat kan er niets mee gedaan worden.');
+    return;
+  }
+
+  var knop = document.getElementById('btnFdaVerstuur');
+  knop.disabled = true;
+  knop.textContent = 'Versturen...';
+
+  sb.rpc('rpc_meld_feit_van_derde', {
+    p_gebruiker_id: gebruiker.id,
+    p_datum_feiten: document.getElementById('fdaDatum').value || null,
+    p_periode: document.getElementById('fdaPeriode').value.trim() || null,
+    p_plaats: document.getElementById('fdaPlaats').value.trim() || null,
+    p_hoedanigheid: document.getElementById('fdaHoedanigheid').value.trim() || null,
+    p_soort: fdGekozenSoorten,
+    p_beschrijving: beschrijving,
+    p_naam_erbij: document.getElementById('fdaNaamErbij').checked
+  }).then(function (r) {
+    knop.disabled = false;
+    knop.textContent = 'Versturen';
+    if (r.error) {
+      showToast('Versturen lukte niet. Probeer opnieuw, of spreek uw vertrouwenspersoon aan.');
+      return;
+    }
+    // De velden meteen leegmaken. Wie het toestel weglegt en iemand anders
+    // pakt het op, mag niet lezen wat er net gemeld is.
+    document.getElementById('fdaBeschrijving').value = '';
+    document.getElementById('fdaPlaats').value = '';
+    document.getElementById('fdaPeriode').value = '';
+    document.getElementById('fdaHoedanigheid').value = '';
+    fdGekozenSoorten = [];
+    showScreen('feitderde-klaar');
+  });
+}
+
 function kiesModule(key) {
   if (key === 'preinspecties') { laadVoertuigen(); return; }
   if (key === 'vuurvergunning') { laadVergunningen(); return; }
   if (key === 'lmra') { laadLmra(); return; }
   if (key === 'chemie') { laadChemie(); return; }
+  if (key === 'feiten_derden') { openFeitVanDerde(); return; }
   showToast('Deze module is nog niet beschikbaar.');
 }
 
