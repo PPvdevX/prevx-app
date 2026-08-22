@@ -41,7 +41,12 @@ function corsHeaders(req) {
   return {
     'Access-Control-Allow-Origin': TOEGELATEN_HERKOMST.includes(herkomst) ? herkomst : TOEGELATEN_HERKOMST[0],
     'Access-Control-Allow-Headers': 'authorization, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    // Zonder deze regel ziet JavaScript in de browser alleen content-type en
+    // content-length. Eigen headers worden bij een cross-origin antwoord
+    // standaard verborgen -- de aanroeper las dus null en meldde '? documenten
+    // gebonden'.
+    'Access-Control-Expose-Headers': 'X-Gebonden, X-Overgeslagen'
   };
 }
 
@@ -69,6 +74,29 @@ function opslagPad(url) {
   const m = /\/storage\/v1\/object\/(?:public\/|sign\/)?([^\/?]+)\/([^?]+)/.exec(String(url || ''));
   if (!m) return null;
   return { bucket: m[1], pad: decodeURIComponent(m[2]) };
+}
+
+// De volgorde van de elf onderdelen zoals de codex ze opsomt (boek III, titel 3).
+// Alfabetisch sorteren gaf BPR voor BRA en zette het evacuatieplan tussen de
+// algemene stukken -- een stapel PDF's in plaats van een dossier. Wie dit aan de
+// brandweer geeft, hoort het in de volgorde te krijgen waarin ernaar gevraagd
+// wordt.
+//
+// Types die niet tot het dossier behoren (risicoanalyse, GPP, JAP, toolbox)
+// komen erna, met hun eigen volgorde. Ze horen erbij als achtergrond, maar niet
+// tussen de elf.
+//
+// Onderdeel 10 is ADB, niet ADV: ADV is de gewone adviesnota en die kan over om
+// het even welk risico gaan. Ze blijft in de bundel, maar achteraan bij de
+// achtergrond -- niet tussen de stukken die de brandweer opvraagt.
+const DOSSIER_VOLGORDE = ['BRA', 'BBD', 'BPR', 'EVP', 'ITD', 'EVO', 'BMP', 'AFW', 'ADB', 'HLP'];
+const NA_HET_DOSSIER = ['RIS', 'GPP', 'JAP', 'ADV', 'AUD', 'RPT', 'CHL', 'TBX', 'FOR', 'TPL'];
+
+function rangschik(type) {
+  const i = DOSSIER_VOLGORDE.indexOf(type);
+  if (i >= 0) return i;
+  const j = NA_HET_DOSSIER.indexOf(type);
+  return 100 + (j >= 0 ? j : 50);
 }
 
 function isPdf(naam, type) {
@@ -126,6 +154,10 @@ async function verwerk(req) {
   if (!docs || !docs.length) {
     return fout({ error: 'Geen documenten in dit dossier, of geen toegang tot dit bedrijf' }, 404);
   }
+
+  // Op dossiervolgorde zetten. Binnen hetzelfde type blijft de nieuwste bovenaan,
+  // zoals de query ze al gaf.
+  docs.sort((a, b) => rangschik(a.type) - rangschik(b.type));
 
   const { data: bedrijf } = await alsGebruiker
     .from('bedrijven').select('naam').eq('id', bedrijf_id).maybeSingle();

@@ -952,6 +952,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
                 <option value="EVO">EVO &mdash; Vaststellingen evacuatieoefening</option>
                 <option value="BMP">BMP &mdash; Beschermingsmiddelen: lijst en plan</option>
                 <option value="AFW">AFW &mdash; Afwijking art. 52 ARAB</option>
+                <option value="ADB">ADB &mdash; Adviezen adviseur, comit&eacute; en hulpdienst</option>
                 <option value="HLP">HLP &mdash; Info openbare hulpdienst</option>
                 </optgroup>
               </select>
@@ -3396,6 +3397,12 @@ function magKeuringenBeheren(){
 //                  dossier "wordt bijgewerkt". Een aftelklok tonen zou hier
 //                  een uitspraak zijn die niemand gedaan heeft; daarom telt de
 //                  stempel van de preventieadviseur, met naam en datum.
+//
+// ADB en niet ADV voor onderdeel 10. ADV is de gewone adviesnota -- die gaat
+// evengoed over een heftruck of een lawaaimeting. Zolang beide hetzelfde type
+// droegen, telde elke adviesnota mee als brandpreventieadvies en stond het
+// dossier groen op iets dat er niet in hoort. ADB is enkel het advies van de
+// preventieadviseur, het comité of de hulpdienst over brandpreventie.
 var BPD_ONDERDELEN=[
   {key:'risicoanalyse',        naam:'Brandrisicoanalyse en preventiemaatregelen', type:'BRA'},
   {key:'brandbestrijdingsdienst',naam:'Organisatie van de brandbestrijdingsdienst', type:'BBD'},
@@ -3406,7 +3413,7 @@ var BPD_ONDERDELEN=[
   {key:'beschermingsmiddelen', naam:'Beschermingsmiddelen: lijst en situering op plan', type:'BMP'},
   {key:'controles',            naam:'Controles en onderhoud van middelen en installaties', bron:'keuringen'},
   {key:'afwijkingen',          naam:'Afwijkingen (art. 52 ARAB)',                 type:'AFW'},
-  {key:'adviezen',             naam:'Adviezen van adviseur, comit\u00e9 en hulpdienst', type:'ADV'},
+  {key:'adviezen',             naam:'Adviezen van adviseur, comit\u00e9 en hulpdienst', type:'ADB'},
   {key:'hulpdiensten',         naam:'Informatie aan de openbare hulpdienst',      type:'HLP'}
 ];
 
@@ -4070,7 +4077,7 @@ function verwijderDocument(id,code,titel){
 }
 
 function renderDocumenten(data){
-  var typeLabels={RPT:'Rapport',RIS:'Risicoanalyse',GPP:'GPP',JAP:'JAP',ADV:'Advies',AUD:'Audit',CHL:'Checklist',TBX:'Toolbox',FOR:'Formulier',TPL:'Template',BRA:'Brandrisicoanalyse',BBD:'Brandbestrijdingsdienst',BPR:'Schriftelijke procedures',EVP:'Evacuatieplan',ITD:'Interventiedossier',EVO:'Vaststellingen oefening',BMP:'Beschermingsmiddelen',AFW:'Afwijking art. 52 ARAB',HLP:'Info hulpdienst'};
+  var typeLabels={RPT:'Rapport',RIS:'Risicoanalyse',GPP:'GPP',JAP:'JAP',ADV:'Advies',AUD:'Audit',CHL:'Checklist',TBX:'Toolbox',FOR:'Formulier',TPL:'Template',BRA:'Brandrisicoanalyse',BBD:'Brandbestrijdingsdienst',BPR:'Schriftelijke procedures',EVP:'Evacuatieplan',ITD:'Interventiedossier',EVO:'Vaststellingen oefening',BMP:'Beschermingsmiddelen',AFW:'Afwijking art. 52 ARAB',ADB:'Adviezen dossier',HLP:'Info hulpdienst'};
   var plan=data.filter(function(d){return d.type==='GPP'||d.type==='JAP';});
   var overige=data.filter(function(d){return d.type!=='GPP'&&d.type!=='JAP';});
   function renderRijen(tbodyId,rows,leegText){

@@ -796,7 +796,24 @@ begin
   -- een klant: DEMO-PX-RIS-001 enzovoort. Er hangt geen bestand aan -- die
   -- zouden in Storage blijven staan na een reset. Het scherm toont dan "-" bij
   -- Bekijk; dat is de enige plek waar je merkt dat het een demo is.
+  --
+  -- De tien onderdelen van het brandpreventiedossier die uit een document
+  -- komen, staan hieronder allemaal. Dat is geen opsmuk: het scherm
+  -- Brandpreventiedossier kijkt eerst of er een document van dat type bestaat
+  -- en zegt anders "Ontbreekt" -- ook wanneer brandpreventie_status verderop
+  -- vertelt dat het onderdeel nagekeken is. Laat je er zes weg, dan spreken de
+  -- twee schermen elkaar tegen: Documenten toont niets, het dossier toont een
+  -- stempel. De uploaddatum loopt daarom gelijk met de datum van nakijken
+  -- verderop in dit blok.
+  --
+  -- Twee data zijn met opzet gekozen en mogen niet dichterbij gelegd worden:
+  --   EVO op 400 dagen  -- het enige onderdeel met een wettelijke termijn
+  --                        (twaalf maanden), dus dat komt in het rood;
+  --   AFW zonder stempel -- staat oranje, "nog niet nagekeken".
+  -- Zo toont het scherm groen, oranje en rood in plaats van elf keer hetzelfde.
   insert into documenten (bedrijf_id, type, titel, versie, geupload_op, code) values
+    (v_bedrijf, 'EVO', 'Vaststellingen evacuatieoefening ' || extract(year from current_date - 400)::text, '1.0',
+       now() - interval '400 days', public.volgend_documentcode(v_bedrijf, 'EVO')),
     (v_bedrijf, 'RIS', 'Risicoanalyse productie en magazijn', '2.0', now() - interval '70 days',
        public.volgend_documentcode(v_bedrijf, 'RIS')),
     (v_bedrijf, 'GPP', 'Globaal preventieplan ' || extract(year from current_date)::text || '-' || (extract(year from current_date)::int + 4)::text, '1.0',
@@ -809,10 +826,66 @@ begin
        public.volgend_documentcode(v_bedrijf, 'EVP')),
     (v_bedrijf, 'BPR', 'Procedures bij brand en evacuatie', '1.0', now() - interval '44 days',
        public.volgend_documentcode(v_bedrijf, 'BPR')),
+    (v_bedrijf, 'BBD', 'Organisatie van de brandbestrijdingsdienst', '1.0', now() - interval '44 days',
+       public.volgend_documentcode(v_bedrijf, 'BBD')),
+    (v_bedrijf, 'ITD', 'Interventiedossier voor de openbare hulpdienst', '1.0', now() - interval '42 days',
+       public.volgend_documentcode(v_bedrijf, 'ITD')),
     (v_bedrijf, 'HLP', 'Info voor de openbare hulpdiensten', '1.0', now() - interval '42 days',
        public.volgend_documentcode(v_bedrijf, 'HLP')),
+    (v_bedrijf, 'ADB', 'Adviezen van preventieadviseur, comité en brandweer', '1.0', now() - interval '41 days',
+       public.volgend_documentcode(v_bedrijf, 'ADB')),
+    (v_bedrijf, 'AFW', 'Afwijking art. 52 ARAB: opslag verven en solventen', '1.0', now() - interval '40 days',
+       public.volgend_documentcode(v_bedrijf, 'AFW')),
+    -- Bewust naast ADB: een gewone adviesnota over een heel ander risico. Op
+    -- Documenten staan ze naast elkaar, in het brandpreventiedossier telt enkel
+    -- ADB mee. Wie de twee door elkaar haalt, ziet hier meteen waarom ze
+    -- gescheiden zijn.
+    (v_bedrijf, 'ADV', 'Advies aankoop en opstelling nieuwe lasafzuiging', '1.0', now() - interval '35 days',
+       public.volgend_documentcode(v_bedrijf, 'ADV')),
+    (v_bedrijf, 'BMP', 'Beschermingsmiddelen: lijst en situering op plan', '1.2', now() - interval '30 days',
+       public.volgend_documentcode(v_bedrijf, 'BMP')),
     (v_bedrijf, 'TBX', 'Toolbox: veilig stapelen en heffen', '1.0', now() - interval '30 days',
        public.volgend_documentcode(v_bedrijf, 'TBX'));
+
+  -- ---------------------------------------------------------------------------
+  -- De voorbeeldbestanden terugkoppelen
+  -- ---------------------------------------------------------------------------
+  -- De rijen hierboven hebben geen bestand, en dat was een gat dat je pas merkte
+  -- als je erop klikte: de kolom Bekijk toonde overal een streepje en de knop
+  -- "Bundel tot PDF" had niets om te binden. Voor een demo is dat erger dan een
+  -- leeg dossier -- een prospect klikt, er gebeurt niets, en het verhaal over
+  -- "altijd de recentste versie" valt stil.
+  --
+  -- De acht PDF's liggen in de bucket 'documenten' en blijven daar staan: dit
+  -- script wist enkel rijen, geen bestanden. Vandaar dat ze hier bij naam
+  -- teruggekoppeld worden in plaats van opnieuw opgeladen te moeten worden.
+  --
+  -- LET OP: wie deze bestanden uit de opslag verwijdert, breekt de demo. Ze
+  -- horen bij geen enkele rij zolang dit script niet gedraaid heeft, dus een
+  -- opkuis van "verweesde bestanden" haalt ze weg. De bronbestanden staan in
+  -- C:\Users\peter\Documents\PrevX-demo-documenten en zijn opnieuw op te
+  -- laden via het portaal; de namen hieronder moeten dan wel aangepast worden,
+  -- want de uploadfunctie geeft elk bestand de id van zijn nieuwe rij.
+  --
+  -- Elke PDF draagt een oranje balk VOORBEELDDOCUMENT over elke pagina. Dat is
+  -- met opzet: een nepevacuatieplan dat er echt uitziet hoort niet op een
+  -- werkvloer terecht te kunnen komen.
+  update documenten d
+  set bestand_url = 'https://axziicyfcghanhvtmgsm.supabase.co/storage/v1/object/public/documenten/'
+                    || v_bedrijf::text || '/' || v.bestand
+  from (values
+    ('BPR', 'c80d0dcc-1c4a-40fd-b2c1-ba6fbc0c1cec.pdf'),
+    ('GPP', '885514dc-2f77-4134-b933-d3ea99394eec.pdf'),
+    ('JAP', 'c99e036b-6476-47d6-b3aa-dfa30bf01351.pdf'),
+    ('EVP', '2168e012-c7f9-472f-a44c-58dd598f8fc1.pdf'),
+    ('TBX', '21b9722d-e583-44d0-afbf-9fcea1f7a7e3.pdf'),
+    ('HLP', '4a71a351-9b58-4ea9-ab51-65ec9c9cf46a.pdf'),
+    ('RIS', '9875efee-038b-4518-8035-952886de78cc.pdf'),
+    ('BRA', '822fc38c-8971-4d23-96d8-4be4a6c6edd2.pdf')
+  ) as v(soort, bestand)
+  where d.bedrijf_id = v_bedrijf
+    and d.type = v.soort;
+
 
   insert into documenten (bedrijf_id, type, titel, versie, geupload_op, code)
   values (v_bedrijf, 'RPT', 'Bezoekverslag rondgang magazijn', '1.0', now() - interval '38 days',
@@ -858,6 +931,11 @@ begin
   -- --- brandpreventiedossier ----------------------------------------------
   -- Bewust gemengd: een dossier waarin elk onderdeel groen staat, toont niet
   -- waar het scherm voor dient.
+  --
+  -- Een stempel hieronder is niets waard zonder het document erbij: het scherm
+  -- kijkt eerst naar het document en pas daarna naar deze tabel. Zet je hier
+  -- een onderdeel bij, zet dan ook het document erbij (zie het blok documenten
+  -- hierboven) -- en houd de datums gelijk.
   --
   -- Overgeslagen zolang migratie 0088 niet gedraaid is (zie de uitleg bij de
   -- gelijkaardige controle in BLOK 1). De rest van de demo staat er dan wel
