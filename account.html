@@ -846,6 +846,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
           <div class="table-header"><span class="table-title">Uitgevoerde LMRA's</span>
             <span class="table-count" id="lmraCount">0</span>
           </div>
+          <div id="lmraFilters" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 12px"></div>
           <table><thead><tr><th>Wanneer</th><th>Wie</th><th>Taak</th><th>Plek</th><th>Duur</th><th>Status</th></tr></thead>
           <tbody id="lmraTabel"><tr class="loading-row"><td colspan="6"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
         </div>
@@ -5694,12 +5695,76 @@ function zetLmraRisico(risicoId,aan){
   });
 }
 
+// Twee vragen in plaats van een: de tweede haalt op welke LMRA's een risico op
+// "niet in orde" hebben staan. Dat is niet af te leiden uit de lmras-rij zelf,
+// en het is wel waarop je wil kunnen filteren -- een LMRA waarin iemand iets
+// heeft vastgesteld is het tegenovergestelde van afvinkgedrag en verdient te
+// worden teruggevonden.
+var alleLmras=[];
+var lmrasMetVaststelling={};
+var lmraFilter='alles';
+
 function laadUitgevoerdeLmras(){
-  sb.from('lmras').select('*,gebruikers(naam)').eq('bedrijf_id',huidigeBedrijfId)
-    .order('gestart_op',{ascending:false}).limit(100).then(function(r){
-      if(r.error){showToast('Fout: '+r.error.message);return;}
-      renderLmras(r.data||[]);
-    });
+  Promise.all([
+    sb.from('lmras').select('*,gebruikers(naam)').eq('bedrijf_id',huidigeBedrijfId)
+      .order('gestart_op',{ascending:false}).limit(100),
+    sb.from('lmra_risico_antwoorden').select('lmra_id').eq('in_orde',false)
+  ]).then(function(res){
+    if(res[0].error){showToast('Fout: '+res[0].error.message);return;}
+    alleLmras=res[0].data||[];
+    lmrasMetVaststelling={};
+    (res[1].data||[]).forEach(function(a){lmrasMetVaststelling[a.lmra_id]=true;});
+    lmraFilter='alles';
+    renderLmraFilters();
+    renderLmras(lmraGefilterd());
+  });
+}
+
+// Een volledige LMRA onder twintig seconden is niet geloofwaardig. Dezelfde
+// grens als in het detailscherm; die twee horen gelijk te blijven.
+function lmraTeSnel(l){
+  return l.soort==='volledig'&&l.afgerond_op&&l.gestart_op&&
+    (new Date(l.afgerond_op)-new Date(l.gestart_op))<20000;
+}
+
+// Stilgelegd en nog niet hervat. Werk dat intussen weer loopt is een goed
+// afgelopen verhaal en hoort niet in een lijstje dat om aandacht vraagt.
+function lmraNogStil(l){
+  return l.status==='gestopt'&&!l.hervat_op;
+}
+
+function lmraGefilterd(){
+  if(lmraFilter==='stil')return alleLmras.filter(lmraNogStil);
+  if(lmraFilter==='snel')return alleLmras.filter(lmraTeSnel);
+  if(lmraFilter==='vaststelling')return alleLmras.filter(function(l){return lmrasMetVaststelling[l.id];});
+  return alleLmras;
+}
+
+function renderLmraFilters(){
+  var vak=document.getElementById('lmraFilters');
+  if(!vak)return;
+  var tellers=[
+    {key:'alles',        label:"Alle LMRA's",      aantal:alleLmras.length, kleur:null},
+    {key:'stil',         label:'Nog stilgelegd',   aantal:alleLmras.filter(lmraNogStil).length, kleur:'#dc2626'},
+    {key:'snel',         label:'Verdacht snel',    aantal:alleLmras.filter(lmraTeSnel).length, kleur:'#E97F02'},
+    {key:'vaststelling', label:'Met vaststelling', aantal:alleLmras.filter(function(l){return lmrasMetVaststelling[l.id];}).length, kleur:null}
+  ];
+  vak.innerHTML=tellers.map(function(f){
+    var actief=lmraFilter===f.key;
+    // Een filter dat nul oplevert blijft zichtbaar maar dof: dat er vandaag
+    // niets stilligt, is zelf ook een antwoord.
+    var kleur=(f.aantal&&f.kleur)?f.kleur:'inherit';
+    return '<button class="btn-add-sm" onclick="zetLmraFilter(\''+f.key+'\')" '+
+      'style="'+(actief?'background:var(--navy);color:#fff;':'')+
+      (actief?'':'color:'+kleur+';')+(f.aantal?'':'opacity:.5;')+'">'+
+      f.label+' ('+f.aantal+')</button>';
+  }).join('');
+}
+
+function zetLmraFilter(key){
+  lmraFilter=key;
+  renderLmraFilters();
+  renderLmras(lmraGefilterd());
 }
 
 // ---------------------------------------------------------------------------
@@ -5798,9 +5863,17 @@ function openLmra(id){
 }
 
 function renderLmras(data){
-  document.getElementById('lmraCount').textContent=data.length+" LMRA's";
+  document.getElementById('lmraCount').textContent=
+    (lmraFilter==='alles') ? data.length+" LMRA's"
+                           : data.length+' van '+alleLmras.length;
   var tbody=document.getElementById('lmraTabel');
-  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">Nog geen LMRA\'s uitgevoerd.</td></tr>';return;}
+  if(!data.length){
+    var leeg=(lmraFilter==='alles')?"Nog geen LMRA's uitgevoerd."
+      :(lmraFilter==='stil')?'Er ligt niets stil. '
+      :(lmraFilter==='snel')?'Geen enkele LMRA ging verdacht snel.'
+      :'Geen enkele LMRA met een vaststelling.';
+    tbody.innerHTML='<tr class="empty-row"><td colspan="6">'+leeg+'</td></tr>';return;
+  }
   tbody.innerHTML='';
   data.forEach(function(l){
     var duur='-';
