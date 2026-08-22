@@ -80,6 +80,33 @@ h1,h2,h3,h4{font-family:'Montserrat',sans-serif}
 .btn-logout{width:100%;padding:9px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);border:1px solid rgba(0,0,0,.15);color:#fff;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:700;font-family:'Poppins',sans-serif;transition:all .2s}
 .btn-logout:hover{background:#4d7aa3;border-color:rgba(0,0,0,.25)}
 .main-content{flex:1;overflow-y:auto}
+/* Hulp in het scherm. Het vraagteken hangt aan de titel zelf, niet ernaast in
+   een balk: zo staat het altijd waar de vraag opkomt, ook op een smal scherm. */
+.hulp-knop{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-left:9px;
+  border-radius:50%;border:1.5px solid var(--navy2);background:transparent;color:var(--navy-text);
+  font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;line-height:1;cursor:pointer;
+  vertical-align:2px;padding:0;transition:background .12s,border-color .12s}
+.hulp-knop:hover{background:var(--gray-100);border-color:var(--navy-text)}
+.hulp-knop:focus-visible{outline:2px solid var(--navy-text);outline-offset:2px}
+#hulpPaneel{display:none;position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.35);
+  align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.hulp-paneel{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+  max-width:540px;width:100%;overflow:hidden}
+.hulp-kop{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding:18px 22px 14px;border-bottom:1px solid var(--gray-200)}
+.hulp-titel{font-family:'Montserrat',sans-serif;font-size:18px;font-weight:600;color:var(--navy-text);line-height:1.25}
+.hulp-bron{font-size:11.5px;color:var(--gray-500);margin-top:5px;letter-spacing:.02em}
+.hulp-sluit{background:none;border:0;color:var(--gray-500);font-size:24px;line-height:1;cursor:pointer;padding:0 2px}
+.hulp-blok{padding:15px 22px;border-bottom:1px solid var(--gray-200)}
+.hulp-blok:last-child{border-bottom:0}
+.hulp-label{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--navy-text);
+  font-weight:600;margin-bottom:6px}
+.hulp-blok p{margin:0;font-size:14px;line-height:1.65;color:var(--gray-700)}
+.hulp-blok ul{margin:0;padding-left:1.1em;font-size:14px;line-height:1.6;color:var(--gray-700)}
+.hulp-blok li{margin-bottom:5px}
+.hulp-let-op{background:var(--orange-bg)}
+.hulp-let-op .hulp-label{color:var(--orange)}
+.hulp-let-op p{color:var(--gray-700)}
 .page-header{background:var(--surface);padding:22px 32px;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:10}
 .page-title{font-family:'Montserrat',sans-serif;font-size:19px;font-weight:600;color:var(--navy-text);letter-spacing:-.2px}
 .page-subtitle{font-size:12px;color:var(--gray-500);margin-top:2px}
@@ -2209,6 +2236,153 @@ function pasBrandingToe(bedrijf){
   if(logo)logo.src=bedrijf.logo_url||'Logo-PrevX.png';
 }
 
+// ---------------------------------------------------------------------------
+// Hulp in het scherm
+// ---------------------------------------------------------------------------
+// Naast de titel van een scherm staat een vraagteken. Het opent een paneel met
+// altijd dezelfde vier blokken, in dezelfde volgorde:
+//
+//   1. Wat dit scherm doet   -- in gewone woorden, zonder wetstaal
+//   2. Wat de wet vraagt     -- kort, met het artikel erbij; de uitleg hoort
+//                               in de vormingsmodule, niet hier
+//   3. Wat u hier doet       -- handelingen, geen beschrijving
+//   4. Waar het misloopt     -- wat er bij klanten fout gaat, en dat staat in
+//                               geen enkele wettekst
+//
+// Dat vierde blok is de reden dat dit meer is dan een handleiding. Het is de
+// ervaring van de preventieadviseur, en die stond tot nu enkel in zijn hoofd.
+//
+// Geen letter extra opmaak per scherm: de knop wordt bij het openen van een
+// tabblad naast de titel geschoven zodra er een tekst voor bestaat. Zo groeit
+// dit mee met elk nieuw scherm zonder dat er iets vergeten kan worden -- en een
+// scherm zonder tekst toont gewoon geen vraagteken.
+
+var SCHERMHULP={
+
+  feitenderden:{
+    bron:'codex boek I, titel 3 &mdash; art. I.3-3',
+    doet:'Dit scherm houdt bij wat klanten, leveranciers of bezoekers uw mensen aandoen: geweld, '+
+         'pesterijen of ongewenst seksueel gedrag. E&eacute;n verklaring per voorval, met de datum en de '+
+         'plaats erbij.',
+    wet:'Komen uw werknemers bij hun werk in contact met andere personen, dan moet u dit register '+
+        'bijhouden. Het wordt beheerd door de vertrouwenspersoon. De verklaringen blijven vijf jaar '+
+        'bewaard, en de naam van de werknemer staat er niet in tenzij hij daarmee instemt.',
+    doetU:[
+      'Een voorval optekenen zodra iemand het meldt, in zijn woorden en niet in uw beoordeling ervan.',
+      'Noteren wat u ermee gedaan hebt. Dat is wat een register onderscheidt van een archief.',
+      'E&eacute;n keer per jaar het geheel doorlopen voor uw evaluatie van de preventiemaatregelen.'
+    ],
+    misloopt:'Bedrijven wachten tot er iets ernstigs gebeurt. Juist het kleine dat zich herhaalt hoort '+
+             'erin: dezelfde chauffeur die elke week staat te roepen, is het patroon dat u kan aanpakken. '+
+             'En wijs een vertrouwenspersoon aan bij <strong>Gebruikers</strong> &mdash; bij iemand die '+
+             'niet de baas is, vertelt een werknemer het eerder.'
+  },
+
+  chemie:{
+    bron:'codex boek VI, titels 1 en 2',
+    doet:'Dit scherm houdt bij welke chemische producten er in huis zijn, waar ze staan, en welk '+
+         'veiligheidsinformatieblad erbij hoort. Het is zelf geen risicoanalyse; het is waarop die '+
+         'analyse steunt.',
+    wet:'U moet de gevaarlijke eigenschappen van elk product kennen en die informatie bij uw leverancier '+
+        'inwinnen. Voor kankerverwekkende, mutagene, reprotoxische en hormoonontregelende stoffen geldt '+
+        'een strenger regime: vervangen gaat v&oacute;&oacute;r beschermen.',
+    doetU:[
+      'Elk product opnemen met zijn H-zinnen van het etiket. Daaruit bepaalt het systeem zelf of het '+
+      'onder titel 2 valt.',
+      'Het veiligheidsinformatieblad opladen. Zonder dat blad kan de wettelijke toets niet gebeuren.',
+      'Een product dat uit dienst gaat archiveren in plaats van wissen &mdash; dat het ooit in huis was, '+
+      'is zelf informatie.'
+    ],
+    misloopt:'Twee dingen. Men kijkt naar het pictogram in plaats van naar de H-zinnen, en dan mist men '+
+             'precies de stoffen waar het om gaat: hormoonontregelaars dragen geen eigen teken, en '+
+             'H351 (&ldquo;verdacht van&rdquo;) lijkt op H350 maar valt er niet onder. En men laadt het '+
+             'blad op en kijkt er nooit meer naar. Leveranciers herzien hun bladen zonder iemand te '+
+             'verwittigen; een blad van tien jaar oud beschrijft een product dat u niet meer koopt.'
+  },
+
+  vragen:{
+    bron:null,
+    doet:'Hier stelt u een vraag aan uw preventieadviseur en leest u het antwoord. Vraag en antwoord '+
+         'blijven in uw dossier staan, zodat de volgende die het zich afvraagt het terugvindt.',
+    wet:null,
+    doetU:[
+      'Een vraag stellen waar niet meteen een antwoord voor is. Voor iets dringends belt u beter.',
+      'Oudere vragen nalezen voor u dezelfde opnieuw stelt.'
+    ],
+    misloopt:'Er wordt te weinig gevraagd, en te vaak gebeld over iets waar het antwoord schriftelijk '+
+             'nuttiger is. Wat u belt, is weg zodra u ophangt. Wat hier staat, kan u aan een nieuwe '+
+             'medewerker tonen. Let wel op: dit staat open voor uw collega&rsquo;s met toegang, dus gaat '+
+             'het over een persoon of over iets vertrouwelijks, bel dan.'
+  }
+
+};
+
+function hulpBeschikbaar(tabKey){
+  return !!SCHERMHULP[tabKey];
+}
+
+// Zet het vraagteken naast de titel van het geopende scherm. Bestaat er geen
+// tekst, dan gebeurt er niets -- geen knop die op een leeg paneel uitkomt.
+function zetHulpKnop(tabKey){
+  var tab=document.getElementById('tab-'+tabKey);
+  if(!tab)return;
+  var titel=tab.querySelector('.page-title');
+  if(!titel)return;
+  var bestaand=titel.querySelector('.hulp-knop');
+  if(bestaand)bestaand.parentNode.removeChild(bestaand);
+  if(!hulpBeschikbaar(tabKey))return;
+
+  var knop=document.createElement('button');
+  knop.className='hulp-knop';
+  knop.type='button';
+  knop.textContent='?';
+  knop.title='Waarvoor dient dit scherm?';
+  knop.setAttribute('aria-label','Uitleg bij dit scherm');
+  knop.onclick=function(){toonSchermhulp(tabKey);};
+  titel.appendChild(knop);
+}
+
+function toonSchermhulp(tabKey){
+  var h=SCHERMHULP[tabKey];
+  if(!h)return;
+  var item=menuItem(tabKey);
+  var naam=(item&&item.naam)||tabKey;
+
+  function blok(label,inhoud,klasse){
+    if(!inhoud)return '';
+    return '<div class="hulp-blok'+(klasse?' '+klasse:'')+'">'+
+      '<div class="hulp-label">'+label+'</div>'+inhoud+'</div>';
+  }
+
+  var lijst=h.doetU&&h.doetU.length
+    ? '<ul>'+h.doetU.map(function(r){return '<li>'+r+'</li>';}).join('')+'</ul>'
+    : '';
+
+  document.getElementById('hulpPaneelInhoud').innerHTML=
+    '<div class="hulp-kop">'+
+      '<div><div class="hulp-titel">'+naam+'</div>'+
+        (h.bron?'<div class="hulp-bron">'+h.bron+'</div>':'')+'</div>'+
+      '<button type="button" class="hulp-sluit" onclick="sluitSchermhulp()" aria-label="Sluiten">&times;</button>'+
+    '</div>'+
+    blok('Wat dit scherm doet','<p>'+h.doet+'</p>')+
+    blok('Wat de wet vraagt',h.wet?'<p>'+h.wet+'</p>':'')+
+    blok('Wat u hier doet',lijst)+
+    blok('Waar het misloopt',h.misloopt?'<p>'+h.misloopt+'</p>':'','hulp-let-op');
+
+  document.getElementById('hulpPaneel').style.display='flex';
+}
+
+function sluitSchermhulp(){
+  document.getElementById('hulpPaneel').style.display='none';
+}
+
+// Escape sluit het paneel. Wie hulp opent, wil er ook weer uit zonder te zoeken.
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  var p=document.getElementById('hulpPaneel');
+  if(p&&p.style.display==='flex')sluitSchermhulp();
+});
+
 function toonTab(naam){
   var item=menuItem(naam);
   if(!item)return;
@@ -2223,6 +2397,7 @@ function toonTab(naam){
   menuActieveTab=naam;
   bouwMenu();
   werkKruimelBij(naam);
+  zetHulpKnop(naam);
   if(item.laad)item.laad();
 }
 
@@ -8464,5 +8639,10 @@ function wisAbonnee(id){
   });
 }
 </script>
+
+<!-- Het paneel staat een keer in de pagina en wordt per scherm gevuld. -->
+<div id="hulpPaneel" onclick="if(event.target===this)sluitSchermhulp()">
+  <div class="hulp-paneel" id="hulpPaneelInhoud"></div>
+</div>
 </body>
 </html>
