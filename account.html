@@ -965,6 +965,132 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
       </div>
     </div>
 
+    <div id="tab-feitenderden" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Register van feiten van derden</div>
+        <div class="page-subtitle">Geweld, pesterijen of ongewenst seksueel gedrag door klanten, leveranciers of bezoekers</div>
+      </div>
+      <div class="content-area">
+
+        <div id="registerGeenToegang" style="display:none;max-width:640px">
+          <div class="table-card"><div style="padding:20px;line-height:1.6">
+            <p style="margin:0 0 12px"><strong>Dit register is vertrouwelijk.</strong></p>
+            <p style="margin:0 0 12px;color:var(--gray-600)">
+              Artikel I.3-3 van de codex somt op wie erin mag kijken: de werkgever, de preventieadviseur
+              psychosociale aspecten, de vertrouwenspersoon en de preventieadviseur die de interne dienst leidt.
+              Niemand anders &mdash; ook uw collega&rsquo;s met toegang tot de rest van het dossier niet.
+            </p>
+            <p style="margin:0;color:var(--gray-600)">
+              Wilt u een voorval laten optekenen, spreek dan uw vertrouwenspersoon aan. Is er geen aangewezen,
+              dan is dat de werkgever.
+            </p>
+          </div></div>
+        </div>
+
+        <div id="registerCijfersAlleen" style="display:none;max-width:720px">
+          <div id="registerCijfers" class="kpi-rij" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px"></div>
+          <div class="table-card"><div style="padding:20px;line-height:1.6;color:var(--gray-600)">
+            <p style="margin:0 0 12px"><strong>U ziet hier alleen de cijfers, en dat is met opzet.</strong></p>
+            <p style="margin:0 0 12px">
+              De wet somt vier functies op die de verklaringen zelf mogen lezen, en de externe dienst die dit
+              portaal levert staat daar niet bij. Wat er wel naar de preventieadviseur psychosociale aspecten
+              gaat, zijn de statistische gegevens, eenmaal per jaar (artikel I.3-65). Dat is precies wat hierboven staat.
+            </p>
+            <p style="margin:0">
+              De feiten uit dit register wegen mee in de jaarlijkse evaluatie van de preventiemaatregelen
+              (artikel I.3-6). Daarvoor volstaan deze aantallen; wie meer nodig heeft, vraagt het aan de werkgever.
+            </p>
+          </div></div>
+        </div>
+
+        <div id="registerInhoud" style="display:none">
+          <div id="registerSignalen" class="kpi-rij" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px"></div>
+
+          <div id="registerFormulier" class="table-card" style="margin-bottom:20px;max-width:680px;display:none">
+            <div class="table-header"><span class="table-title" id="registerFormTitel">Een verklaring optekenen</span>
+              <button class="btn-add-sm" onclick="sluitVerklaringFormulier()">Sluiten</button></div>
+            <div style="padding:16px 20px">
+
+              <div class="form-group"><label class="form-label">Datum van de verklaring</label>
+                <input type="date" class="form-input" id="fdDatumVerklaring">
+                <div style="font-size:12px;color:var(--gray-500);margin-top:5px">
+                  De dag waarop de werknemer het laat optekenen. Vanaf deze dag lopen de vijf jaar bewaartermijn.
+                </div>
+              </div>
+
+              <div class="form-group"><label class="form-label">Datum van de feiten</label>
+                <input type="date" class="form-input" id="fdDatumFeiten">
+              </div>
+
+              <div class="form-group"><label class="form-label">Of een periode</label>
+                <input type="text" class="form-input" id="fdPeriode" placeholder="bv. drie keer in de loop van juli en augustus">
+                <div style="font-size:12px;color:var(--gray-500);margin-top:5px">
+                  De wet vraagt de data, meervoud. Bij iemand die telkens terugkomt is het patroon het feit.
+                </div>
+              </div>
+
+              <div class="form-group"><label class="form-label">Plaats van de feiten</label>
+                <input type="text" class="form-input" id="fdPlaats" placeholder="bv. onthaal, laadkade, aan de telefoon"></div>
+
+              <div class="form-group"><label class="form-label">Hoedanigheid van de derde</label>
+                <input type="text" class="form-input" id="fdHoedanigheid" placeholder="bv. klant, patiënt, chauffeur van een transportfirma">
+                <div style="font-size:12px;color:var(--gray-500);margin-top:5px">
+                  Niet de naam van die persoon. Waar het om gaat is in welke hoedanigheid hij hier was.
+                </div>
+              </div>
+
+              <div class="form-group"><label class="form-label">Waarover gaat het?</label>
+                <div id="fdSoortKiezer" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+              </div>
+
+              <div class="form-group"><label class="form-label">Beschrijving van de feiten</label>
+                <textarea class="form-input" id="fdBeschrijving" rows="6" placeholder="Wat er gebeurd is, in de woorden van de werknemer."></textarea>
+                <div style="font-size:12px;color:var(--gray-500);margin-top:5px;line-height:1.5">
+                  Noteer wat de werknemer verklaart, niet uw beoordeling ervan. Het register legt vast wat er gemeld is.
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:13px;line-height:1.5">
+                  <input type="checkbox" id="fdInstemming" style="margin-top:3px" onchange="wisselInstemming()">
+                  <span>De werknemer stemt ermee in dat zijn naam in het register komt</span>
+                </label>
+                <div style="font-size:12px;color:var(--gray-500);margin-top:6px;line-height:1.5">
+                  Standaard staat er geen naam in. De wet zegt dat met zoveel woorden: de verklaring vermeldt
+                  de identiteit van de werknemer niet, tenzij hij daarmee instemt.
+                </div>
+                <input type="text" class="form-input" id="fdAangever" placeholder="Naam van de werknemer" style="margin-top:10px;display:none">
+              </div>
+
+              <div class="form-group"><label class="form-label">Opgetekend door</label>
+                <input type="text" class="form-input" id="fdOpgetekendDoor"></div>
+
+              <button class="btn-login" id="registerBewaarKnop" onclick="bewaarVerklaring()">Optekenen</button>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-header"><span class="table-title">Verklaringen</span>
+              <span style="display:flex;align-items:center;gap:10px">
+                <span class="table-count" id="registerCount">0</span>
+                <button class="btn-add-sm" onclick="toonVerklaringFormulier()">+ Verklaring</button>
+              </span>
+            </div>
+            <div id="registerLijst" style="padding:6px 20px 18px"><div class="loading-row"><div class="spinner-sm"></div>Laden...</div></div>
+          </div>
+
+          <p style="font-size:13px;color:var(--gray-500);margin-top:14px;max-width:760px;line-height:1.6">
+            Dit register bestaat om er iets mee te doen. Bekijk het minstens een keer per jaar in zijn geheel:
+            terugkerende voorvallen op dezelfde plaats of bij dezelfde soort bezoeker wijzen op iets dat te
+            verhelpen valt &mdash; een afspraak met een leverancier, een fysieke scheiding aan het onthaal,
+            een opleiding omgaan met agressie. De feiten wegen mee in de jaarlijkse evaluatie van de
+            preventiemaatregelen (artikel I.3-6 van de codex).
+          </p>
+        </div>
+
+      </div>
+    </div>
+
     <div id="tab-chemie" style="display:none">
       <div class="page-header">
         <div class="page-title">Chemische agentia</div>
@@ -1774,7 +1900,10 @@ var MENU=[
     {key:'kennisbank',naam:'Kennisbank',module:'kennisbank',laad:function(){laadKennisbank();}},
     // Geen module-vlag: vragen stellen hoort bij elke formule. Wie een dossier
     // heeft, mag iets vragen.
-    {key:'vragen',naam:'Vragen',laad:function(){laadVragen();}}
+    {key:'vragen',naam:'Vragen',laad:function(){laadVragen();}},
+    // Geen module-vlag maar wel een eigen slot: het scherm zelf beslist of het
+    // iets toont. Wie er niet bij mag, krijgt uitleg in plaats van een lege lijst.
+    {key:'feitenderden',naam:'Feiten van derden',laad:function(){laadFeitenDerden();}}
   ]},
   {groep:'Pre-inspectie',icoon:'inspecties',module:'preinspecties',items:[
     {key:'inspecties',naam:'Inspecties',laad:function(){laadInspecties();}},
@@ -2208,6 +2337,8 @@ var KLANT_KAARTEN=[
   {groep:'milieu',key:'milieukeuringen',tab:'keuringen',module:'planning',filterVeld:'keuringenFilterDomein',filterWaarde:'milieu',
    naam:'Milieukeuringen',icoon:'milieu',
    sub:'Stookolietank, koelinstallatie, afvalwater en wat daar nog bij hoort.'},
+  {groep:'psychosociaal',key:'feitenderden',naam:'Register van feiten van derden',icoon:'meldingen',
+   sub:'Geweld of pesterijen door klanten, leveranciers of bezoekers. Vertrouwelijk.'},
   {groep:'hygiene',key:'chemie',naam:'Chemische agentia',module:'chemie',icoon:'chemie',
    sub:'Welke producten er staan, waar, en het veiligheidsinformatieblad erbij.'},
   {groep:'dossier',key:'kennisbank',naam:'Kennisbank',module:'kennisbank',icoon:'kennisbank',
@@ -3878,6 +4009,301 @@ function beantwoordVraag(id){
 // migratie 0098) en wordt hier alleen getoond -- zodat scherm en app nooit iets
 // anders beweren dan wat er opgeslagen staat.
 var chemieProducten=[];
+// ---------------------------------------------------------------------------
+// Register van feiten van derden -- codex boek I titel 3, artikel I.3-3
+// ---------------------------------------------------------------------------
+// Het enige scherm in dit portaal waar PrevX zelf niet binnen kan. De policy in
+// de databank laat de superbeheerder er niet door; hier bovenop toont het
+// scherm hem enkel de cijfers, met de uitleg waarom. Twee sloten op dezelfde
+// deur, want een gemiste policy is stil en een gemiste knop niet.
+
+var SOORTEN_FEITEN=[
+  {key:'geweld',                   naam:'Geweld'},
+  {key:'pesterijen',               naam:'Pesterijen'},
+  {key:'ongewenst_seksueel_gedrag',naam:'Ongewenst seksueel gedrag'}
+];
+
+var verklaringen=[];
+var gekozenSoorten=[];
+var verklaringBewerktId=null;
+
+// De vier functies uit artikel I.3-3, vertaald naar wat dit portaal kent: de
+// werkgever is de klant-beheerder, en de vertrouwenspersoon draagt zijn vlag.
+function magRegisterZien(){
+  if(!eigenGebruiker)return false;
+  return eigenGebruiker.dossier_rol==='klant_beheerder'||eigenGebruiker.vertrouwenspersoon===true;
+}
+
+function laadFeitenDerden(){
+  if(!huidigeBedrijfId)return;
+  var geen=document.getElementById('registerGeenToegang');
+  var cijfers=document.getElementById('registerCijfersAlleen');
+  var inhoud=document.getElementById('registerInhoud');
+  geen.style.display='none';cijfers.style.display='none';inhoud.style.display='none';
+
+  if(isSuperbeheerder&&!magRegisterZien()){
+    cijfers.style.display='';
+    laadRegisterCijfers();
+    return;
+  }
+  if(!magRegisterZien()){geen.style.display='';return;}
+
+  inhoud.style.display='';
+  tekenSoortKiezer();
+  sb.from('feiten_van_derden').select('*').eq('bedrijf_id',huidigeBedrijfId)
+    .order('datum_verklaring',{ascending:false}).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    verklaringen=r.data||[];
+    renderRegister();
+  });
+}
+
+function laadRegisterCijfers(){
+  sb.rpc('rpc_feiten_derden_statistiek',{p_bedrijf_id:huidigeBedrijfId}).then(function(r){
+    var el=document.getElementById('registerCijfers');
+    if(r.error||!r.data){el.innerHTML='<p style="color:var(--gray-500)">Cijfers niet beschikbaar.</p>';return;}
+    var d=r.data;
+    el.innerHTML=registerKaart(d.totaal,'verklaringen in het register','grijs','Sinds dit register bestaat.')+
+      registerKaart(d.laatste_12_maanden,'in de laatste twaalf maanden','grijs','Het cijfer dat in de jaarlijkse evaluatie hoort.')+
+      registerKaart(d.open,'nog niet afgehandeld',d.open?'oranje':'grijs','Zonder gevolg is een register een archief.');
+  });
+}
+
+function registerKaart(getal,tekst,kleur,uitleg){
+  var stijl=kleur==='rood'?'background:var(--red-bg);color:var(--red-tekst)'
+           :kleur==='oranje'?'background:var(--orange-bg);color:var(--orange)'
+           :'background:var(--gray-100);color:var(--gray-700)';
+  return '<div style="'+stijl+';border-radius:var(--radius);padding:12px 16px;min-width:180px">'+
+    '<div style="font-size:22px;font-weight:700;line-height:1.2">'+getal+'</div>'+
+    '<div style="font-size:12px;font-weight:600">'+tekst+'</div>'+
+    '<div style="font-size:11px;opacity:.85;margin-top:3px;line-height:1.4">'+uitleg+'</div></div>';
+}
+
+function soortNaam(key){
+  var n=key;
+  SOORTEN_FEITEN.forEach(function(s){if(s.key===key)n=s.naam;});
+  return n;
+}
+
+function renderRegister(){
+  document.getElementById('registerCount').textContent=verklaringen.length+
+    (verklaringen.length===1?' verklaring':' verklaringen');
+
+  var open=0,recent=0,verlopen=0;
+  var grens=new Date();grens.setFullYear(grens.getFullYear()-1);
+  verklaringen.forEach(function(v){
+    if(!v.afgehandeld)open++;
+    if(new Date(v.datum_verklaring+'T00:00:00')>grens)recent++;
+    if(v.bewaren_tot&&new Date(v.bewaren_tot+'T00:00:00')<new Date())verlopen++;
+  });
+
+  // Alleen wat om een handeling vraagt krijgt kleur. Het totaal is een
+  // vaststelling, geen gebrek -- een register met nul verklaringen is niet
+  // beter dan een met drie, het betekent alleen dat er niets gemeld is.
+  document.getElementById('registerSignalen').innerHTML=
+    registerKaart(verklaringen.length,'verklaringen','grijs','Wat er in dit register staat.')+
+    registerKaart(recent,'in de laatste twaalf maanden','grijs','Dit cijfer hoort in uw jaarlijkse evaluatie.')+
+    registerKaart(open,'zonder gevolg',open?'oranje':'grijs','Noteer wat u ermee gedaan heeft.')+
+    (verlopen?registerKaart(verlopen,'ouder dan vijf jaar','rood','De bewaartermijn is verstreken; verwijderen.'):'');
+
+  var lijst=document.getElementById('registerLijst');
+  if(!verklaringen.length){
+    lijst.innerHTML='<p style="color:var(--gray-500);padding:14px 0;line-height:1.6">Nog geen verklaringen. '+
+      'Dat is goed nieuws zolang uw werknemers weten dat ze er een kunnen laten optekenen &mdash; '+
+      'die informatieplicht staat in artikel I.3-51 van de codex.</p>';
+    return;
+  }
+
+  lijst.innerHTML=verklaringen.map(function(v){
+    var verlopen=v.bewaren_tot&&new Date(v.bewaren_tot+'T00:00:00')<new Date();
+    var wanneer=v.datum_feiten?formatDatum(v.datum_feiten):(v.periode_feiten||'datum niet vermeld');
+    var soorten=(v.soort||[]).map(function(k){
+      return '<span class="badge" style="background:var(--gray-100);color:var(--gray-700);margin-right:5px">'+soortNaam(k)+'</span>';
+    }).join('');
+
+    return '<div style="border-bottom:1px solid var(--gray-200);padding:16px 0">'+
+      '<div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start">'+
+        '<div><div style="font-weight:600">'+wanneer+
+          (v.plaats?' &middot; <span style="font-weight:400;color:var(--gray-600)">'+v.plaats+'</span>':'')+'</div>'+
+          '<div style="font-size:12px;color:var(--gray-500);margin-top:2px">'+
+            (v.hoedanigheid_derde||'hoedanigheid niet vermeld')+'</div></div>'+
+        '<div style="text-align:right">'+soorten+
+          '<div style="font-size:11px;color:'+(verlopen?'var(--red-tekst)':'var(--gray-500)')+';margin-top:4px">'+
+            'opgetekend '+formatDatum(v.datum_verklaring)+' &middot; bewaren tot '+formatDatum(v.bewaren_tot)+'</div></div>'+
+      '</div>'+
+      '<div style="margin-top:10px;line-height:1.6;white-space:pre-wrap">'+veiligeTekst(v.beschrijving)+'</div>'+
+      (v.aangever&&v.naam_met_instemming
+        ? '<div style="font-size:12px;color:var(--gray-500);margin-top:8px">Aangever: '+veiligeTekst(v.aangever)+' (met instemming)</div>'
+        : '<div style="font-size:12px;color:var(--gray-500);margin-top:8px">Zonder naam, zoals de wet voorschrijft</div>')+
+      (v.opgetekend_door?'<div style="font-size:12px;color:var(--gray-500)">Opgetekend door '+veiligeTekst(v.opgetekend_door)+'</div>':'')+
+      '<div style="margin-top:12px">'+
+        '<label class="form-label" style="font-size:12px">Gevolg</label>'+
+        '<textarea class="form-input" rows="2" placeholder="Wat is er met deze melding gedaan?" '+
+          'onchange="bewaarGevolg(\'' + v.id + '\',this.value)">'+veiligeTekst(v.gevolg||'')+'</textarea>'+
+      '</div>'+
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+        '<button class="btn-add-sm" onclick="zetVerklaringAfgehandeld(\'' + v.id + '\',' + (!v.afgehandeld) + ')">'+
+          (v.afgehandeld?'Terug openzetten':'Markeer als afgehandeld')+'</button>'+
+        '<button class="btn-add-sm" onclick="openVerklaring(\'' + v.id + '\')">Aanpassen</button>'+
+        (verlopen?'<button class="btn-add-sm" style="border-color:var(--red-tekst);color:var(--red-tekst)" '+
+          'onclick="verwijderVerklaring(\'' + v.id + '\')">Verwijderen</button>':'')+
+        (v.afgehandeld?'<span class="badge rijklaar">afgehandeld</span>':'')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function veiligeTekst(t){
+  return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function tekenSoortKiezer(){
+  var el=document.getElementById('fdSoortKiezer');
+  if(!el)return;
+  el.innerHTML=SOORTEN_FEITEN.map(function(s){
+    var aan=gekozenSoorten.indexOf(s.key)>=0;
+    return '<button type="button" onclick="wisselSoort(\'' + s.key + '\')" class="btn-add-sm" '+
+      'style="border-color:'+(aan?'var(--navy2)':'var(--gray-300)')+';background:'+(aan?'var(--gray-100)':'transparent')+
+      ';color:'+(aan?'var(--navy-text)':'var(--gray-600)')+'">'+s.naam+'</button>';
+  }).join('');
+}
+
+function wisselSoort(key){
+  var i=gekozenSoorten.indexOf(key);
+  if(i>=0)gekozenSoorten.splice(i,1);else gekozenSoorten.push(key);
+  tekenSoortKiezer();
+}
+
+function wisselInstemming(){
+  var aan=document.getElementById('fdInstemming').checked;
+  var veld=document.getElementById('fdAangever');
+  veld.style.display=aan?'':'none';
+  if(!aan)veld.value='';
+}
+
+function leegVerklaringFormulier(){
+  verklaringBewerktId=null;
+  ['fdDatumFeiten','fdPeriode','fdPlaats','fdHoedanigheid','fdBeschrijving','fdAangever']
+    .forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('fdDatumVerklaring').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fdOpgetekendDoor').value=(eigenGebruiker&&eigenGebruiker.naam)||'';
+  document.getElementById('fdInstemming').checked=false;
+  gekozenSoorten=[];
+  tekenSoortKiezer();
+  wisselInstemming();
+  document.getElementById('registerFormTitel').textContent='Een verklaring optekenen';
+  document.getElementById('registerBewaarKnop').textContent='Optekenen';
+}
+
+function toonVerklaringFormulier(){
+  var el=document.getElementById('registerFormulier');
+  if(el.style.display!=='none'&&verklaringBewerktId){leegVerklaringFormulier();return;}
+  var open=el.style.display==='none';
+  el.style.display=open?'':'none';
+  if(open)leegVerklaringFormulier();
+}
+
+function sluitVerklaringFormulier(){
+  document.getElementById('registerFormulier').style.display='none';
+  leegVerklaringFormulier();
+}
+
+function openVerklaring(id){
+  var v=null;
+  verklaringen.forEach(function(x){if(x.id===id)v=x;});
+  if(!v)return;
+  verklaringBewerktId=id;
+  document.getElementById('fdDatumVerklaring').value=v.datum_verklaring||'';
+  document.getElementById('fdDatumFeiten').value=v.datum_feiten||'';
+  document.getElementById('fdPeriode').value=v.periode_feiten||'';
+  document.getElementById('fdPlaats').value=v.plaats||'';
+  document.getElementById('fdHoedanigheid').value=v.hoedanigheid_derde||'';
+  document.getElementById('fdBeschrijving').value=v.beschrijving||'';
+  document.getElementById('fdOpgetekendDoor').value=v.opgetekend_door||'';
+  document.getElementById('fdInstemming').checked=!!v.naam_met_instemming;
+  wisselInstemming();
+  document.getElementById('fdAangever').value=v.aangever||'';
+  gekozenSoorten=(v.soort||[]).slice();
+  tekenSoortKiezer();
+  document.getElementById('registerFormTitel').textContent='Verklaring van '+formatDatum(v.datum_verklaring);
+  document.getElementById('registerBewaarKnop').textContent='Opslaan';
+  var el=document.getElementById('registerFormulier');
+  el.style.display='';
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function bewaarVerklaring(){
+  var beschrijving=document.getElementById('fdBeschrijving').value.trim();
+  if(!beschrijving){showToast('Zonder beschrijving van de feiten heeft een verklaring geen inhoud.');return;}
+  var instemming=document.getElementById('fdInstemming').checked;
+
+  var rij={
+    datum_verklaring:document.getElementById('fdDatumVerklaring').value||null,
+    datum_feiten:document.getElementById('fdDatumFeiten').value||null,
+    periode_feiten:document.getElementById('fdPeriode').value.trim()||null,
+    plaats:document.getElementById('fdPlaats').value.trim()||null,
+    hoedanigheid_derde:document.getElementById('fdHoedanigheid').value.trim()||null,
+    soort:gekozenSoorten.slice(),
+    beschrijving:beschrijving,
+    // Zonder instemming gaat er geen naam mee. Niet leeggemaakt in het scherm
+    // maar hier weggelaten: dan kan een vergeten vinkje nooit een naam
+    // achterlaten die er niet hoort te staan.
+    naam_met_instemming:instemming,
+    aangever:instemming?(document.getElementById('fdAangever').value.trim()||null):null,
+    opgetekend_door:document.getElementById('fdOpgetekendDoor').value.trim()||null
+  };
+  if(!rij.datum_verklaring){showToast('De datum van de verklaring is nodig; daarvan loopt de bewaartermijn.');return;}
+
+  var actie;
+  if(verklaringBewerktId){
+    actie=sb.from('feiten_van_derden').update(rij).eq('id',verklaringBewerktId);
+  }else{
+    rij.bedrijf_id=huidigeBedrijfId;
+    actie=sb.from('feiten_van_derden').insert(rij);
+  }
+  var wasWijziging=!!verklaringBewerktId;
+  actie.then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    sluitVerklaringFormulier();
+    showToast(wasWijziging?'Opgeslagen':'Verklaring opgetekend');
+    laadFeitenDerden();
+  });
+}
+
+function bewaarGevolg(id,tekst){
+  sb.from('feiten_van_derden').update({gevolg:tekst.trim()||null}).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Gevolg bewaard');
+    laadFeitenDerden();
+  });
+}
+
+function zetVerklaringAfgehandeld(id,aan){
+  sb.from('feiten_van_derden').update({afgehandeld:aan}).eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    laadFeitenDerden();
+  });
+}
+
+// Verwijderen mag alleen wanneer de vijf jaar om zijn. Dat is geen voorzichtigheid
+// maar de bedoeling van de bewaartermijn: er staat wat er staat, tot die dag.
+function verwijderVerklaring(id){
+  var v=null;
+  verklaringen.forEach(function(x){if(x.id===id)v=x;});
+  if(!v)return;
+  if(!(v.bewaren_tot&&new Date(v.bewaren_tot+'T00:00:00')<new Date())){
+    showToast('Deze verklaring moet nog bewaard worden tot '+formatDatum(v.bewaren_tot)+'.');
+    return;
+  }
+  if(!confirm('De bewaartermijn van vijf jaar is verstreken op '+formatDatum(v.bewaren_tot)+
+              '.\n\nDeze verklaring definitief verwijderen?'))return;
+  sb.from('feiten_van_derden').delete().eq('id',id).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);return;}
+    showToast('Verklaring verwijderd');
+    laadFeitenDerden();
+  });
+}
+
 // De negen gevarenpictogrammen uit bijlage V van CLP, als inline SVG. Ze komen
 // van Wikimedia Commons, waar ze als werk van de Verenigde Naties in het publiek
 // domein staan; de coordinaten zijn afgerond op gehele getallen om het bestand
@@ -6066,6 +6492,17 @@ function wijzigGebruikerEmail(gebruikerId,input){
   });
 }
 
+function wijzigVertrouwenspersoon(gebruikerId,aan){
+  sb.from('gebruikers').update({vertrouwenspersoon:aan}).eq('id',gebruikerId).then(function(r){
+    if(r.error){showToast('Fout: '+r.error.message);laadGebruikers();return;}
+    // Het gaat om toegang tot vertrouwelijke verklaringen, dus het bericht zegt
+    // wat er verandert en niet alleen dat er iets bewaard is.
+    showToast(aan?'Aangewezen als vertrouwenspersoon — ziet voortaan het register'
+                 :'Niet langer vertrouwenspersoon — ziet het register niet meer');
+    laadGebruikers();
+  });
+}
+
 function wijzigDossierRol(gebruikerId,waarde){
   sb.from('gebruikers').update({dossier_rol:waarde||null}).eq('id',gebruikerId).then(function(r){
     if(r.error){showToast('Fout: '+r.error.message);laadGebruikers();return;}
@@ -6199,7 +6636,7 @@ function niveauKeuzeTekst(){
 function laadGebruikers(){
   if(!huidigeBedrijfId)return;
   document.getElementById('gebruikersKlantcode').textContent=(huidigeBedrijf&&huidigeBedrijf.klantcode)||'—';
-  sb.from('gebruikers').select('id,naam,rol,bedrijf_id,actief,dossier_rol,email,auth_user_id').eq('bedrijf_id',huidigeBedrijfId).order('naam').then(function(r){
+  sb.from('gebruikers').select('id,naam,rol,bedrijf_id,actief,dossier_rol,vertrouwenspersoon,email,auth_user_id').eq('bedrijf_id',huidigeBedrijfId).order('naam').then(function(r){
     var g=r.data||[];
     document.getElementById('gebruikersCount').textContent=g.length+' gebruikers';
     // Van hoog naar laag, zodat de keuzelijst de rangorde toont.
@@ -6221,6 +6658,20 @@ function laadGebruikers(){
           '<option value="klant_medewerker"'+(u.dossier_rol==='klant_medewerker'?' selected':'')+'>Klant-medewerker</option>'+
           '</select>'
         :(dossierRolLabels[u.dossier_rol]||'-');
+
+      // Vertrouwenspersoon is geen rol maar een functie ernaast: iemand kan
+      // zaakvoerder en vertrouwenspersoon tegelijk zijn, en dossier_rol heeft
+      // maar plaats voor een. Vandaar een vinkje in dezelfde cel in plaats van
+      // een tiende kolom.
+      var magVpZetten=isSuperbeheerder||(eigenGebruiker&&eigenGebruiker.dossier_rol==='klant_beheerder');
+      if(magVpZetten){
+        dossierRol+='<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--gray-500);margin-top:5px;cursor:pointer" '+
+          'title="Houdt het register van feiten van derden bij en kan het inzien">'+
+          '<input type="checkbox"'+(u.vertrouwenspersoon?' checked':'')+
+          ' onchange="wijzigVertrouwenspersoon(''+u.id+'',this.checked)">vertrouwenspersoon</label>';
+      }else if(u.vertrouwenspersoon){
+        dossierRol+='<div style="font-size:11px;color:var(--gray-500);margin-top:5px">vertrouwenspersoon</div>';
+      }
       var rolSelect='<select class="niveau-select" onchange="wijzigGebruikerRol(\''+u.id+'\',this.value)">'+
         Object.keys(labels).map(function(r){return '<option value="'+r+'"'+(u.rol===r?' selected':'')+'>'+labels[r]+'</option>';}).join('')+
         '</select>';
