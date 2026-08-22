@@ -107,6 +107,16 @@ h1,h2,h3,h4{font-family:'Montserrat',sans-serif}
 .hulp-let-op{background:var(--orange-bg)}
 .hulp-let-op .hulp-label{color:var(--orange)}
 .hulp-let-op p{color:var(--gray-700)}
+/* Thema-knop. Drie standen en geen twee: "systeem" hoort de standaard te
+   blijven, want die volgt vanzelf de avondstand van een toestel. Wie daarvan
+   afwijkt, doet dat bewust en wil dat het zo blijft. */
+.thema-knop{display:inline-flex;align-items:center;gap:7px;background:transparent;
+  border:1px solid var(--gray-300);color:var(--gray-700);border-radius:var(--radius);
+  padding:6px 11px;font-size:12.5px;font-family:inherit;cursor:pointer;white-space:nowrap;
+  transition:background .12s,border-color .12s}
+.thema-knop:hover{background:var(--gray-100);border-color:var(--gray-400)}
+.thema-knop svg{display:block}
+.sidebar-bottom .thema-knop{width:100%;justify-content:center;margin-bottom:10px}
 .page-header{background:var(--surface);padding:22px 32px;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:10}
 .page-title{font-family:'Montserrat',sans-serif;font-size:19px;font-weight:600;color:var(--navy-text);letter-spacing:-.2px}
 .page-subtitle{font-size:12px;color:var(--gray-500);margin-top:2px}
@@ -434,7 +444,9 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
 }
 
 @media (prefers-color-scheme: dark){
-  :root{
+  /* Niet zomaar :root. Wie in het portaal uitdrukkelijk voor licht
+     kiest, moet dat ook krijgen op een toestel dat op donker staat. */
+  :root:not([data-theme="light"]){
     color-scheme:dark;
     /* Neutraal donkergrijs met een spoortje blauw, niet het navy van de
        huisstijl. Een merkkleur als ondergrond werkt op een marketingpagina,
@@ -466,6 +478,42 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
     --shadow-lg:0 20px 60px rgba(0,0,0,.6);
   }
 }
+
+/* Dezelfde waarden nog eens, voor wie in het portaal zelf donker kiest.
+   Ze staan er twee keer omdat een media-blok niet van buitenaf aan te
+   zetten is; ze worden hier uit het blok hierboven overgenomen en niet
+   met de hand herschreven, zodat de twee niet uiteen kunnen lopen. */
+:root[data-theme="dark"]{
+    color-scheme:dark;
+    /* Neutraal donkergrijs met een spoortje blauw, niet het navy van de
+       huisstijl. Een merkkleur als ondergrond werkt op een marketingpagina,
+       maar in een scherm waar je uren in zit wordt ze vermoeiend.
+       Geen puur zwart: dat geeft halatie -- lichte tekst lijkt uit te vloeien --
+       en je kan er geen hoogteverschil op tonen. Diepte komt van lagen:
+       achtergrond het donkerst, kaarten een stap lichter, panelen daarboven.
+       Tekst is bewust niet puur wit; dat contrast is te hard om lang te lezen. */
+    --bg:#131519;
+    --surface:#1c1f24;
+    --sidebar-bg:#17191e;
+    --hairline:rgba(255,255,255,.08);
+    --navy2:#9aa7b5;
+    --navy-text:#d3d8de;
+    --accent-tekst:#8fb3d9;
+    --gray-50:#16181c;
+    --gray-100:#1f2227;
+    --gray-200:#2a2e34;
+    --gray-300:#3b4048;
+    --gray-400:#8b9099;
+    --gray-500:#a7acb4;
+    --gray-700:#cdd1d6;
+    --gray-900:#e6e8eb;
+    --red-tekst:#f28b82;
+    --green-bg:#13291b;
+    --red-bg:#2b1518;
+    --orange-bg:#2b1f11;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 18px rgba(0,0,0,.35);
+    --shadow-lg:0 20px 60px rgba(0,0,0,.6);
+  }
 
 @media print {
   .sidebar{height:auto}
@@ -653,6 +701,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
            superbeheerder -- een klant zit in klantmodus en ziet ze niet -- dus
            die knop bood de adviseur aan zichzelf aan. Voor de klant zit de weg
            naar de adviseur op de vergrendelde kaarten; zie bouwKlantKaarten. -->
+      <button type="button" class="thema-knop" onclick="wisselThema()" id="themaKnop" title="Wissel tussen systeem, licht en donker"><span id="themaIcoon"></span><span id="themaTekst">Thema</span></button>
       <button class="btn-logout" onclick="doLogout()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg> Afmelden</button>
       <a href="https://prevx.be" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;text-decoration:none;opacity:.7">
         <span style="font-size:10px;color:var(--gray-500)">Powered by</span>
@@ -673,6 +722,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
     </div>
     <div class="klant-topbar-rechts">
       <span id="klantTopbarGebruiker"></span>
+      <button type="button" class="thema-knop" onclick="wisselThema()" id="themaKnopKlant" title="Wissel tussen systeem, licht en donker"><span id="themaIcoonKlant"></span><span id="themaTekstKlant">Thema</span></button>
       <button onclick="doLogout()">Afmelden</button>
     </div>
   </div>
@@ -956,6 +1006,49 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
           </div>
           <table><thead><tr><th>Datum</th><th>Tijdstip</th><th>Type</th><th>Dagen</th><th>Status</th><th>Verslag</th><th></th></tr></thead>
           <tbody id="planningTabel"><tr class="loading-row"><td colspan="7"><div class="spinner-sm"></div>Laden...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-aandeslag" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Aan de slag</div>
+        <div class="page-subtitle">Zes stappen om uw dossier op te zetten. Eenmalig werk.</div>
+      </div>
+      <div class="content-area">
+        <div style="max-width:760px;display:flex;flex-direction:column;gap:16px">
+
+          <p style="margin:0;line-height:1.65;color:var(--gray-700)">
+            U hoeft dit niet in één keer te doorlopen, en niet alles is voor elk bedrijf van toepassing.
+            Doe stap 1 tot 3 vóór u iemand anders uitnodigt &mdash; die bepalen wie wat ziet, en dat
+            achteraf rechtzetten kost meer moeite dan het meteen goed zetten.
+          </p>
+
+          <div class="table-card"><div style="padding:4px 20px 8px" id="aandeslagStappen"></div></div>
+
+          <div class="table-card"><div style="padding:18px 20px;line-height:1.65">
+            <div style="font-weight:600;margin-bottom:8px">Overal een vraagteken</div>
+            <p style="margin:0;color:var(--gray-700)">
+              Naast de titel van een scherm staat een <span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;border:1.5px solid var(--navy2);color:var(--navy-text);font-size:11px;font-weight:600;vertical-align:1px">?</span>.
+              Dat opent een korte uitleg: wat het scherm doet, wat de wet erover vraagt, wat u er concreet
+              doet, en waar het bij andere bedrijven misloopt. Dat laatste is de moeite &mdash; het staat in
+              geen enkele wettekst.
+            </p>
+          </div></div>
+
+          <div class="table-card"><div style="padding:18px 20px;line-height:1.65">
+            <div style="font-weight:600;margin-bottom:8px">Er blijft iets onduidelijk</div>
+            <p style="margin:0 0 10px;color:var(--gray-700)">
+              Stel de vraag bij <a href="#" onclick="toonTab('vragen');return false">Vragen</a>. Vraag en
+              antwoord blijven in uw dossier staan, zodat de volgende die het zich afvraagt het terugvindt.
+              Is het dringend, bel dan.
+            </p>
+            <p style="margin:0;color:var(--gray-500);font-size:14px">
+              Gaat het over een persoon of over iets vertrouwelijks: bel. Wat u bij Vragen zet, is zichtbaar
+              voor uw collega&rsquo;s met toegang.
+            </p>
+          </div></div>
+
         </div>
       </div>
     </div>
@@ -1910,6 +2003,9 @@ var MENU=[
   // het modules zijn die een klant al dan niet afneemt, elk met eigen
   // instellingen.
   {groep:'Dossier',icoon:'documenten',items:[
+    // Vooraan, want dit is het enige menu-item dat bedoeld is voor wie hier voor
+    // het eerst binnenkomt. Wie het niet meer nodig heeft, scrollt eroverheen.
+    {key:'aandeslag',naam:'Aan de slag',laad:function(){laadAanDeSlag();}},
     // Assets stonden onder Pre-inspectie, maar ze horen daar niet: keuringen
     // verwijzen er evengoed naar. Erger dan onlogisch was het ook stuk -- die
     // groep hangt aan de module preinspecties, dus bij een klant zonder
@@ -2237,6 +2333,62 @@ function pasBrandingToe(bedrijf){
 }
 
 // ---------------------------------------------------------------------------
+// Licht of donker
+// ---------------------------------------------------------------------------
+// Het portaal had wel een donker thema maar geen knop: het volgde blind de
+// instelling van Windows. Dat werkt voor wie zijn toestel 's avonds laat
+// omslaan, en niet voor wie in een donkere werkplaats zit met een laptop die op
+// licht staat -- of omgekeerd, wie een scherm in de zon heeft staan.
+//
+// Drie standen, niet twee. "Systeem" blijft de standaard, want die volgt vanzelf
+// de avondstand van een toestel; wie daarvan afwijkt doet dat bewust en wil dat
+// het zo blijft, ook morgen. De keuze staat in localStorage en dus per toestel:
+// dezelfde persoon wil op zijn telefoon iets anders dan op de bureaucomputer.
+//
+// Wat er NIET verandert: afdrukken blijft licht. Dat staat in het print-blok van
+// de opmaak, want papier is wit wat het scherm ook doet.
+
+var THEMA_STANDEN=['systeem','licht','donker'];
+
+var THEMA_ICOON={
+  systeem:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  licht:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  donker:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>'
+};
+
+var THEMA_TEKST={systeem:'Systeem',licht:'Licht',donker:'Donker'};
+
+function huidigThema(){
+  var t=null;
+  try{t=localStorage.getItem('prevx-thema');}catch(e){}
+  return THEMA_STANDEN.indexOf(t)>=0?t:'systeem';
+}
+
+function pasThemaToe(stand){
+  // Bij "systeem" halen we het kenmerk weg in plaats van er iets in te zetten.
+  // Dan doet de media-regel weer haar werk, en volgt het scherm het toestel.
+  if(stand==='systeem')document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',stand==='donker'?'dark':'light');
+
+  ['','Klant'].forEach(function(achtervoegsel){
+    var icoon=document.getElementById('themaIcoon'+achtervoegsel);
+    var tekst=document.getElementById('themaTekst'+achtervoegsel);
+    if(icoon)icoon.innerHTML=THEMA_ICOON[stand];
+    if(tekst)tekst.textContent=THEMA_TEKST[stand];
+  });
+}
+
+function wisselThema(){
+  var volgende=THEMA_STANDEN[(THEMA_STANDEN.indexOf(huidigThema())+1)%THEMA_STANDEN.length];
+  try{localStorage.setItem('prevx-thema',volgende);}catch(e){}
+  pasThemaToe(volgende);
+}
+
+// Meteen toepassen, nog voor er iets geladen is: anders flitst het scherm even
+// in de verkeerde kleur voordat de keuze doorkomt.
+pasThemaToe(huidigThema());
+
+// ---------------------------------------------------------------------------
 // Hulp in het scherm
 // ---------------------------------------------------------------------------
 // Naast de titel van een scherm staat een vraagteken. Het opent een paneel met
@@ -2257,7 +2409,141 @@ function pasBrandingToe(bedrijf){
 // dit mee met elk nieuw scherm zonder dat er iets vergeten kan worden -- en een
 // scherm zonder tekst toont gewoon geen vraagteken.
 
+// ---------------------------------------------------------------------------
+// Aan de slag
+// ---------------------------------------------------------------------------
+// Eén pagina voor een nieuwe klant-beheerder. Geen rondleiding langs alle
+// schermen -- daar dient het vraagteken voor -- maar de volgorde waarin je een
+// dossier opzet, met de reden erbij waarom die volgorde uitmaakt.
+//
+// De stappen springen naar het scherm in kwestie in plaats van uit te leggen
+// waar het staat. Wie hier een menupad leest, moet het onthouden; wie op een
+// knop klikt, staat er.
+
+var AANDESLAG_STAPPEN=[
+  {tab:'huisstijl', naam:'Zet uw logo en kleur',
+   waarom:'Het portaal draagt daarna uw huisstijl in plaats van de onze. Klein werk, en het scheelt '+
+          'voor de mensen die u zo meteen uitnodigt: ze herkennen hun eigen bedrijf.'},
+
+  {tab:'gebruikers', naam:'Voeg uw mensen toe',
+   waarom:'Iedereen die met de app werkt of het dossier moet kunnen inzien. Geef elk een rol en een '+
+          'e-mailadres &mdash; zonder adres kan iemand zijn pincode niet zelf herstellen en staat hij op '+
+          'een ochtend vast.'},
+
+  {tab:'gebruikers', naam:'Wijs een vertrouwenspersoon aan',
+   waarom:'Een vinkje naast de dossierrol. Die persoon beheert het register van feiten van derden. Bij '+
+          'iemand die niet de baas is, vertelt een werknemer eerder wat een klant of leverancier hem '+
+          'aandoet.'},
+
+  {tab:'voertuigen', naam:'Breng uw assets in',
+   waarom:'Machines, voertuigen, werkposten en zones. Alles wat later gekeurd, geïnspecteerd of aan een '+
+          'melding gekoppeld wordt, hangt hieraan. Dit is de stap die het meeste tijd kost en de meeste '+
+          'tijd bespaart.'},
+
+  {tab:'keuringen', naam:'Zet uw keuringen op',
+   waarom:'Per asset welk type keuring geldt en wanneer het verslag vervalt. Neem de datum uit het '+
+          'verslag en niet van de factuur; dat scheelt soms weken.'},
+
+  {tab:'documenten', naam:'Laad op wat u al hebt',
+   waarom:'Uw arbeidsreglement, risicoanalyses, verslagen van het comité. Het dossier is pas nuttig als '+
+          'het compleet genoeg is om er iets in terug te vinden.'}
+];
+
+function laadAanDeSlag(){
+  var houder=document.getElementById('aandeslagStappen');
+  if(!houder)return;
+  houder.innerHTML=AANDESLAG_STAPPEN.map(function(s,i){
+    var bestaat=!!document.getElementById('tab-'+s.tab);
+    return '<div style="display:grid;grid-template-columns:32px 1fr;gap:4px 14px;padding:16px 0;'+
+        (i?'border-top:1px solid var(--gray-200)':'')+'">'+
+      '<div style="font-family:monospace;font-size:14px;color:var(--gray-400);font-weight:600;padding-top:2px">'+
+        (i+1)+'</div>'+
+      '<div style="font-weight:600">'+s.naam+'</div>'+
+      '<div style="grid-column:2">'+
+        '<div style="color:var(--gray-700);line-height:1.6;margin-bottom:8px">'+s.waarom+'</div>'+
+        (bestaat
+          ? '<button class="btn-add-sm" onclick="toonTab(\''+s.tab+'\')">Openen</button>'
+          : '<span style="font-size:12px;color:var(--gray-500)">Dit onderdeel zit niet in uw formule.</span>')+
+      '</div></div>';
+  }).join('');
+}
+
 var SCHERMHULP={
+
+  brandpreventie:{
+    bron:'KB 28 maart 2014 &mdash; brandpreventie op de arbeidsplaatsen, bijlage 6',
+    doet:'Dit scherm toont de elf onderdelen waaruit uw brandpreventiedossier bestaat, en of ze er zijn. '+
+         'Het dossier zelf is geen document maar een verzameling: plannen, verslagen, keuringen en '+
+         'afspraken die elk hun eigen leven leiden. Dit scherm houdt het geheel bij elkaar.',
+    wet:'Elke werkgever stelt een brandpreventiedossier samen en houdt het ter beschikking van het '+
+        'comit&eacute;, de inspectie en de openbare hulpdiensten. Er staat geen termijn op waarbinnen het '+
+        'herzien moet worden; er staat wel dat het bijgewerkt moet zijn.',
+    doetU:[
+      'Per onderdeel opladen wat u hebt. Wat ontbreekt, blijft zichtbaar ontbreken.',
+      'Het dossier als pdf bundelen wanneer de brandweer of de inspectie erom vraagt.',
+      'Na elke verbouwing, nieuwe installatie of gewijzigde bezetting nakijken wat niet meer klopt.'
+    ],
+    misloopt:'Het dossier wordt &eacute;&eacute;n keer aangelegd en daarna vergeten. Dat valt niet op tot '+
+             'er iets gebeurt, en dan blijkt het evacuatieplan een muur te tonen die er niet meer staat. '+
+             'Het tweede euvel: bedrijven denken dat het onderdeel &ldquo;keuringen&rdquo; over de '+
+             'brandblussers gaat. Het gaat ook over de elektrische installatie, de verwarming en de '+
+             'branddetectie &mdash; en die verslagen liggen meestal bij drie verschillende mensen.'
+  },
+
+  keuringen:{
+    bron:'codex boek IV, titel 2 &mdash; arbeidsmiddelen',
+    doet:'Dit scherm houdt bij wat er periodiek gekeurd moet worden, wanneer het laatst gebeurd is en '+
+         'wanneer het opnieuw moet. Van hijsmiddelen en heftrucks tot de elektrische installatie en de '+
+         'stookolietank.',
+    wet:'Arbeidsmiddelen worden op vaste tijdstippen gecontroleerd door een bevoegd persoon of een '+
+        'erkende instelling, en de verslagen worden bijgehouden. Welke termijn geldt, hangt af van het '+
+        'middel; de wet legt de verplichting op, niet &eacute;&eacute;n termijn voor alles.',
+    doetU:[
+      'Elk keuringstype koppelen aan het asset waar het over gaat, met de vervaldatum van het verslag.',
+      'Het verslag zelf opladen. Een datum zonder verslag bewijst niets.',
+      'Tijdig de keurder bestellen &mdash; het scherm kleurt op v&oacute;&oacute;r de vervaldag, niet erna.'
+    ],
+    misloopt:'De vervaldatum wordt overgenomen van de factuur in plaats van uit het verslag, en dat '+
+             'scheelt soms weken. En er wordt gedacht dat een verlopen keuring een boete oplevert. Dat is '+
+             'het kleinste probleem: bij een ongeval met een niet-gekeurd arbeidsmiddel verschuift de '+
+             'aansprakelijkheid, en dat is een ander gesprek met uw verzekeraar.'
+  },
+
+  planning:{
+    bron:null,
+    doet:'Dit scherm toont wat er gepland staat: bezoeken van uw preventieadviseur, oefeningen, '+
+         'opleidingen en afspraken die uit een actiepunt zijn voortgekomen. Het is uw agenda voor '+
+         'preventie, los van wat er moet gekeurd worden.',
+    wet:null,
+    doetU:[
+      'Een afspraak vastleggen en er de reden bij zetten, zodat later duidelijk is waarom ze er stond.',
+      'Nakijken hoeveel van uw bezoekdagen dit jaar al opgenomen zijn.',
+      'Wat verschoven is meteen aanpassen in plaats van het te onthouden.'
+    ],
+    misloopt:'De planning wordt een lijst van goede voornemens. Wat hier staat zonder datum, gebeurt niet. '+
+             'Zet er liever een datum op die u nog moet verzetten dan geen datum die u nooit haalt &mdash; '+
+             'een verschoven afspraak is zichtbaar, een vergeten afspraak niet.'
+  },
+
+  gebruikers:{
+    bron:null,
+    doet:'Hier staat wie er bij uw dossier kan en wat elk van hen mag. Zowel de mensen die in het portaal '+
+         'inloggen als de mensen die met een pincode op de app werken.',
+    wet:null,
+    doetU:[
+      'Iemand toevoegen en zijn rol kiezen. De rol stuurt wat hij in de app mag; de dossierrol stuurt wat '+
+      'hij in dit portaal ziet.',
+      'Een vertrouwenspersoon aanwijzen. Dat is een aparte functie naast de rol: die persoon ziet het '+
+      'register van feiten van derden, ook als hij verder maar medewerker is.',
+      'Iemand die vertrekt archiveren in plaats van verwijderen &mdash; zijn inspecties en meldingen '+
+      'blijven dan leesbaar.'
+    ],
+    misloopt:'Dit is het scherm waar een verkeerde instelling het stilst misgaat. Iemand krijgt geen '+
+             'e-mailadres en kan dan zijn pincode niet zelf herstellen, dus staat hij op een ochtend vast. '+
+             'Of iedereen wordt klant-beheerder &ldquo;om geen gedoe te hebben&rdquo;, en dan kan iedereen '+
+             'ook alles wijzigen en wegzetten. Geef de rol die iemand nodig heeft, niet de rol die het '+
+             'minste vragen oplevert.'
+  },
 
   feitenderden:{
     bron:'codex boek I, titel 3 &mdash; art. I.3-3',
