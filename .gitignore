@@ -1,0 +1,9 @@
+# Toestand van de Supabase CLI: welk project gekoppeld is, welke versies de
+# server draait. Machinegebonden en wordt automatisch opnieuw aangemaakt bij
+# de eerstvolgende `supabase link`. Hoort niet in versiebeheer -- het zegt iets
+# over deze laptop, niet over het project.
+supabase/.temp/
+
+# Lokale instellingen van de editor: welke commando's zonder vragen mogen
+# draaien, welke dev-server er start. Dat verschilt per machine en per persoon.
+.claude/

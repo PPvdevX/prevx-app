@@ -29,7 +29,7 @@ as $$
 declare
   v_gebruiker gebruikers;
 begin
-  select * into v_gebruiker from gebruikers where id = p_gebruiker_id and actief = true;
+  select * into v_gebruiker from gebruikers where gebruikers.id = p_gebruiker_id and gebruikers.actief = true;
   if not found then
     return;
   end if;

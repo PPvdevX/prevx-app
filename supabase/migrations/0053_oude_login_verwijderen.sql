@@ -1,0 +1,34 @@
+-- STAP 2 van de klantcode-uitrol (zie 0052). PAS UITVOEREN wanneer de nieuwe
+-- chauffeurs-app een paar dagen live staat en je in de portaal-tabel
+-- login_pogingen ziet dat er geen aanmeldingen meer binnenkomen via de oude
+-- weg. Tot dat moment bestaat de platformbrede ingang nog en is het gat uit
+-- 0052 niet echt dicht.
+--
+-- Controle vooraf -- zo zie je of iemand nog op de oude functie zit. De nieuwe
+-- app logt met bron 'login' net als de oude, dus dit zegt niet alles; de
+-- betrouwbaarste check is gewoon: staat de nieuwe app live, en heeft elke
+-- chauffeur zijn klantcode ingevoerd?
+--
+--   select bron, gelukt, count(*), max(tijdstip)
+--   from login_pogingen
+--   where tijdstip > now() - interval '7 days'
+--   group by 1, 2;
+--
+-- Na het droppen kan een chauffeur met een oude, gecachete app niet meer
+-- inloggen tot hij de pagina herlaadt. De service worker haalt bij elke
+-- geslaagde netwerkoproep de nieuwste versie op, dus dat lost zichzelf op --
+-- maar plan dit niet midden in een drukke ochtendshift.
+
+drop function if exists public.rpc_login_chauffeur(text);
+
+-- Vanaf hier is rpc_login_chauffeur_klant de enige ingang: een pincode alleen
+-- volstaat niet meer, er hoort altijd een klantcode bij. Daarmee is een
+-- geraden pincode waardeloos zonder ook het juiste bedrijf te kennen, en is de
+-- platformbrede uniciteit van pincodes geen veiligheidsvereiste meer.
+--
+-- Gevolg voor later: pincodes hoeven nu enkel nog binnen één bedrijf uniek te
+-- zijn. De controles die dat platformbreed afdwingen (rpc_genereer_pincode en
+-- rpc_pincodes_controleren uit 0051) mogen daarop versoepeld worden zodra je
+-- dat wil -- dat heft ook de grens van 10.000 gebruikers over alle klanten
+-- samen op. Bewust niet in deze migratie: eerst de login omzetten, dan pas de
+-- uniciteitsregel losser maken.

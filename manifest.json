@@ -1,0 +1,14 @@
+{
+  "name": "PrevX app",
+  "short_name": "PrevX",
+  "description": "Pre-inspecties en vuurvergunningen",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#003366",
+  "theme_color": "#003366",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/Logo-PrevX.png", "sizes": "800x800", "type": "image/png" }
+  ]
+}
