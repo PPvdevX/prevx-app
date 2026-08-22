@@ -3950,7 +3950,9 @@ function verwijderDocument(id,code,titel){
       body:JSON.stringify({document_id:id,access_token:token})
     }).then(function(res){return res.json().then(function(b){return {ok:res.ok,body:b};});})
       .then(function(r){
-        if(!r.ok){showToast('Fout: '+(r.body.error||'verwijderen mislukt'));return;}
+        // waarschuwing meelezen: sommige mislukkingen leveren enkel dat veld op,
+        // en dan stond er een kale 'verwijderen mislukt' zonder enige aanwijzing.
+        if(!r.ok){alert('Verwijderen mislukt.\n\n'+(r.body.error||r.body.waarschuwing||'Onbekende oorzaak.'));return;}
         // Half gelukt mag niet als een toast voorbijgaan: dan staat er een
         // bestand minder maar de rij nog wel.
         if(r.body.waarschuwing)alert(r.body.waarschuwing);
@@ -5382,7 +5384,9 @@ function verwijderBedrijf(bedrijfId,naam){
       body:JSON.stringify({bedrijf_id:bedrijfId,access_token:token})
     }).then(function(res){return res.json().then(function(b){return {ok:res.ok,body:b};});})
       .then(function(r){
-        if(!r.ok){showToast('Fout: '+(r.body.error||'verwijderen mislukt'));return;}
+        // waarschuwing meelezen: sommige mislukkingen leveren enkel dat veld op,
+        // en dan stond er een kale 'verwijderen mislukt' zonder enige aanwijzing.
+        if(!r.ok){alert('Verwijderen mislukt.\n\n'+(r.body.error||r.body.waarschuwing||'Onbekende oorzaak.'));return;}
         // Een waarschuwing betekent: rijen weg, bestanden niet allemaal. Dat mag
         // niet als succes wegklikken -- vandaar een alert i.p.v. een toast die
         // na drie seconden verdwenen is.
