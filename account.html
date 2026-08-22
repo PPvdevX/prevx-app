@@ -1600,6 +1600,7 @@ tr:hover td{background:var(--gray-50);cursor:pointer}
         <div class="table-card" style="margin-bottom:20px;padding:14px 22px">
           <span style="font-size:13px;color:var(--gray-700)">Code van dit bedrijf voor de preventie-app:
             <code id="gebruikersKlantcode" style="font-family:monospace;font-size:15px;letter-spacing:2px;background:var(--gray-100);padding:4px 10px;border-radius:5px;margin-left:6px">—</code>
+            <button class="btn-add-sm" style="margin-left:14px" onclick="drukOphangblad()">Ophangblad afdrukken</button>
           </span>
           <div style="font-size:11px;color:var(--gray-500);margin-top:6px">Een gebruiker voert deze code één keer in op zijn toestel, daarna enkel nog zijn pincode.</div>
         </div>
@@ -2408,6 +2409,109 @@ pasThemaToe(huidigThema());
 // tabblad naast de titel geschoven zodra er een tekst voor bestaat. Zo groeit
 // dit mee met elk nieuw scherm zonder dat er iets vergeten kan worden -- en een
 // scherm zonder tekst toont gewoon geen vraagteken.
+
+// ---------------------------------------------------------------------------
+// Het ophangblad voor de app
+// ---------------------------------------------------------------------------
+// Eén A4 om in de kleedkamer of aan het onthaal te hangen. Geen handleiding: een
+// chauffeur leest die niet, en als hij het zou doen is het op het verkeerde
+// moment. Wat hij nodig heeft staat hier in drie regels -- waar de app staat,
+// welke code van dit bedrijf is, en waar zijn pincode vandaan komt.
+//
+// Waarom afdrukken en niet een pdf: er zit geen pdf-bibliotheek in dit portaal
+// en er hoeft er geen in te komen. window.print() laat de browser het werk doen
+// en de gebruiker kiest zelf tussen papier en "opslaan als pdf". Zelfde aanpak
+// als de bundel van het brandpreventiedossier.
+//
+// De QR wijst naar het adres van de app en NIET naar de klantcode van dit
+// bedrijf. Een blad aan een muur wordt gefotografeerd; wie dat doet, hoeft niet
+// meteen de code van dat bedrijf mee te hebben. De cijfers staan er groot naast
+// voor wie binnen is, en dat is de bedoelde weg.
+
+// Het adres van de app, als QR. Opgebouwd uit de matrix zelf en teruggelezen met
+// een echte lezer voor hij hier beland is -- een QR die niet scant is erger dan
+// geen QR, en dat zie je niet aan de opmaak.
+var QR_APP='<svg viewBox="0 0 25 25" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><path fill="#000" d="M0 0h7v1h-7zM8 0h4v1h-4zM13 0h4v1h-4zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM13 1h2v1h-2zM16 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM10 2h1v1h-1zM12 2h1v1h-1zM14 2h1v1h-1zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h1v1h-1zM10 3h1v1h-1zM13 3h2v1h-2zM16 3h1v1h-1zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h2v1h-2zM13 4h1v1h-1zM15 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM10 5h2v1h-2zM13 5h2v1h-2zM16 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM8 7h1v1h-1zM10 7h3v1h-3zM15 7h1v1h-1zM0 8h1v1h-1zM4 8h1v1h-1zM6 8h5v1h-5zM17 8h5v1h-5zM24 8h1v1h-1zM0 9h1v1h-1zM2 9h1v1h-1zM4 9h1v1h-1zM7 9h2v1h-2zM12 9h2v1h-2zM15 9h3v1h-3zM20 9h2v1h-2zM23 9h1v1h-1zM0 10h1v1h-1zM2 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM11 10h2v1h-2zM15 10h3v1h-3zM21 10h2v1h-2zM0 11h2v1h-2zM5 11h1v1h-1zM7 11h2v1h-2zM11 11h1v1h-1zM16 11h3v1h-3zM22 11h2v1h-2zM0 12h5v1h-5zM6 12h1v1h-1zM8 12h1v1h-1zM13 12h2v1h-2zM17 12h2v1h-2zM21 12h4v1h-4zM0 13h4v1h-4zM9 13h2v1h-2zM12 13h1v1h-1zM14 13h3v1h-3zM20 13h1v1h-1zM23 13h1v1h-1zM2 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM10 14h7v1h-7zM19 14h4v1h-4zM2 15h1v1h-1zM4 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM19 15h2v1h-2zM22 15h2v1h-2zM0 16h3v1h-3zM4 16h1v1h-1zM6 16h1v1h-1zM8 16h1v1h-1zM10 16h1v1h-1zM12 16h2v1h-2zM15 16h8v1h-8zM8 17h3v1h-3zM13 17h2v1h-2zM16 17h1v1h-1zM20 17h1v1h-1zM0 18h7v1h-7zM8 18h1v1h-1zM10 18h1v1h-1zM16 18h1v1h-1zM18 18h1v1h-1zM20 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM12 19h1v1h-1zM14 19h3v1h-3zM20 19h4v1h-4zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM8 20h1v1h-1zM10 20h2v1h-2zM13 20h2v1h-2zM16 20h9v1h-9zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM9 21h1v1h-1zM12 21h1v1h-1zM17 21h3v1h-3zM22 21h3v1h-3zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM9 22h1v1h-1zM11 22h5v1h-5zM18 22h1v1h-1zM21 22h1v1h-1zM23 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM10 23h2v1h-2zM13 23h1v1h-1zM19 23h5v1h-5zM0 24h7v1h-7zM8 24h3v1h-3zM12 24h2v1h-2zM15 24h1v1h-1zM22 24h3v1h-3z"/></svg>';
+
+// Spiegelt GEBOUWDE_MODULES uit app.html. Staat er hier iets in dat daar niet
+// gebouwd is, dan belooft het blad een tegel die niet bestaat.
+var APP_TEGELS=[
+  {key:'preinspecties',  naam:'Controle vóór gebruik',
+   wat:'Loop de checklist af voor u met een machine of voertuig begint. Iets niet in orde? Zet het op rood en meld het meteen.'},
+  {key:'vuurvergunning', naam:'Vuurvergunning',
+   wat:'Vraag toestemming voor lassen, slijpen of ander werk met vlam of vonken. U krijgt bericht zodra ze goedgekeurd is.'},
+  {key:'lmra',           naam:'LMRA',
+   wat:'Kijk uw werkplek na vóór u begint. Duurt een minuut en is bedoeld om u te doen stilstaan, niet om af te vinken.'},
+  {key:'chemie',         naam:'Chemische producten',
+   wat:'Zoek een product op en lees wat erin zit, wat het met u doet en wat u moet doen als het misgaat.'},
+  {key:'feiten_derden',  naam:'Feiten door derden',
+   wat:'Meld geweld of pesterijen door een klant, leverancier of bezoeker. Zonder uw naam, tenzij u dat zelf wil.'}
+];
+
+function drukOphangblad(){
+  var bedrijf=huidigeBedrijf||{};
+  var klantcode=bedrijf.klantcode||'';
+  if(!klantcode){showToast('Dit bedrijf heeft nog geen klantcode.');return;}
+
+  var tegels=APP_TEGELS.filter(function(t){return actieveModules[t.key]===true;});
+  if(!tegels.length){
+    showToast('Voor dit bedrijf staat er nog geen app-module aan.');return;
+  }
+
+  var w=window.open('','_blank');
+  if(!w){showToast('Sta pop-ups toe om te kunnen afdrukken');return;}
+
+  var rijen=tegels.map(function(t,i){
+    return '<tr><td class="nr">'+(i+1)+'</td><td><div class="tnaam">'+onthtml(t.naam)+'</div>'+
+      '<div class="twat">'+onthtml(t.wat)+'</div></td></tr>';
+  }).join('');
+
+  w.document.write('<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8">'+
+   '<title>Ophangblad '+onthtml(bedrijf.naam||'')+'</title><style>'+
+   '@page{size:A4 portrait;margin:14mm}'+
+   'body{font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:#0f172a;margin:0}'+
+   'h1{font-size:30px;line-height:1.15;margin:0 0 6px;letter-spacing:-.5px}'+
+   '.onder{color:#475569;font-size:15px;margin:0 0 26px}'+
+   '.vak{display:flex;gap:26px;align-items:center;border:2px solid #003366;border-radius:12px;'+
+     'padding:20px 24px;margin-bottom:26px}'+
+   '.qr{width:118px;height:118px;flex:none}.qr svg{width:100%;height:100%;display:block}'+
+   '.adres{font-size:20px;font-weight:600;margin:0 0 12px}'+
+   '.codelabel{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:#475569;margin-bottom:2px}'+
+   '.code{font-family:ui-monospace,Consolas,monospace;font-size:44px;font-weight:700;'+
+     'letter-spacing:7px;line-height:1;color:#003366}'+
+   'h2{font-size:15px;text-transform:uppercase;letter-spacing:1.2px;color:#475569;'+
+     'margin:0 0 10px;font-weight:600}'+
+   'table{border-collapse:collapse;width:100%;margin-bottom:26px}'+
+   'td{padding:11px 0;border-bottom:1px solid #e2e8f0;vertical-align:top}'+
+   'td.nr{width:30px;color:#94a3b8;font-weight:700;font-size:15px}'+
+   '.tnaam{font-weight:600;font-size:16px}.twat{color:#475569;font-size:13.5px;margin-top:2px}'+
+   '.pin{background:#f1f5f9;border-radius:10px;padding:16px 20px;font-size:14px;line-height:1.6}'+
+   '.pin strong{display:block;margin-bottom:4px}'+
+   '.voet{margin-top:22px;padding-top:12px;border-top:1px solid #e2e8f0;'+
+     'font-size:11.5px;color:#64748b;display:flex;justify-content:space-between;gap:16px}'+
+   '@media print{.knop{display:none}}'+
+   '.knop{position:fixed;top:12px;right:12px;background:#003366;color:#fff;border:0;'+
+     'border-radius:8px;padding:9px 16px;font-size:14px;cursor:pointer}'+
+   '</style></head><body>'+
+   '<button class="knop" onclick="window.print()">Afdrukken</button>'+
+   '<h1>De preventie-app op uw telefoon</h1>'+
+   '<p class="onder">'+onthtml(bedrijf.naam||'')+' &mdash; hang dit op waar uw mensen passeren.</p>'+
+   '<div class="vak"><div class="qr">'+QR_APP+'</div><div>'+
+     '<p class="adres">prevx.be/app</p>'+
+     '<div class="codelabel">Code van dit bedrijf</div>'+
+     '<div class="code">'+onthtml(klantcode)+'</div>'+
+   '</div></div>'+
+   '<h2>Wat u ermee doet</h2>'+
+   '<table><tbody>'+rijen+'</tbody></table>'+
+   '<div class="pin"><strong>Uw pincode</strong>'+
+     'Die is persoonlijk en krijgt u van uw leidinggevende. Vergeten of werkt hij niet meer? '+
+     'Vraag een nieuwe &mdash; deel nooit uw code met een collega, want alles wat u meldt komt op uw naam '+
+     '(behalve op het scherm waar uitdrukkelijk staat dat het zonder naam gaat).</div>'+
+   '<div class="voet"><span>Er is niets te installeren. Open het adres in de browser van uw telefoon '+
+     'en zet het bij uw favorieten.</span><span>PrevX</span></div>'+
+   '</body></html>');
+  w.document.close();
+}
 
 // ---------------------------------------------------------------------------
 // Aan de slag
